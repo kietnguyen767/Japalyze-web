@@ -72,14 +72,14 @@ export default function DeckQuiz({ cards, onBack, onUpdateProgress }: DeckQuizPr
   // --- MÀN HÌNH: KHÔNG ĐỦ THẺ ---
   if (cards.length < 4) {
     return (
-      <div className="p-10 text-center border-2 border-dashed border-red-200 rounded-xl bg-red-50">
+      <div className="p-8 md:p-10 text-center border-2 border-dashed border-red-200 rounded-xl bg-red-50">
         <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <XCircle size={32} />
         </div>
-        <h3 className="text-red-600 font-bold text-lg">Không đủ dữ liệu</h3>
-        <p className="text-slate-500 mb-6 mt-2">Cần ít nhất 4 thẻ trong bộ này để tạo bài trắc nghiệm.</p>
-        <button onClick={onBack} className="bg-white border border-slate-300 px-4 py-2 rounded-lg font-bold text-slate-600 hover:bg-slate-50">
-            Quay lại học từ
+        <h3 className="text-red-600 font-bold text-xl mb-2">Không đủ dữ liệu</h3>
+        <p className="text-slate-500 mb-6">Cần ít nhất 4 thẻ trong bộ này để tạo bài trắc nghiệm.</p>
+        <button onClick={onBack} className="bg-white border-2 border-red-300 px-6 py-2 rounded-lg font-bold text-red-600 hover:bg-red-100 transition-all">
+            ← Quay lại
         </button>
       </div>
     );
@@ -123,28 +123,28 @@ export default function DeckQuiz({ cards, onBack, onUpdateProgress }: DeckQuizPr
                  <div className="text-2xl md:text-4xl font-black text-slate-800">{q.question}</div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  {q.options.map((opt: string, idx: number) => {
                     const isSelected = userAnswer === opt;
                     const isTrue = opt === q.correctAnswer;
                     
-                    let btnClass = "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-blue-300";
+                    let btnClass = "bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-blue-300";
                     let icon = null;
 
                     if (isAnswered) {
                         if (isSelected && isTrue) {
-                            btnClass = "bg-green-600 border-green-600 text-white shadow-md transform scale-105";
-                            icon = <CheckCircle size={20} className="absolute right-4"/>;
+                            btnClass = "bg-green-600 border-green-600 text-white shadow-lg";
+                            icon = <CheckCircle size={20} />;
                         }
                         else if (isSelected && !isTrue) {
-                            btnClass = "bg-red-500 border-red-500 text-white opacity-90";
-                            icon = <XCircle size={20} className="absolute right-4"/>;
+                            btnClass = "bg-red-500 border-red-500 text-white shadow-md";
+                            icon = <XCircle size={20} />;
                         }
                         else if (!isSelected && isTrue) {
-                            btnClass = "bg-green-50 border-green-400 text-green-700 border-dashed ring-2 ring-green-100";
+                            btnClass = "bg-green-50 border-green-400 text-green-700 border-dashed";
                         }
                         else {
-                            btnClass = "opacity-30 bg-slate-50 grayscale";
+                            btnClass = "opacity-50 bg-slate-50 text-slate-400 cursor-not-allowed";
                         }
                     }
 
@@ -152,10 +152,10 @@ export default function DeckQuiz({ cards, onBack, onUpdateProgress }: DeckQuizPr
                        <button key={idx}
                           onClick={() => handleSelectOption(q.id, opt, q.correctAnswer)}
                           disabled={isAnswered}
-                          className={`relative py-4 px-6 rounded-2xl border-2 font-bold text-lg transition-all text-left flex items-center justify-between ${btnClass}`}
+                          className={`py-3 px-4 rounded-2xl border-2 font-bold text-base transition-all text-left flex items-center justify-between gap-3 ${btnClass}`}
                        >
-                           {opt}
-                           {icon}
+                           <span className="flex-1">{opt}</span>
+                           {icon && <span>{icon}</span>}
                        </button>
                     );
                  })}
@@ -167,19 +167,19 @@ export default function DeckQuiz({ cards, onBack, onUpdateProgress }: DeckQuizPr
 
       {/* Màn hình kết thúc (Hiện ở cuối trang khi làm xong) */}
       {isFinished && (
-         <div className="mt-12 text-center bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-10 text-white shadow-xl animate-bounce-in">
+         <div className="mt-12 text-center bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 md:p-12 text-white shadow-xl">
             <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
                 <Star size={40} className="text-yellow-300 fill-yellow-300" />
             </div>
-            <h2 className="text-3xl font-bold mb-2">Hoàn thành xuất sắc!</h2>
-            <p className="text-blue-100 mb-8 text-lg">Bạn đã trả lời đúng <strong className="text-white text-xl">{score}/{quizData.length}</strong> câu hỏi.</p>
+            <h2 className="text-3xl md:text-4xl font-bold mb-2">Hoàn thành xuất sắc!</h2>
+            <p className="text-blue-100 mb-8 text-lg">Bạn đã trả lời đúng <strong className="text-yellow-200 text-2xl">{score}/{quizData.length}</strong> câu hỏi.</p>
             
-            <div className="flex justify-center gap-4">
-                <button onClick={onBack} className="bg-white/10 hover:bg-white/20 text-white border border-white/30 px-6 py-3 rounded-xl font-bold transition-all">
-                    Quay lại
+            <div className="flex flex-col md:flex-row justify-center gap-4 mt-8">
+                <button onClick={onBack} className="bg-white/20 hover:bg-white/30 text-white border-2 border-white px-6 md:px-8 py-3 rounded-xl font-bold transition-all">
+                    ← Quay lại
                 </button>
-                <button onClick={() => window.location.reload()} className="bg-white text-blue-600 px-8 py-3 rounded-xl font-bold shadow-lg hover:scale-105 transition-transform flex items-center gap-2">
-                    <RefreshCw size={20}/> Làm lại đề mới
+                <button onClick={() => window.location.reload()} className="bg-white text-blue-600 px-6 md:px-8 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2">
+                    <RefreshCw size={20}/> Làm lại
                 </button>
             </div>
          </div>
