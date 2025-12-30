@@ -24,7 +24,8 @@ export async function POST(request: Request) {
 
         // 1. Tìm UserID sở hữu đơn hàng này trong Redis
         // (Lưu ý: Ở file create-link, bạn nhớ lưu redis dạng: order_pending:123 = userId nhé)
-        const userId = await redis.get(`order_pending:${orderCode}`);
+        const userIdRaw = await redis.get(`order_pending:${orderCode}`);
+        const userId = typeof userIdRaw === 'string' ? userIdRaw : null;
         
         console.log("👤 UserID tìm thấy:", userId);
 

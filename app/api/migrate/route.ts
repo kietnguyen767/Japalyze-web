@@ -41,7 +41,7 @@ export async function GET() {
       let finalUser = userData;
       if (!userData || Object.keys(userData).length === 0) {
           const stringData = await redis.get(key);
-          finalUser = safeJsonParse(stringData);
+          finalUser = safeJsonParse(stringData as string | null);
       }
 
       if (finalUser && finalUser.email) {
@@ -69,7 +69,7 @@ export async function GET() {
         // ==========================================
         const deckKey = `decks:${finalUser.email}`;
         const deckDataRaw = await redis.get(deckKey);
-        const decks = safeJsonParse(deckDataRaw);
+        const decks = safeJsonParse(deckDataRaw as string | null);
 
         if (Array.isArray(decks)) {
           for (const d of decks) {
@@ -97,7 +97,7 @@ export async function GET() {
         // ==========================================
         const progressKey = `exercise_progress:${finalUser.email}`;
         const progressDataRaw = await redis.get(progressKey);
-        const progressList = safeJsonParse(progressDataRaw);
+        const progressList = safeJsonParse(progressDataRaw as string | null);
 
         if (Array.isArray(progressList)) {
            for (const exerciseId of progressList) {
@@ -124,7 +124,7 @@ export async function GET() {
     // 2. DI CHUYỂN BÀI VIẾT CỘNG ĐỒNG
     // ==========================================
     const communityDataRaw = await redis.get('community:posts');
-    const communityPosts = safeJsonParse(communityDataRaw);
+    const communityPosts = safeJsonParse(communityDataRaw as string | null);
 
     if (Array.isArray(communityPosts) && communityPosts.length > 0) {
         logs.push(`📦 Tìm thấy ${communityPosts.length} bài viết cộng đồng.`);

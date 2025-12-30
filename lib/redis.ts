@@ -1,57 +1,39 @@
-// lib/redis.ts
-import Redis from 'ioredis';
+import { Redis } from '@upstash/redis';
 
-const getRedisUrl = (): string => {
-  if (process.env.REDIS_URL) {
-    return process.env.REDIS_URL;
-  }
-  throw new Error("REDIS_URL is not defined in .env.local");
-};
-
-// --- FIX LỖI TRÀN KẾT NỐI (Singleton Pattern) ---
-// Khai báo biến global để Next.js không tạo lại kết nối khi Hot Reload
-const globalForRedis = global as unknown as { redis: Redis };
-
-const redis = globalForRedis.redis || new Redis(getRedisUrl());
-
-if (process.env.NODE_ENV !== 'production') {
-  globalForRedis.redis = redis;
-}
-
-redis.on('connect', () => {
-  console.log('✅ Connected to Redis');
+// 1. Khởi tạo Client (Dùng biến môi trường UPSTASH...)
+// Nếu chưa cấu hình biến môi trường, nó sẽ báo lỗi rõ ràng.
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
 });
 
-redis.on('error', (error) => {
-  console.error('❌ Redis connection error:', error);
-});
+// --- HELPER FUNCTIONS ---
 
-// --- HELPER FUNCTIONS (Đã nâng cấp để hỗ trợ JSON) ---
-
-// Lưu dữ liệu (Tự động chuyển Object/Array thành String JSON)
+// Lưu dữ liệu
+// Ưu điểm Upstash: Bạn truyền Object vào, nó tự biến thành JSON. Không cần JSON.stringify thủ công.
 export async function setCache(key: string, value: any, ttl: number = 3600): Promise<void> {
-  const stringValue = JSON.stringify(value);
-  await redis.setex(key, ttl, stringValue);
+  // cú pháp: .set(key, value, { ex: thời_gian_hết_hạn_giây })
+  await redis.set(key, value, { ex: ttl });
 }
 
-// Lấy dữ liệu (Tự động chuyển String JSON thành Object/Array)
-// Sử dụng Generic <T> để bạn có thể định nghĩa kiểu dữ liệu trả về
+// Lấy dữ liệu
+// Ưu điểm Upstash: Nó tự parse JSON ra Object cho bạn luôn.
 export async function getCache<T = any>(key: string): Promise<T | null> {
-  const data = await redis.get(key);
-  if (!data) return null;
-  
   try {
-    return JSON.parse(data) as T;
+    const data = await redis.get<T>(key);
+    return data; 
   } catch (error) {
-    // Nếu dữ liệu không phải JSON (ví dụ chỉ là string thường), trả về nguyên gốc
-    return data as unknown as T;
+    console.error(`Lỗi lấy cache key "${key}":`, error);
+    return null;
   }
 }
 
+// Xóa dữ liệu
 export async function deleteCache(key: string): Promise<void> {
   await redis.del(key);
 }
 
+// Xóa sạch Database (Dùng cẩn thận)
 export async function clearCache(): Promise<void> {
   await redis.flushdb();
 }

@@ -11,7 +11,8 @@ export async function GET(request: Request) {
     }
 
     // 1. Kiểm tra Session trong Redis (Vẫn dùng Redis để check token cho nhanh)
-    const userId = await redis.get(`session:${token}`);
+    const userIdRaw = await redis.get(`session:${token}`);
+    const userId = typeof userIdRaw === 'string' ? userIdRaw : null;
     
     if (!userId) {
         return NextResponse.json({ error: 'Session expired' }, { status: 401 });

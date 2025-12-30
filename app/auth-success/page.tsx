@@ -5,8 +5,9 @@ import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Loader2 } from 'lucide-react';
+import { Suspense } from 'react';
 
-export default function AuthSuccessPage() {
+function AuthSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAuth();
@@ -58,7 +59,19 @@ export default function AuthSuccessPage() {
     <div className="h-screen flex flex-col items-center justify-center bg-slate-50">
       <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
       <h2 className="text-xl font-bold text-slate-700">Đang đăng nhập...</h2>
-      <p className="text-slate-500">Vui lòng đợi trong giây lát.</p>
     </div>
+  );
+}
+
+export default function AuthSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="h-screen flex flex-col items-center justify-center bg-slate-50">
+        <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
+        <h2 className="text-xl font-bold text-slate-700">Đang đăng nhập...</h2>
+      </div>
+    }>
+      <AuthSuccessContent />
+    </Suspense>
   );
 }

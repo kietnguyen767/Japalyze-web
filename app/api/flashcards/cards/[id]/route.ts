@@ -5,13 +5,14 @@ import { getUserId } from '@/lib/get-user';
 // PUT: Cập nhật trạng thái thẻ (Đã thuộc / Chưa thuộc)
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const userId = await getUserId();
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const cardId = params.id;
+    const { id } = await params;
+    const cardId = id;
     const { isLearned } = await request.json(); // Gửi lên { isLearned: true/false }
 
     // Kiểm tra quyền sở hữu (Query phức tạp hơn xíu vì phải join bảng Deck)
@@ -40,16 +41,17 @@ export async function PUT(
 // DELETE: Xóa thẻ
 export async function DELETE(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
   ) {
     const userId = await getUserId();
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   
     try {
+        const { id } = await params;
         // Logic check quyền tương tự ở trên...
         // Xóa
         await prisma.card.delete({
-            where: { id: params.id }
+            where: { id: id }
         });
         return NextResponse.json({ success: true });
     } catch (error) {

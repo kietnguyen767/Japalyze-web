@@ -1,7 +1,7 @@
 // app/translate/page.tsx
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 // 1. Import thêm các icon cần thiết và Hook Auth, Service
 import { ArrowRightLeft, Copy, RotateCcw, Volume2, Check, Bookmark, Plus, X } from 'lucide-react';
@@ -9,7 +9,7 @@ import Navbar from '@/components/Navbar';
 import { FlashcardService, Deck } from '@/lib/flashcardService';
 import { useAuth } from '@/context/AuthContext';
 
-export default function TranslatePage() {
+function TranslateContent() {
   const searchParams = useSearchParams();
   const { user } = useAuth(); // Lấy thông tin user đăng nhập
   
@@ -358,5 +358,17 @@ export default function TranslatePage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function TranslatePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <p className="text-slate-600">Đang tải...</p>
+      </div>
+    }>
+      <TranslateContent />
+    </Suspense>
   );
 }
