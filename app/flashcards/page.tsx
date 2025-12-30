@@ -93,18 +93,54 @@ export default function FlashcardsPage() {
     }
   };
 
-  // 3. XÓA & ĐỔI TÊN (Tạm thời giả lập hoặc chờ API bổ sung)
-  // Vì bài trước ta chưa viết API Delete/Rename Deck, nên tạm thời mình để console.log
-  // Bạn có thể bổ sung API sau.
+  // 3. XÓA DECK
   const handleDeleteDeck = async (deckId: string) => {
-    if (!confirm('Tính năng đang bảo trì. Bạn có muốn xóa giao diện tạm thời?')) return;
-    setDecks(decks.filter(d => d.id !== deckId));
+    if (!confirm('Bạn chắc chắn muốn xóa bộ thẻ này?')) return;
+    
+    try {
+      const res = await fetch(`/api/flashcards/decks/${deckId}`, {
+        method: 'DELETE'
+      });
+
+      if (res.ok) {
+        setDecks(decks.filter(d => d.id !== deckId));
+        alert('✅ Xóa thành công');
+      } else {
+        alert('❌ Lỗi xóa deck');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('❌ Lỗi: ' + (e as any).message);
+    }
   };
 
+  // 4. ĐỔI TÊN DECK
   const handleRenameDeck = async (deckId: string) => {
-    // Tạm thời update local state
-    setDecks(decks.map(d => d.id === deckId ? { ...d, title: editingName } : d));
-    setEditingDeckId(null);
+    if (!editingName.trim()) {
+      alert('Tên deck không được để trống');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/flashcards/decks/${deckId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: editingName.trim() })
+      });
+
+      if (res.ok) {
+        const updated = await res.json();
+        setDecks(decks.map(d => d.id === deckId ? { ...d, title: updated.title } : d));
+        setEditingDeckId(null);
+        setEditingName('');
+        alert('✅ Cập nhật thành công');
+      } else {
+        alert('❌ Lỗi cập nhật');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('❌ Lỗi: ' + (e as any).message);
+    }
   };
 
   if (isLoading || !user)
