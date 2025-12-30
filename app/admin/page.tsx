@@ -6,7 +6,7 @@ import {
   GraduationCap, X, Check, MessageCircle, Crown, Loader2
 } from 'lucide-react';
 
-// --- Constants (Danh sách bài học - Giữ nguyên) ---
+// --- Constants (Giữ nguyên) ---
 const ALL_LESSONS = [
   { id: 'hiragana', name: 'Bảng Hiragana' },
   { id: 'katakana', name: 'Bảng Katakana' },
@@ -41,25 +41,23 @@ const ALL_LESSONS = [
   { id: 'conv_5_photo', name: 'Hội thoại 5: Rủ đi chụp ảnh' },
 ];
 
-// --- Types (CẬP NHẬT CHO KHỚP PRISMA) ---
+// --- Types ---
 type UserData = {
   email: string;
   name: string;
   role: 'admin' | 'user';
-  createdAt: string; // Prisma trả về ISO string
+  createdAt: string;
   isPremium?: boolean;
 };
 
 type PostData = {
   id: string;
-  // User lồng nhau do Prisma join bảng
   user: { 
       name: string | null; 
       email: string;
   }; 
   content: string;
   createdAt: string;
-  // Bỏ rating vì DB mới không có
 };
 
 export default function AdminDashboard() {
@@ -80,31 +78,19 @@ export default function AdminDashboard() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Lấy Users
         const resUsers = await fetch('/api/admin/users');
-        if (!resUsers.ok) {
-          console.error("❌ Lỗi tải users:", resUsers.status, resUsers.statusText);
-          alert(`⚠️ Lỗi tải người dùng: ${resUsers.status === 403 ? 'Bạn không phải Admin' : 'Vui lòng đăng nhập'}`);
-          setUsers([]);
-        } else {
+        if (resUsers.ok) {
           const dataUsers = await resUsers.json();
           setUsers(dataUsers.users || []);
-          console.log("✅ Đã tải", dataUsers.users?.length || 0, "users");
         }
 
-        // Lấy Posts
-        const resPosts = await fetch('/api/community/posts'); // 👈 URL MỚI
-        if (!resPosts.ok) {
-          console.error("❌ Lỗi tải posts:", resPosts.status);
-          setPosts([]);
-        } else {
+        const resPosts = await fetch('/api/community/posts');
+        if (resPosts.ok) {
           const dataPosts = await resPosts.json();
           setPosts(Array.isArray(dataPosts) ? dataPosts : []);
-          console.log("✅ Đã tải", dataPosts?.length || 0, "posts");
         }
       } catch (error) {
-        console.error("❌ Lỗi tải dữ liệu Admin:", error);
-        alert("⚠️ Lỗi kết nối server. Vui lòng tải lại trang.");
+        console.error("Lỗi tải dữ liệu:", error);
       } finally {
         setLoading(false);
       }
@@ -112,35 +98,39 @@ export default function AdminDashboard() {
     fetchData();
   }, []);
 
-  // --- ACTIONS ---
+  // --- ACTIONS (OPTIMISTIC UI - CẬP NHẬT NGAY LẬP TỨC) ---
 
   const handleDeleteUser = async (email: string) => {
     if (!confirm(`Bạn chắc chắn muốn xóa tài khoản ${email}?`)) return;
     
+    // 1. Cập nhật UI ngay lập tức
+    const previousUsers = [...users];
+    setUsers(prev => prev.filter(u => u.email !== email));
+
     try {
+      // 2. Gọi API ngầm
       const res = await fetch('/api/admin/users', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
       });
 
-      if (!res.ok) {
-        const errData = await res.json();
-        alert(`❌ Lỗi xóa user: ${errData.error || 'Unknown error'}`);
-        return;
-      }
-
-      setUsers(prev => prev.filter(u => u.email !== email));
-      alert(`✅ Xóa user ${email} thành công`);
+      if (!res.ok) throw new Error("Lỗi xóa");
+      
     } catch (error) {
-      console.error("❌ Lỗi xóa user:", error);
-      alert("⚠️ Lỗi kết nối server");
+      // 3. Nếu lỗi thì hoàn tác (Rollback)
+      alert("❌ Lỗi kết nối server, hoàn tác xóa.");
+      setUsers(previousUsers);
     }
   };
 
   const handleToggleRole = async (user: UserData) => {
     const newRole = user.role === 'admin' ? 'user' : 'admin';
     if (!confirm(`Đổi quyền của ${user.name} thành ${newRole}?`)) return;
+
+    // Optimistic Update
+    const previousUsers = [...users];
+    setUsers(prev => prev.map(u => u.email === user.email ? { ...u, role: newRole } : u));
 
     try {
       const res = await fetch('/api/admin/users', {
@@ -149,23 +139,20 @@ export default function AdminDashboard() {
         body: JSON.stringify({ email: user.email, role: newRole })
       });
 
-      if (!res.ok) {
-        const errData = await res.json();
-        alert(`❌ Lỗi cập nhật: ${errData.error}`);
-        return;
-      }
-
-      setUsers(prev => prev.map(u => u.email === user.email ? { ...u, role: newRole } : u));
-      alert(`✅ Cập nhật quyền thành công`);
+      if (!res.ok) throw new Error("Lỗi update");
     } catch (error) {
-      console.error("❌ Lỗi toggle role:", error);
-      alert("⚠️ Lỗi kết nối server");
+      alert("❌ Lỗi kết nối server.");
+      setUsers(previousUsers);
     }
   };
 
   const handleTogglePremium = async (user: UserData) => {
     const newStatus = !user.isPremium;
     if (!confirm(`${newStatus ? 'Kích hoạt' : 'Hủy'} Premium cho ${user.email}?`)) return;
+
+    // Optimistic Update
+    const previousUsers = [...users];
+    setUsers(prev => prev.map(u => u.email === user.email ? { ...u, isPremium: newStatus } : u));
 
     try {
       const res = await fetch('/api/admin/users', {
@@ -174,38 +161,39 @@ export default function AdminDashboard() {
         body: JSON.stringify({ email: user.email, type: 'premium', value: newStatus })
       });
 
-      if (!res.ok) {
-        const errData = await res.json();
-        alert(`❌ Lỗi cập nhật: ${errData.error}`);
-        return;
-      }
-
-      setUsers(prev => prev.map(u => u.email === user.email ? { ...u, isPremium: newStatus } : u));
-      alert(`✅ Cập nhật gói cước thành công`);
+      if (!res.ok) throw new Error("Lỗi update");
     } catch (error) {
-      console.error("❌ Lỗi toggle premium:", error);
-      alert("⚠️ Lỗi kết nối server");
+      alert("❌ Lỗi kết nối server.");
+      setUsers(previousUsers);
     }
   };
 
   const handleDeletePost = async (postId: string) => {
     if (!confirm('Xóa bài viết này vĩnh viễn?')) return;
 
-    await fetch('/api/admin/posts', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ postId })
-    });
-
+    // Optimistic Update
+    const previousPosts = [...posts];
     setPosts(prev => prev.filter(p => p.id !== postId));
+
+    try {
+        const res = await fetch('/api/admin/posts', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ postId })
+        });
+        if (!res.ok) throw new Error("Lỗi xóa post");
+    } catch (error) {
+        alert("❌ Lỗi kết nối server.");
+        setPosts(previousPosts);
+    }
   };
 
-  // --- PROGRESS ACTIONS ---
+  // --- PROGRESS ACTIONS (OPTIMISTIC UI CHUẨN) ---
 
   const openProgressModal = async (email: string) => {
     setSelectedUserEmail(email);
     setShowProgressModal(true);
-    setUserProgress([]);
+    setUserProgress([]); // Reset tạm thời
 
     try {
       const res = await fetch(`/api/admin/users/progress?email=${email}`);
@@ -219,16 +207,19 @@ export default function AdminDashboard() {
   const toggleLessonStatus = async (lessonId: string, currentStatus: boolean) => {
     if (!selectedUserEmail) return;
 
-    const oldProgress = [...userProgress]; // Lưu state cũ để rollback nếu lỗi
+    const oldProgress = [...userProgress];
 
-    // Optimistic UI Update
+    // 1. CẬP NHẬT GIAO DIỆN NGAY LẬP TỨC (Không cần chờ server)
     if (currentStatus) {
+      // Đang có -> Xóa
       setUserProgress(prev => prev.filter(id => id !== lessonId));
     } else {
+      // Chưa có -> Thêm
       setUserProgress(prev => [...prev, lessonId]);
     }
 
     try {
+      // 2. Gửi request xuống server
       const res = await fetch('/api/admin/users/progress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -240,23 +231,17 @@ export default function AdminDashboard() {
       });
 
       if (!res.ok) {
-        const errData = await res.json();
-        console.error("❌ Lỗi toggle progress:", errData.error);
-        // Rollback UI nếu request failed
-        setUserProgress(oldProgress);
-        alert(`❌ Lỗi: ${errData.error}`);
-        return;
+        throw new Error("API Error");
       }
+      
+      // ✅ QUAN TRỌNG: Nếu thành công, KHÔNG cập nhật lại state từ server nữa
+      // để tránh bị nháy (flicker) do độ trễ mạng. Giao diện đã đúng từ bước 1 rồi.
 
-      const data = await res.json();
-      // Sync với state từ server để đảm bảo đồng bộ
-      setUserProgress(data.completed || oldProgress);
-      console.log("✅ Cập nhật tiến độ thành công");
     } catch (error) {
       console.error("❌ Lỗi kết nối:", error);
-      // Rollback UI nếu network error
+      // 3. Chỉ khi lỗi mới quay lại trạng thái cũ
       setUserProgress(oldProgress);
-      alert("⚠️ Lỗi kết nối server. Thay đổi đã được hoàn tác.");
+      alert("⚠️ Lỗi kết nối server, không thể cập nhật.");
     }
   };
 
@@ -335,7 +320,6 @@ export default function AdminDashboard() {
                     </td>
 
                     <td className="p-4 text-sm text-slate-500">
-                      {/* XỬ LÝ NGÀY THÁNG CHUẨN */}
                       {u.createdAt ? new Date(u.createdAt).toLocaleDateString('vi-VN') : 'N/A'}
                     </td>
                     <td className="p-4 flex justify-end gap-2">
@@ -369,7 +353,6 @@ export default function AdminDashboard() {
               <div key={post.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-start gap-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    {/* SỬA LỖI HIỂN THỊ USER */}
                     <span className="font-bold text-slate-800">{post.user?.name || 'Ẩn danh'}</span>
                     <span className="text-xs text-slate-400">• {new Date(post.createdAt).toLocaleDateString('vi-VN')}</span>
                   </div>
@@ -385,7 +368,7 @@ export default function AdminDashboard() {
         )}
       </div>
 
-      {/* === MODAL QUẢN LÝ TIẾN ĐỘ (Giữ nguyên UI) === */}
+      {/* === MODAL QUẢN LÝ TIẾN ĐỘ === */}
       {showProgressModal && selectedUserEmail && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
@@ -429,7 +412,6 @@ export default function AdminDashboard() {
             </div>
         </div>
       )}
-
     </div>
   );
 }

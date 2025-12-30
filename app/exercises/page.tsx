@@ -13,7 +13,7 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { CONVERSATION_DATA } from '@/lib/conversationData';
 
-// --- DATA CỐ ĐỊNH (GIỮ NGUYÊN) ---
+// --- DATA CỐ ĐỊNH ---
 const CATEGORIES = [
   {
     title: "Nhập môn (Trắc nghiệm)",
@@ -67,24 +67,38 @@ export default function ExercisesPage() {
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [isPremiumUser, setIsPremiumUser] = useState(false);
 
+  // --- LOGIC TỰ ĐỘNG CẬP NHẬT (POLLING) ---
   useEffect(() => {
+    // 1. Hàm lấy dữ liệu
     const fetchProgress = async () => {
       if (!user) return;
       try {
-        // 👇 SỬA ĐỔI: Gọi API mới (không cần ?email=...)
         const res = await fetch('/api/exercises/progress');
-        const data = await res.json();
-        
-        // Data trả về { completed: string[], isPremium: boolean }
-        setCompletedLessons(data.completed || []);
-        setIsPremiumUser(data.isPremium || false);
+        if (res.ok) {
+           const data = await res.json();
+           // Cập nhật State: Nếu có thay đổi so với cũ thì React sẽ tự render lại tích xanh
+           setCompletedLessons(data.completed || []);
+           setIsPremiumUser(data.isPremium || false);
+        }
       } catch (error) {
         console.error("Lỗi tải tiến trình", error);
       }
     };
+
+    // 2. Gọi ngay khi vừa vào trang
     fetchProgress();
+
+    // 3. Cài đặt gọi lại sau mỗi 5 giây (5000ms)
+    const intervalId = setInterval(() => {
+        fetchProgress();
+    }, 5000);
+
+    // 4. Dọn dẹp bộ nhớ khi user thoát trang
+    return () => clearInterval(intervalId);
+
   }, [user]);
 
+  // --- LOGIC HIỂN THỊ TÊN BÀI HỌC ---
   const getLessonTitle = (id: string) => {
     for (const cat of CATEGORIES) {
       const found = cat.lessons.find(l => l.id === id);
@@ -93,10 +107,11 @@ export default function ExercisesPage() {
     return id;
   };
 
+  // --- LOGIC KIỂM TRA KHÓA BÀI ---
   const checkLockStatus = (lessonId: string) => {
     const convData = CONVERSATION_DATA.find(c => c.id === lessonId);
 
-    // 🔥 PREMIUM: mở toàn bộ hội thoại
+    // Nếu là VIP thì mở hết
     if (isPremiumUser && convData) {
       return { isLocked: false, missingTitles: [] };
     }
