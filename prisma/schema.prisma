@@ -1,0 +1,140 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                 String               @id @default(uuid())
+  email              String               @unique
+  name               String?
+  password           String?
+  avatar             String?
+  role               String               @default("user")
+  isPremium          Boolean              @default(false)
+  provider           String               @default("email")
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  
+  // Quan hệ ngược (để truy vấn ngược từ User)
+  payments           Payment[]
+  decks              Deck[]
+  translationHistory TranslationHistory[]
+  exerciseProgress   ExerciseProgress[]
+  posts              Post[]
+  comments           Comment[]
+  likes              Like[]
+}
+
+model Payment {
+  id        String   @id @default(uuid())
+  orderCode Int      @unique
+  amount    Int
+  status    String
+  createdAt DateTime @default(now())
+  
+  userId    String
+  // 👇 Thêm onDelete: Cascade
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// --- 1. FLASHCARDS ---
+model Deck {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+
+  userId      String
+  // 👇 Thêm onDelete: Cascade
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  cards       Card[]
+}
+
+model Card {
+  id        String   @id @default(uuid())
+  front     String
+  back      String
+  example   String?
+  isLearned Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  deckId    String
+  // Đã có Cascade (Xóa bộ thẻ -> Xóa thẻ con) -> TỐT
+  deck      Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
+}
+
+// --- 2. TRANSLATE HISTORY ---
+model TranslationHistory {
+  id         String   @id @default(uuid())
+  sourceText String
+  targetText String
+  createdAt  DateTime @default(now())
+
+  userId     String
+  // 👇 Thêm onDelete: Cascade
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// --- 3. EXERCISES ---
+model ExerciseProgress {
+  id          String   @id @default(uuid())
+  exerciseId  String
+  score       Int
+  completedAt DateTime @default(now())
+
+  userId      String
+  // 👇 Thêm onDelete: Cascade
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// --- 4. COMMUNITY ---
+model Post {
+  id        String   @id @default(uuid())
+  content   String
+  rating    Int      @default(5) // 👈 Thêm rating (1-5 stars)
+  createdAt DateTime @default(now())
+
+  userId    String
+  // 👇 Thêm onDelete: Cascade
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  comments  Comment[]
+  likes     Like[]
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+
+  postId    String
+  // Đã có Cascade (Xóa bài -> Xóa cmt) -> TỐT
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  userId    String
+  // 👇 Thêm onDelete: Cascade (Xóa user -> Xóa cmt của user đó)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  postId    String
+  // Đã có Cascade -> TỐT
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  userId    String
+  // 👇 Thêm onDelete: Cascade
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+}
