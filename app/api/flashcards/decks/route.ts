@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getUserId } from '@/lib/get-user'; // Nhớ tạo file helper này như bài trước
-
+export const dynamic = 'force-dynamic';
 // GET: Lấy toàn bộ Deck và Card bên trong
 export async function GET() {
   const userId = await getUserId();

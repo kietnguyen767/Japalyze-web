@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
 import redis from '@/lib/redis'; // Vẫn dùng Redis để lưu Session
 import { v4 as uuidv4 } from 'uuid';
-
+export const dynamic = 'force-dynamic';
 export async function POST(request: Request) {
   try {
     const { email, password } = await request.json();

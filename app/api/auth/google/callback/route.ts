@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import redis from '@/lib/redis';
 import prisma from '@/lib/prisma'; // 👈 Thêm Prisma vào để lưu User
 import { v4 as uuidv4 } from 'uuid';
-
+export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);

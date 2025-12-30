@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { getCache, setCache } from '@/lib/redis';
 import prisma from '@/lib/prisma';
 import { getUserId } from '@/lib/get-user';
-
+export const dynamic = 'force-dynamic';
 export async function POST(request: Request) {
   try {
     // 1. Nhận dữ liệu

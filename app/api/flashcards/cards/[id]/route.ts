@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getUserId } from '@/lib/get-user';
-
+export const dynamic = 'force-dynamic';
 // PUT: Cập nhật trạng thái thẻ (Đã thuộc / Chưa thuộc)
 export async function PUT(
   request: Request,

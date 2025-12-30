@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getUserId } from '@/lib/get-user';
-
+export const dynamic = 'force-dynamic';
 // GET: Lấy danh sách bài đã học VÀ trạng thái Premium
 export async function GET(request: Request) {
   // 1. Lấy UserID từ Session (Bảo mật hơn lấy email từ URL)

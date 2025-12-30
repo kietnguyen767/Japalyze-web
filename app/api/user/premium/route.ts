@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import redis from '@/lib/redis';
 import prisma from '@/lib/prisma'; // 👈 Thêm Prisma
-
+export const dynamic = 'force-dynamic';
 export async function POST(request: Request) {
   try {
     const { email, action } = await request.json(); // action: 'trial' | 'buy_1_month'

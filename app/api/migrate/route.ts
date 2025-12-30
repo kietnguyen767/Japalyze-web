@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import redis from '@/lib/redis';
-
+export const dynamic = 'force-dynamic';
 // 1. Helper: Parse JSON an toàn (tránh lỗi crash nếu chuỗi không phải JSON)
 const safeJsonParse = (str: string | null) => {
   if (!str) return null;

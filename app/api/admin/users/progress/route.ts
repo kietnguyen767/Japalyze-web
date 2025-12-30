@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getUserId } from '@/lib/get-user';
-
+export const dynamic = 'force-dynamic';
 // GET: Lấy tiến trình của 1 user cụ thể
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

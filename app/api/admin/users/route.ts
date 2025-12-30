@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getUserId } from '@/lib/get-user';
-
+export const dynamic = 'force-dynamic';
 // GET: Lấy danh sách tất cả User (Code Prisma Mới)
 export async function GET() {
   try {
