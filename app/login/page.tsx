@@ -38,8 +38,16 @@ export default function LoginPage() {
 
       // 🔥 LƯU TOKEN VÀO COOKIE
       if (data.token) {
+        console.log('🔑 Token từ API:', data.token.substring(0, 20) + '...');
         document.cookie = `session_token=${data.token}; path=/; max-age=86400; SameSite=Lax`;
         console.log("✅ Token đã lưu vào cookie");
+        
+        // Verify token được lưu
+        const cookieToken = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('session_token='))
+          ?.split('=')[1];
+        console.log('🔐 Verify cookie token:', cookieToken?.substring(0, 20) + '...');
       }
 
       login(data.user);

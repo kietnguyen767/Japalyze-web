@@ -1,132 +1,218 @@
 // lib/flashcardService.ts
 
-// Định nghĩa Types
-export type Flashcard = {
+// Định nghĩa Types (Match Prisma schema)
+export type Card = {
   id: string;
   front: string;
   back: string;
-  example?: string;
-  learned?: boolean; // Đánh dấu đã thuộc
-  createdAt: number;
+  example?: string | null;
+  isLearned: boolean;
+  createdAt?: Date;
 };
 
 export type Deck = {
   id: string;
-  userId: string;
-  name: string;
-  cards: Flashcard[];
-  createdAt: number;
+  title: string;
+  description?: string | null;
+  cards: Card[];
+  createdAt?: Date;
 };
 
-// SERVICE GỌI API SERVER
+// SERVICE GỌI API SERVER (Dùng Prisma API)
 export const FlashcardService = {
-  // 1. Lấy dữ liệu từ Server
-  getDecks: async (email: string): Promise<Deck[]> => {
+  // Helper: Lấy token từ cookie (cải tiến)
+  getToken: (): string | null => {
+    if (typeof document === 'undefined') return null;
+    
     try {
-      const res = await fetch(`/api/decks?email=${email}`, { cache: 'no-store' });
-      if (!res.ok) return [];
+      console.log('🔍 [FlashcardService] getToken() - Đang tìm token từ cookie');
+      console.log('🔍 [FlashcardService] document.cookie:', document.cookie || '(empty)');
+      
+      // Cách 1: Tìm session_token
+      const cookieArray = document.cookie.split(';');
+      console.log('🔍 [FlashcardService] cookieArray.length:', cookieArray.length);
+      
+      for (let cookie of cookieArray) {
+        const [name, value] = cookie.trim().split('=');
+        console.log(`🔍 [FlashcardService] Cookie: name='${name}', hasValue=${!!value}`);
+        if (name === 'session_token' && value) {
+          const decoded = decodeURIComponent(value);
+          console.log('✅ [FlashcardService] Tìm thấy token:', decoded.substring(0, 20) + '...');
+          return decoded;
+        }
+      }
+      
+      console.warn('⚠️ [FlashcardService] Không tìm thấy session_token trong cookie');
+      return null;
+    } catch (error) {
+      console.error('❌ [FlashcardService] Lỗi lấy token:', error);
+      return null;
+    }
+  },
+
+  // 1. Lấy dữ liệu từ Server
+  getDecks: async (): Promise<Deck[]> => {
+    try {
+      const token = FlashcardService.getToken();
+      console.log('🔑 [FlashcardService.getDecks] token:', token ? token.substring(0, 20) + '...' : 'NULL');
+      
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        console.log('🔑 [FlashcardService.getDecks] Gửi Authorization header: Bearer ' + token.substring(0, 20) + '...');
+      } else {
+        console.warn('⚠️ [FlashcardService.getDecks] ⚠️ KHÔNG CÓ TOKEN - Gửi request mà không Authorization');
+      }
+
+      console.log('📤 [FlashcardService.getDecks] GET /api/flashcards/decks');
+      console.log('📤 [FlashcardService.getDecks] Headers:', {
+        'Content-Type': headers['Content-Type'],
+        'Authorization': headers['Authorization'] ? headers['Authorization'].substring(0, 30) + '...' : 'NONE'
+      });
+      
+      const res = await fetch(`/api/flashcards/decks`, { 
+        headers,
+        cache: 'no-store' 
+      });
+      
+      console.log('📥 [FlashcardService.getDecks] Response status:', res.status);
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('❌ [FlashcardService.getDecks] Lỗi:', res.status, errorText);
+        return [];
+      }
       const data = await res.json();
+      console.log('✅ [FlashcardService.getDecks] Lấy thành công:', data.decks?.length || 0, 'decks');
       return data.decks || [];
     } catch (error) {
-      console.error("Lỗi lấy decks:", error);
+      console.error("❌ [FlashcardService.getDecks] Exception:", error);
       return [];
     }
   },
 
-  // 2. Hàm lưu dữ liệu lên Server (Helper nội bộ)
-  saveDecks: async (email: string, newDecks: Deck[]) => {
+  // --- CÁC HÀM CRUD ---
+
+  createDeck: async (title: string, description?: string): Promise<Deck> => {
     try {
-      await fetch('/api/decks', {
+      console.log('🎴 Tạo deck:', { title, description });
+      
+      const token = FlashcardService.getToken();
+      console.log('🔑 Token:', token ? 'có' : 'không');
+      
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      
+      const res = await fetch('/api/flashcards/decks', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, decks: newDecks }),
+        headers,
+        body: JSON.stringify({ title, description }),
       });
-    } catch (error) {
-      console.error("Lỗi lưu decks:", error);
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        console.error('❌ API lỗi:', res.status, data);
+        throw new Error(data.error || data.details || `Lỗi tạo deck (${res.status})`);
+      }
+      
+      console.log('✅ Deck tạo thành công:', data.id);
+      return data;
+    } catch (error: any) {
+      console.error('❌ Lỗi createDeck:', error);
+      throw error;
     }
   },
 
-  // --- CÁC HÀM CRUD (Bây giờ đều là Async) ---
+  addCardToDeck: async (deckId: string, card: Omit<Card, 'id' | 'isLearned' | 'createdAt'>): Promise<Card> => {
+    try {
+      const token = FlashcardService.getToken();
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  createDeck: async (email: string, name: string): Promise<Deck[]> => {
-    const decks = await FlashcardService.getDecks(email);
-    const newDeck: Deck = {
-      id: Date.now().toString(),
-      userId: email,
-      name,
-      cards: [],
-      createdAt: Date.now(),
-    };
-    const updatedDecks = [...decks, newDeck];
-    await FlashcardService.saveDecks(email, updatedDecks);
-    return updatedDecks;
+      const res = await fetch(`/api/flashcards/cards`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ deckId, ...card }),
+      });
+      if (!res.ok) throw new Error('Lỗi thêm thẻ');
+      return await res.json();
+    } catch (error) {
+      console.error("Lỗi thêm thẻ:", error);
+      throw error;
+    }
   },
 
-  deleteDeck: async (email: string, deckId: string): Promise<Deck[]> => {
-    const decks = await FlashcardService.getDecks(email);
-    const updatedDecks = decks.filter(d => d.id !== deckId);
-    await FlashcardService.saveDecks(email, updatedDecks);
-    return updatedDecks;
+  updateCard: async (cardId: string, updates: Partial<Card>): Promise<Card> => {
+    try {
+      const token = FlashcardService.getToken();
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`/api/flashcards/cards/${cardId}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(updates),
+      });
+      if (!res.ok) throw new Error('Lỗi cập nhật thẻ');
+      return await res.json();
+    } catch (error) {
+      console.error("Lỗi cập nhật thẻ:", error);
+      throw error;
+    }
   },
 
-  renameDeck: async (email: string, deckId: string, newName: string): Promise<Deck[]> => {
-    const decks = await FlashcardService.getDecks(email);
-    const updatedDecks = decks.map(d => 
-      d.id === deckId ? { ...d, name: newName } : d
-    );
-    await FlashcardService.saveDecks(email, updatedDecks);
-    return updatedDecks;
+  deleteCard: async (cardId: string): Promise<void> => {
+    try {
+      const token = FlashcardService.getToken();
+      const headers: HeadersInit = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`/api/flashcards/cards/${cardId}`, {
+        method: 'DELETE',
+        headers,
+      });
+      if (!res.ok) throw new Error('Lỗi xóa thẻ');
+    } catch (error) {
+      console.error("Lỗi xóa thẻ:", error);
+      throw error;
+    }
   },
 
-  addCardToDeck: async (email: string, deckId: string, cardData: { front: string, back: string, example?: string }): Promise<Deck[]> => {
-    const decks = await FlashcardService.getDecks(email);
-    const updatedDecks = decks.map(d => {
-      if (d.id === deckId) {
-        return {
-          ...d,
-          cards: [...d.cards, { 
-            id: Date.now().toString(), 
-            front: cardData.front,
-            back: cardData.back,
-            example: cardData.example,
-            learned: false,
-            createdAt: Date.now() 
-          }]
-        };
-      }
-      return d;
-    });
-    await FlashcardService.saveDecks(email, updatedDecks);
-    return updatedDecks;
+  deleteDeck: async (deckId: string): Promise<void> => {
+    try {
+      const token = FlashcardService.getToken();
+      const headers: HeadersInit = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`/api/flashcards/decks/${deckId}`, {
+        method: 'DELETE',
+        headers,
+      });
+      if (!res.ok) throw new Error('Lỗi xóa deck');
+    } catch (error) {
+      console.error("Lỗi xóa deck:", error);
+      throw error;
+    }
   },
 
-  deleteCard: async (email: string, deckId: string, cardId: string): Promise<Deck[]> => {
-    const decks = await FlashcardService.getDecks(email);
-    const updatedDecks = decks.map(d => {
-      if (d.id === deckId) {
-        return {
-          ...d,
-          cards: d.cards.filter(c => c.id !== cardId)
-        };
-      }
-      return d;
-    });
-    await FlashcardService.saveDecks(email, updatedDecks);
-    return updatedDecks;
-  },
+  renameDeck: async (deckId: string, title: string, description?: string): Promise<Deck> => {
+    try {
+      const token = FlashcardService.getToken();
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  markCardLearned: async (email: string, deckId: string, cardId: string): Promise<Deck[]> => {
-    const decks = await FlashcardService.getDecks(email);
-    const updatedDecks = decks.map(d => {
-      if (d.id === deckId) {
-        return {
-          ...d,
-          cards: d.cards.map(c => c.id === cardId ? { ...c, learned: true } : c)
-        };
-      }
-      return d;
-    });
-    await FlashcardService.saveDecks(email, updatedDecks);
-    return updatedDecks;
-  }
+      const res = await fetch(`/api/flashcards/decks/${deckId}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ title, description }),
+      });
+      if (!res.ok) throw new Error('Lỗi cập nhật deck');
+      return await res.json();
+    } catch (error) {
+      console.error("Lỗi cập nhật deck:", error);
+      throw error;
+    }
+  },
 };

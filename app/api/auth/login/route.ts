@@ -27,19 +27,36 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Sai email hoặc mật khẩu' }, { status: 401 });
     }
 
-    // ✅ TẠO SESSION VÀO REDIS (Giữ nguyên cơ chế session cũ của bạn)
-    // Lý do: Redis nhanh hơn DB cho việc check session mỗi lần load trang
+    // ✅ TẠO SESSION VÀO REDIS
     const sessionToken = uuidv4();
-    // Lưu session trỏ về User ID (thay vì email như cũ để chuẩn hơn, hoặc giữ email tùy bạn)
-    // Ở đây tôi trỏ về ID để sau này query DB cho dễ
-    await redis.setex(`session:${sessionToken}`, 86400, user.id);
+    const userIdString = String(user.id); // Convert to string
+    
+    console.log('🔑 Tạo session token:', sessionToken);
+    console.log('💾 User ID:', user.id, '| Type:', typeof user.id);
+    console.log('💾 User ID as String:', userIdString, '| Type:', typeof userIdString);
+    
+    const redisKey = `session:${sessionToken}`;
+    console.log('💾 Lưu vào Redis - Key:', redisKey, '| Value:', userIdString);
+    
+    try {
+      const setResult = await redis.setex(redisKey, 86400, userIdString);
+      console.log('✅ redis.setex OK - Result:', setResult);
+      
+      // Verify ngay lập tức
+      const verify = await redis.get(redisKey);
+      console.log('🔍 Verify Redis - Retrieved:', verify, '| Expected:', userIdString, '| Match:', verify === userIdString ? '✅' : '❌');
+    } catch (redisError: any) {
+      console.error('❌ REDIS ERROR:', redisError.message);
+      throw redisError;
+    }
 
     return NextResponse.json({ 
         message: 'Thành công', 
         user: { ...user, createdAt: user.createdAt.toISOString() },
-        token: sessionToken // Trả token về để client lưu cookie (nếu cần)
+        token: sessionToken
     });
-  } catch (error) {
-    return NextResponse.json({ message: 'Lỗi server' }, { status: 500 });
+  } catch (error: any) {
+    console.error('❌ Login API error:', error.message);
+    return NextResponse.json({ message: error.message || 'Lỗi server' }, { status: 500 });
   }
 }

@@ -36,12 +36,30 @@ export async function POST(request: Request) {
 
     // 🔥 TẠO SESSION VÀO REDIS (Giống login)
     const sessionToken = uuidv4();
-    await redis.setex(`session:${sessionToken}`, 86400, user.id);
+    const userIdString = String(user.id); // Convert to string
+    console.log('🔑 Register - Tạo session:', sessionToken.substring(0, 10) + '...');
+    console.log('💾 User ID:', user.id, '| Type:', typeof user.id);
+    console.log('💾 User ID as String:', userIdString, '| Type:', typeof userIdString);
+    
+    const redisKey = `session:${sessionToken}`;
+    console.log('💾 Lưu vào Redis - Key:', redisKey, '| Value:', userIdString);
+    
+    try {
+      const setResult = await redis.setex(redisKey, 86400, userIdString);
+      console.log('✅ redis.setex OK - Result:', setResult);
+      
+      // Verify ngay lập tức
+      const verify = await redis.get(redisKey);
+      console.log('🔍 Verify Redis - Retrieved:', verify, '| Expected:', userIdString, '| Match:', verify === userIdString ? '✅' : '❌');
+    } catch (redisError: any) {
+      console.error('❌ REDIS ERROR:', redisError.message);
+      throw redisError;
+    }
 
     return NextResponse.json({ 
       message: 'Đăng ký thành công',
       user: { ...user, createdAt: user.createdAt.toISOString() },
-      token: sessionToken // 👈 Trả về token
+      token: sessionToken
     }, { status: 201 });
   } catch (error) {
     console.error('Register Error:', error);

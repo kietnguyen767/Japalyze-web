@@ -61,10 +61,29 @@ export async function GET(request: Request) {
 
     // 4. Tạo Session Token vào Redis (Giữ nguyên cơ chế session tốc độ cao)
     const sessionToken = uuidv4();
+    const userIdString = String(user.id); // Convert to string
+    
+    console.log('🔑 Google Auth - Tạo session:', sessionToken.substring(0, 10) + '...');
+    console.log('💾 User ID:', user.id, '| Type:', typeof user.id);
+    console.log('💾 User ID as String:', userIdString, '| Type:', typeof userIdString);
+    
+    const redisKey = `session:${sessionToken}`;
+    console.log('💾 Lưu vào Redis - Key:', redisKey, '| Value:', userIdString);
+    
+    try {
+      const setResult = await redis.setex(redisKey, 86400, userIdString);
+      console.log('✅ redis.setex OK - Result:', setResult);
+      
+      // Verify ngay lập tức
+      const verify = await redis.get(redisKey);
+      console.log('🔍 Verify Redis - Retrieved:', verify, '| Expected:', userIdString, '| Match:', verify === userIdString ? '✅' : '❌');
+    } catch (redisError: any) {
+      console.error('❌ REDIS ERROR:', redisError.message);
+      throw redisError;
+    }
     
     // 🔥 QUAN TRỌNG: Lưu user.id (UUID của Postgres) vào session thay vì email
-    // Để sau này các API khác dễ dàng query database
-    await redis.setex(`session:${sessionToken}`, 86400, user.id); 
+    // Để sau này các API khác dễ dàng query database 
 
     // 5. Đá người dùng về trang xử lý thành công (Giữ nguyên)
     // Lưu ý: Đảm bảo biến NEXT_PUBLIC_DOMAIN trong .env đã đúng (http://localhost:3000 hoặc domain thật)

@@ -52,10 +52,21 @@ export default function FlashcardsPage() {
       if (!user) return;
       setIsDataLoading(true);
       try {
-        const res = await fetch('/api/flashcards/decks'); // 👈 Gọi API Prisma
+        // Lấy token từ cookie
+        const token = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('session_token='))
+          ?.split('=')[1];
+
+        const headers: HeadersInit = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch('/api/flashcards/decks', { headers });
         if (res.ok) {
             const data = await res.json();
             setDecks(data.decks || []);
+        } else {
+            console.error('❌ Lỗi load decks:', res.status);
         }
       } catch (e) {
         console.error(e);
@@ -73,18 +84,27 @@ export default function FlashcardsPage() {
     if (!user || !newDeckName.trim()) return;
     setIsDataLoading(true);
     try {
+        const token = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('session_token='))
+          ?.split('=')[1];
+
+        const headers: HeadersInit = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
         const res = await fetch('/api/flashcards/decks', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify({ title: newDeckName.trim() })
         });
         
         if (res.ok) {
             const newDeck = await res.json();
-            // Prisma trả về deck chưa có cards, ta thêm vào để không lỗi UI
             setDecks([{ ...newDeck, cards: [] }, ...decks]); 
             setNewDeckName('');
             setIsCreating(false);
+        } else {
+            console.error('❌ Lỗi tạo deck:', res.status);
         }
     } catch (e) {
         console.error(e);

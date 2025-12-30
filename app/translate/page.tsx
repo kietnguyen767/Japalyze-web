@@ -27,6 +27,7 @@ function TranslateContent() {
   const [selectedDeckId, setSelectedDeckId] = useState<string>('');
   const [newDeckName, setNewDeckName] = useState('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success'>('idle');
+  const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
     const textFromUrl = searchParams.get('text');
@@ -107,60 +108,80 @@ function TranslateContent() {
   };
 
   // --- LOGIC MỚI: Xử lý Modal Lưu Flashcard ---
-  // Sửa lại dòng này thành async
   const openSaveModal = async () => {
     if (!user) {
-      alert("Vui lòng đăng nhập để sử dụng tính năng này!");
+      alert('❌ Vui lòng đăng nhập để sử dụng tính năng này!');
+      return;
+    }
+
+    if (!translatedText.trim()) {
+      alert('❌ Vui lòng dịch trước khi lưu!');
       return;
     }
     
-    // THÊM await Ở ĐÂY
-    // Vì gọi lên Server Redis cần thời gian, không lấy ngay được như LocalStorage
-    const decks = await FlashcardService.getDecks(user.email);
-    
-    setUserDecks(decks);
-    
-    if (decks.length > 0) {
-      setSelectedDeckId(decks[0].id);
+    try {
+      const decks = await FlashcardService.getDecks();
+      setUserDecks(decks);
+      
+      if (decks.length > 0) {
+        setSelectedDeckId(decks[0].id);
+      }
+      
+      setSaveStatus('idle');
+      setNewDeckName('');
+      setShowSaveModal(true);
+    } catch (error: any) {
+      alert('❌ Lỗi tải decks: ' + error.message);
     }
-    
-    setSaveStatus('idle');
-    setNewDeckName('');
-    setShowSaveModal(true);
   };
 
   const handleSaveToDeck = async () => {
-    if (!user) return;
-    
-    let targetDeckId = selectedDeckId;
-
-    // Ưu tiên tạo deck mới nếu người dùng nhập tên
-    if (newDeckName.trim()) {
-       // Thêm await
-       const updatedDecks = await FlashcardService.createDeck(user.email, newDeckName.trim());
-       // Tìm ID của deck vừa tạo trong danh sách mới trả về
-       const createdDeck = updatedDecks[updatedDecks.length - 1]; 
-       targetDeckId = createdDeck.id;
-    }
-
-    if (!targetDeckId) {
-      alert("Vui lòng chọn hoặc tạo một bộ thẻ!");
+    if (!user || !inputText.trim() || !translatedText.trim()) {
+      alert('❌ Vui lòng nhập dữ liệu đầy đủ');
       return;
     }
 
-    await FlashcardService.addCardToDeck(user.email, targetDeckId, {
-      front: inputText,
-      back: translatedText,
-      example: `(Lưu từ Translate)`
-    });
+    setProcessing(true);
+    try {
+      let targetDeckId = selectedDeckId;
 
+      // Nếu người dùng nhập tên deck mới -> tạo deck
+      if (newDeckName.trim()) {
+        const newDeck = await FlashcardService.createDeck(newDeckName.trim(), `Deck từ Translate`);
+        targetDeckId = newDeck.id;
+        // Reset form
+        setNewDeckName('');
+      }
 
-    setSaveStatus('success');
-    
-    // Đóng modal sau 1.5s
-    setTimeout(() => {
-      setShowSaveModal(false);
-    }, 1500);
+      if (!targetDeckId) {
+        alert('❌ Vui lòng chọn hoặc tạo bộ thẻ!');
+        return;
+      }
+
+      // Thêm thẻ vào deck
+      await FlashcardService.addCardToDeck(targetDeckId, {
+        front: inputText.trim(),
+        back: translatedText.trim(),
+        example: `(Từ Translate)`
+      });
+
+      setSaveStatus('success');
+      alert('✅ Lưu thẻ thành công!');
+      
+      // Reset
+      setTimeout(() => {
+        setShowSaveModal(false);
+        setInputText('');
+        setTranslatedText('');
+        setSelectedDeckId('');
+        setSaveStatus('idle');
+      }, 1000);
+    } catch (error: any) {
+      console.error('❌ Lỗi lưu:', error);
+      alert('❌ Lỗi: ' + (error.message || 'Không xác định'));
+    } finally {
+      setProcessing(false);
+    }
   };
 
   return (
@@ -318,7 +339,7 @@ function TranslateContent() {
                   >
                     {userDecks.length === 0 ? <option value="">Chưa có bộ thẻ nào</option> : null}
                     {userDecks.map(deck => (
-                      <option key={deck.id} value={deck.id}>{deck.name} ({deck.cards.length} thẻ)</option>
+                      <option key={deck.id} value={deck.id}>{deck.title} ({deck.cards.length} thẻ)</option>
                     ))}
                   </select>
                 </div>
