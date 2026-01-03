@@ -1,13 +1,14 @@
+//app/exercises/page.tsx
 'use client';
 
 import React, { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
 import { 
-  BookA, Type, LayoutGrid, Hash, CalendarDays, CheckCircle, 
-  UtensilsCrossed, Trophy, CloudSun, School, Briefcase, PawPrint, Users, 
+  BookA, Type, LayoutGrid, Hash, CloudSun, School, Briefcase, PawPrint, Users, 
   Apple, Carrot, Music, Cpu, Armchair, Clapperboard, Palette, Globe, Smile, 
-  Plane, CloudLightning, AlarmClock, Shirt, Heart, PartyPopper, MessageCircle,
-  Lock, Crown
+  Plane, AlarmClock, Shirt, Heart, PartyPopper, MessageCircle,
+  Lock, Crown, MapPin, ShoppingBag, Leaf, UserCheck, Wallet, Stethoscope, Home,
+  Utensils, Map, BookOpen, HandCoins, UtensilsCrossed, Trophy, CheckCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
@@ -53,11 +54,21 @@ const CATEGORIES = [
   {
     title: "Luyện giao tiếp (Nhập vai)",
     lessons: [
-      { id: 'conv_1_intro', title: 'Bài 1: Làm quen & Hỏi tuổi', icon: MessageCircle, color: 'text-indigo-600 bg-indigo-50' },
-      { id: 'conv_2_daigo', title: 'Bài 2: Bạn cùng khoa', icon: MessageCircle, color: 'text-pink-600 bg-pink-50' },
-      { id: 'conv_3_casual', title: 'Bài 3: Bạn cùng tuổi', icon: MessageCircle, color: 'text-orange-600 bg-orange-50' },
-      { id: 'conv_4_isora', title: 'Bài 4: Tiền bối & Hậu bối', icon: MessageCircle, color: 'text-purple-600 bg-purple-50' },
-      { id: 'conv_5_photo', title: 'Bài 5: Rủ đi chụp ảnh', icon: MessageCircle, color: 'text-teal-600 bg-teal-50' },
+     { id: 'conv_1_intro', title: '1. Giới thiệu bản thân', icon: UserCheck, color: 'text-indigo-600 bg-indigo-50' },
+      { id: 'conv_2_hometown', title: '2. Quê quán', icon: MapPin, color: 'text-green-600 bg-green-50' },
+      { id: 'conv_3_friends', title: '3. Bạn thân', icon: Users, color: 'text-pink-600 bg-pink-50' },
+      { id: 'conv_4_subject', title: '4. Môn học yêu thích', icon: BookOpen, color: 'text-blue-600 bg-blue-50' },
+      { id: 'conv_5_job', title: '5. Công việc', icon: Briefcase, color: 'text-slate-600 bg-slate-100' },
+      { id: 'conv_6_shopping', title: '6. Mua sắm', icon: ShoppingBag, color: 'text-orange-600 bg-orange-50' },
+      { id: 'conv_7_interview', title: '7. Phỏng vấn', icon: UserCheck, color: 'text-purple-600 bg-purple-50' },
+      { id: 'conv_8_environment', title: '8. Bảo vệ môi trường', icon: Leaf, color: 'text-emerald-600 bg-emerald-50' },
+      { id: 'conv_9_direction', title: '9. Hỏi đường', icon: Map, color: 'text-sky-600 bg-sky-50' },
+      { id: 'conv_10_family', title: '10. Gia đình', icon: Home, color: 'text-rose-600 bg-rose-50' },
+      { id: 'conv_11_travel', title: '11. Du lịch', icon: Plane, color: 'text-cyan-600 bg-cyan-50' },
+      { id: 'conv_12_hobby', title: '12. Sở thích', icon: Palette, color: 'text-fuchsia-600 bg-fuchsia-50' },
+      { id: 'conv_13_food', title: '13. Đồ ăn', icon: Utensils, color: 'text-amber-600 bg-amber-50' },
+      { id: 'conv_14_health', title: '14. Sức khỏe', icon: Stethoscope, color: 'text-red-600 bg-red-50' },
+      { id: 'conv_15_money', title: '15. Tiền bạc', icon: HandCoins, color: 'text-yellow-600 bg-yellow-50' },
     ]
   }
 ];
