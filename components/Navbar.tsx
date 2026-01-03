@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { 
   BookOpen, Zap, MapPin, ClipboardList, Users, 
-  Search, LogOut, LogIn, UserPlus, Gift, X, CheckCircle, CreditCard
+  Search, LogOut, LogIn, UserPlus, Gift, X, CheckCircle, CreditCard, Loader
 } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
@@ -34,6 +34,7 @@ export default function Navbar() {
   const [query, setQuery] = useState('');
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   
   const router = useRouter();
 
@@ -41,7 +42,14 @@ export default function Navbar() {
     if (user) {
        refreshProfile();
     }
-  }, []); 
+  }, []);
+
+  const handleNavClick = (href: string) => {
+    setIsNavigating(true);
+    router.push(href);
+    // Reset after a short delay
+    setTimeout(() => setIsNavigating(false), 1000);
+  }; 
 
   const handleLogout = () => logout();
 
@@ -108,6 +116,12 @@ export default function Navbar() {
 
   return (
     <>
+    {isNavigating && (
+      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-white px-6 py-4 rounded-full shadow-lg border border-slate-100 z-[999]">
+        <Loader size={20} className="animate-spin text-blue-600" />
+        <span className="text-slate-700 font-medium">Đang tải...</span>
+      </div>
+    )}
     <header className="w-full bg-white shadow-sm border-b border-slate-100 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
         

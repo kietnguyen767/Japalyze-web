@@ -45,6 +45,7 @@ export default function FlashcardsPage() {
   const [isDataLoading, setIsDataLoading] = useState(false);
   const [editingDeckId, setEditingDeckId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [deletingDeckId, setDeletingDeckId] = useState<string | null>(null);
 
   // 1. LOAD DATA TỪ API MỚI
   useEffect(() => {
@@ -117,6 +118,7 @@ export default function FlashcardsPage() {
   const handleDeleteDeck = async (deckId: string) => {
     if (!confirm('Bạn chắc chắn muốn xóa bộ thẻ này?')) return;
     
+    setDeletingDeckId(deckId);
     try {
       const res = await fetch(`/api/flashcards/decks/${deckId}`, {
         method: 'DELETE'
@@ -131,6 +133,8 @@ export default function FlashcardsPage() {
     } catch (e) {
       console.error(e);
       alert('❌ Lỗi: ' + (e as any).message);
+    } finally {
+      setDeletingDeckId(null);
     }
   };
 
@@ -338,9 +342,16 @@ export default function FlashcardsPage() {
                           onClick={() =>
                             handleDeleteDeck(deck.id)
                           }
-                          className="text-slate-400 hover:text-red-600 p-1"
+                          disabled={deletingDeckId === deck.id}
+                          className="text-slate-400 hover:text-red-600 p-1 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
-                          <Trash2 size={16} />
+                          {deletingDeckId === deck.id ? (
+                            <div className="animate-spin">
+                              <RotateCw size={16} />
+                            </div>
+                          ) : (
+                            <Trash2 size={16} />
+                          )}
                         </button>
                       </div>
                     </div>
