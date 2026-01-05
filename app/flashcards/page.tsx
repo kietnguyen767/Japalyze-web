@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import { getTokenFromCookie, createAuthHeaders, is401Error, handle401Error } from '@/lib/tokenUtils';
 
 // --- TYPE MỚI (Khớp với Prisma) ---
 type Card = {
@@ -53,24 +54,30 @@ export default function FlashcardsPage() {
       if (!user) return;
       setIsDataLoading(true);
       try {
-        // Lấy token từ cookie
-        const token = document.cookie
-          .split('; ')
-          .find(row => row.startsWith('session_token='))
-          ?.split('=')[1];
+        const token = getTokenFromCookie();
+        console.log('👤 [Flashcards] User:', user?.email);
 
-        const headers: HeadersInit = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const headers = createAuthHeaders(token);
 
         const res = await fetch('/api/flashcards/decks', { headers });
+        
+        console.log('📥 [Flashcards] Response status:', res.status);
+        
         if (res.ok) {
             const data = await res.json();
+            console.log('✅ [Flashcards] Lấy thành công:', data.decks?.length || 0, 'decks');
             setDecks(data.decks || []);
+        } else if (is401Error(res.status)) {
+            console.error('❌ [Flashcards] 401 Unauthorized');
+            handle401Error(router);
         } else {
-            console.error('❌ Lỗi load decks:', res.status);
+            const errorText = await res.text();
+            console.error('❌ [Flashcards] Lỗi load decks:', res.status, errorText);
+            alert('❌ Lỗi tải dữ liệu. Vui lòng thử lại.');
         }
       } catch (e) {
-        console.error(e);
+        console.error('❌ [Flashcards] Exception:', e);
+        alert('❌ Lỗi kết nối. Vui lòng thử lại.');
       } finally {
         setIsDataLoading(false);
       }
@@ -85,13 +92,14 @@ export default function FlashcardsPage() {
     if (!user || !newDeckName.trim()) return;
     setIsDataLoading(true);
     try {
-        const token = document.cookie
-          .split('; ')
-          .find(row => row.startsWith('session_token='))
-          ?.split('=')[1];
+        const token = getTokenFromCookie();
+        if (!token) {
+          alert('❌ Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+          router.push('/login');
+          return;
+        }
 
-        const headers: HeadersInit = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const headers = createAuthHeaders(token);
 
         const res = await fetch('/api/flashcards/decks', {
             method: 'POST',
@@ -104,11 +112,15 @@ export default function FlashcardsPage() {
             setDecks([{ ...newDeck, cards: [] }, ...decks]); 
             setNewDeckName('');
             setIsCreating(false);
+        } else if (is401Error(res.status)) {
+            handle401Error(router);
         } else {
             console.error('❌ Lỗi tạo deck:', res.status);
+            alert('❌ Lỗi tạo deck. Vui lòng thử lại.');
         }
     } catch (e) {
         console.error(e);
+        alert('❌ Lỗi: ' + (e as any).message);
     } finally {
         setIsDataLoading(false);
     }
@@ -120,13 +132,25 @@ export default function FlashcardsPage() {
     
     setDeletingDeckId(deckId);
     try {
+      const token = getTokenFromCookie();
+      if (!token) {
+        alert('❌ Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+        router.push('/login');
+        return;
+      }
+
+      const headers = createAuthHeaders(token);
+
       const res = await fetch(`/api/flashcards/decks/${deckId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers
       });
 
       if (res.ok) {
         setDecks(decks.filter(d => d.id !== deckId));
         alert('✅ Xóa thành công');
+      } else if (is401Error(res.status)) {
+        handle401Error(router);
       } else {
         alert('❌ Lỗi xóa deck');
       }
@@ -146,9 +170,18 @@ export default function FlashcardsPage() {
     }
 
     try {
+      const token = getTokenFromCookie();
+      if (!token) {
+        alert('❌ Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+        router.push('/login');
+        return;
+      }
+
       const res = await fetch(`/api/flashcards/decks/${deckId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          ...createAuthHeaders(token)
+        },
         body: JSON.stringify({ title: editingName.trim() })
       });
 
@@ -158,6 +191,8 @@ export default function FlashcardsPage() {
         setEditingDeckId(null);
         setEditingName('');
         alert('✅ Cập nhật thành công');
+      } else if (is401Error(res.status)) {
+        handle401Error(router);
       } else {
         alert('❌ Lỗi cập nhật');
       }

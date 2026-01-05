@@ -48,12 +48,39 @@ export default function DeckDetailPage() {
   const loadDeck = async () => {
     if (!user || !deckId) return;
     try {
-        const res = await fetch('/api/flashcards/decks');
+        const token = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('session_token='))
+          ?.split('=')[1];
+
+        console.log('🔑 [DeckDetail] Token:', token ? token.substring(0, 20) + '...' : 'NULL');
+
+        const headers: HeadersInit = { 'Content-Type': 'application/json' };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        } else {
+          console.warn('⚠️ [DeckDetail] Không có token');
+        }
+
+        const res = await fetch('/api/flashcards/decks', { headers });
+        
+        if (res.status === 401) {
+          console.error('❌ 401 Unauthorized');
+          alert('❌ Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+          router.push('/login');
+          return;
+        }
+
+        if (!res.ok) {
+          console.error('❌ Lỗi fetch deck:', res.status);
+          return;
+        }
+
         const data = await res.json();
         const found = (data.decks || []).find((d: any) => d.id === deckId);
         if (found) setDeck(found);
     } catch (e) {
-        console.error(e);
+        console.error('❌ Exception:', e);
     } finally {
         setLoading(false);
     }
@@ -75,9 +102,23 @@ export default function DeckDetailPage() {
     if (!user || !deck || !newFront || !newBack) return;
     
     try {
+        const token = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('session_token='))
+          ?.split('=')[1];
+
+        if (!token) {
+          alert('❌ Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+          router.push('/login');
+          return;
+        }
+
         const res = await fetch('/api/flashcards/cards', { // 👈 API MỚI
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify({
                 deckId: deck.id,
                 front: newFront,
@@ -93,9 +134,16 @@ export default function DeckDetailPage() {
                 cards: [...deck.cards, newCard]
             });
             setNewFront(''); setNewBack(''); setShowAddForm(false);
+        } else if (res.status === 401) {
+            alert('❌ Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+            router.push('/login');
+        } else {
+            alert('❌ Lỗi thêm thẻ');
+            console.error('Lỗi:', res.status);
         }
     } catch (e) {
         console.error(e);
+        alert('❌ Lỗi: ' + (e as any).message);
     }
   };
 
@@ -105,15 +153,37 @@ export default function DeckDetailPage() {
     
     const card = deck.cards[index];
     try {
-        await fetch(`/api/flashcards/cards/${card.id}`, { method: 'DELETE' }); // 👈 API MỚI (Cần bổ sung ở backend nếu chưa có)
-        
-        // Update UI
-        const newCards = deck.cards.filter(c => c.id !== card.id);
-        setDeck({...deck, cards: newCards});
-        if(index >= newCards.length) setIndex(Math.max(0, newCards.length - 1));
+        const token = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('session_token='))
+          ?.split('=')[1];
+
+        if (!token) {
+          alert('❌ Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+          router.push('/login');
+          return;
+        }
+
+        const res = await fetch(`/api/flashcards/cards/${card.id}`, { 
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+          // Update UI
+          const newCards = deck.cards.filter(c => c.id !== card.id);
+          setDeck({...deck, cards: newCards});
+          if(index >= newCards.length) setIndex(Math.max(0, newCards.length - 1));
+        } else if (res.status === 401) {
+          alert('❌ Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+          router.push('/login');
+        } else {
+          alert('❌ Lỗi xóa thẻ');
+        }
         
     } catch (e) {
-        console.error("Lỗi xóa");
+        console.error("❌ Lỗi xóa:", e);
+        alert('❌ Lỗi: ' + (e as any).message);
     }
   };
 

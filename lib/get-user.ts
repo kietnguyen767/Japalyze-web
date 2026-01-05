@@ -30,22 +30,22 @@ export async function getUserId() {
     console.log(`🔐 [getUserId] Đang lookup Redis: ${redisKey.substring(0, 30)}...`);
     console.log(`🔐 [getUserId] Token length: ${token.length}`);
     
-    const userId = await redis.get(redisKey);
-    console.log(`🔐 [getUserId] Redis.get('${redisKey}') = ${userId}`);
-    console.log(`🔐 [getUserId] Result type: ${typeof userId}, Value: ${userId}`);
-    
-    if (!userId) {
-      console.log(`❌ [getUserId] Token ${token.substring(0, 20)}... không tồn tại trong Redis`);
-      // Log all keys to debug
-      console.log(`🔍 [getUserId] Debugging: Checking if Redis connection works...`);
-      const testKey = `session:test-${Date.now()}`;
-      await redis.setex(testKey, 10, 'test-value');
-      const testRead = await redis.get(testKey);
-      console.log(`🔍 [getUserId] Test Redis write/read: ${testRead === 'test-value' ? '✅ OK' : '❌ FAIL'}`);
-      return null;
+    try {
+      const userId = await redis.get(redisKey);
+      console.log(`🔐 [getUserId] Redis.get('${redisKey}') = ${userId}`);
+      console.log(`🔐 [getUserId] Result type: ${typeof userId}, Value: ${userId}`);
+      
+      if (userId) {
+        return (userId as string) || null;
+      }
+    } catch (redisError: any) {
+      console.error(`❌ [getUserId] Redis Error: ${redisError.message}`);
+      console.error(`❌ [getUserId] UPSTASH_REDIS_REST_URL: ${process.env.UPSTASH_REDIS_REST_URL ? '✅ SET' : '❌ NOT SET'}`);
+      console.error(`❌ [getUserId] UPSTASH_REDIS_REST_TOKEN: ${process.env.UPSTASH_REDIS_REST_TOKEN ? '✅ SET' : '❌ NOT SET'}`);
     }
     
-    return (userId as string) || null;
+    console.log(`❌ [getUserId] Token ${token.substring(0, 20)}... không tồn tại trong Redis hoặc Redis không hoạt động`);
+    return null;
     
   } catch (error: any) {
     console.error("🔐 [getUserId] Exception:", error.message);
