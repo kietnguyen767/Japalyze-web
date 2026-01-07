@@ -317,13 +317,33 @@ export default function DeckDetailPage() {
 
                 {/* Form Thêm thẻ (Luôn hiện ở dưới hoặc toggle) */}
                 <div className="mt-12 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 max-w-xl mx-auto">
-                    <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2"><Plus size={18}/> Thêm thẻ mới</h3>
-                    <div className="flex gap-2">
-                        <input value={newFront} onChange={e => setNewFront(e.target.value)} placeholder="Từ vựng (Mặt trước)" className="flex-1 border p-2 rounded-lg" />
-                        <input value={newBack} onChange={e => setNewBack(e.target.value)} placeholder="Nghĩa (Mặt sau)" className="flex-1 border p-2 rounded-lg" />
-                        <button onClick={handleAddCard} className="bg-blue-600 text-white px-4 rounded-lg font-bold">Thêm</button>
-                    </div>
-                </div>
+  <h3 className="font-bold text-slate-700 mb-4 flex items-center gap-2">
+    <Plus size={18} /> Thêm thẻ mới
+  </h3>
+
+  <div className="flex flex-col md:flex-row gap-3">
+    <input
+      value={newFront}
+      onChange={e => setNewFront(e.target.value)}
+      placeholder="Từ vựng (Mặt trước)"
+      className="w-full border p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+    />
+
+    <input
+      value={newBack}
+      onChange={e => setNewBack(e.target.value)}
+      placeholder="Nghĩa (Mặt sau)"
+      className="w-full border p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+    />
+
+    <button
+      onClick={handleAddCard}
+      className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold transition-all"
+    >
+      Thêm
+    </button>
+  </div>
+</div>
             </>
         )}
       </main>

@@ -71,6 +71,13 @@ export default function QuizClient({ data, title, lessonId }: QuizClientProps) {
     }
   }, [isAllDone, isPerfectScore, user, lessonId]);
 
+  // 🔥 TỰ ĐỘNG SCROLL LÊN TRÊN KHI HOÀN THÀNH
+  useEffect(() => {
+    if (isAllDone) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [isAllDone]);
+
 
   if (quizData.length === 0) return <div className="p-10 text-center">Đang tạo đề thi...</div>;
 
@@ -122,7 +129,7 @@ export default function QuizClient({ data, title, lessonId }: QuizClientProps) {
           if (isAnswered) borderClass = isCorrect ? "border-green-500 bg-green-50/30" : "border-red-300 bg-red-50/30";
 
           return (
-            <div key={q.id} className={`bg-white p-6 rounded-2xl shadow-sm border-2 ${borderClass} transition-all`}>
+            <div key={q.id} className={`bg-white p-6 rounded-2xl shadow-sm border-2 ${borderClass} transition-all`} id={`question-${q.id}`}>
               <div className="flex items-center justify-between mb-4">
                  <div className="flex items-center gap-3">
                     <span className="w-8 h-8 flex items-center justify-center bg-slate-100 rounded-full text-xs font-bold text-slate-500">{index + 1}</span>

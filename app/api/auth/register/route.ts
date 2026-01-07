@@ -36,7 +36,7 @@ export async function POST(request: Request) {
 
     // 🔥 TẠO SESSION VÀO REDIS (Giống login)
     const sessionToken = uuidv4();
-    const userIdString = String(user.id); // Convert to string
+      const userIdString = String(user.id); // Convert to string
     console.log('🔑 Register - Tạo session:', sessionToken.substring(0, 10) + '...');
     console.log('💾 User ID:', user.id, '| Type:', typeof user.id);
     console.log('💾 User ID as String:', userIdString, '| Type:', typeof userIdString);
