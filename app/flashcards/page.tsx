@@ -245,30 +245,30 @@ export default function FlashcardsPage() {
           </button>
         </header>
 
-        {/* Create deck */}
         {isCreating && (
-          <div className="mb-8 bg-white p-4 rounded-xl shadow border border-blue-200 flex gap-2">
-            <input
-              autoFocus
-              value={newDeckName}
-              onChange={(e) => setNewDeckName(e.target.value)}
-              placeholder="Tên bộ thẻ..."
-              className="flex-1 border p-2 rounded-lg"
-            />
-            <button
-              onClick={handleCreateDeck}
-              className="bg-blue-600 text-white px-4 rounded-lg font-bold"
-            >
-              Lưu
-            </button>
-            <button
-              onClick={() => setIsCreating(false)}
-              className="bg-slate-200 text-slate-700 px-4 rounded-lg"
-            >
-              Hủy
-            </button>
-          </div>
-        )}
+  <div className="mb-8 bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex gap-2">
+    <input
+      autoFocus
+      value={newDeckName}
+      onChange={(e) => setNewDeckName(e.target.value)}
+      placeholder="Nhập tên bộ thẻ mới..."
+      // 👇 QUAN TRỌNG: outline-none để tắt viền đen, focus:border-blue-500 để hiện màu xanh khi nhập
+      className="flex-1 border border-slate-300 p-2 rounded-lg outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-all text-slate-800"
+    />
+    <button
+      onClick={handleCreateDeck}
+      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold transition-colors"
+    >
+      Lưu
+    </button>
+    <button
+      onClick={() => setIsCreating(false)}
+      className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg transition-colors"
+    >
+      Hủy
+    </button>
+  </div>
+)}
 
         {/* EMPTY STATE + LIST */}
         {decks.length === 0 && !isDataLoading ? (

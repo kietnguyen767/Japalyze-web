@@ -189,8 +189,8 @@ export default function Navbar() {
                             {user.name}
                         </p>
                     </div>
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold shadow-sm ${isPremiumUser ? 'bg-gradient-to-br from-yellow-400 to-orange-500' : 'bg-blue-600'}`}>
-                        {user.name?.charAt(0).toUpperCase()}
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold shadow-sm text-sm leading-none ${isPremiumUser ? 'bg-gradient-to-br from-yellow-400 to-orange-500' : 'bg-blue-600'}`}>
+                        {user.name?.charAt(0).toUpperCase() || 'U'}
                     </div>
                 </div>
               </div>
