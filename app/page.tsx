@@ -1,16 +1,31 @@
 // app/page.tsx
+'use client';
+
 import Navbar from '@/components/Navbar';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { Loader2 } from 'lucide-react';
 
 export default function Home() {
+  const router = useRouter();
+  const [loadingFeature, setLoadingFeature] = useState<number | null>(null);
+
   const features = [
-    { title: "Flashcard Thông Minh", desc: "Tự động lặp lại ngắt quãng (SRS) giúp nhớ từ vựng vĩnh viễn.", emoji: "🎴" },
-    { title: "Roleplay AI", desc: "Đóng vai gọi món, hỏi đường, phỏng vấn xin việc với AI.", emoji: "🎭" },
-    { title: "Learning Path", desc: "Lộ trình học tập cá nhân hóa từ N5 đến N1.", emoji: "🗺️" },
-    { title: "Dịch Thông Minh", desc: "Dịch thuật chính xác với AI, kèm giải thích ngữ pháp.", emoji: "💬" },
-    { title: "Bài Tập Thực Hành", desc: "Hơn 5000 câu hỏi luyện thi JLPT.", emoji: "📝" },
-    { title: "Cộng Đồng Học Tập", desc: "Kết nối và chia sẻ kinh nghiệm học tập.", emoji: "⚔️" }
+    { title: "Flashcard Thông Minh", desc: "Tự động lặp lại ngắt quãng (SRS) giúp nhớ từ vựng vĩnh viễn.", emoji: "🎴", href: "/flashcards" },
+    { title: "Roleplay AI", desc: "Đóng vai gọi món, hỏi đường, phỏng vấn xin việc với AI.", emoji: "🎭", href: "/roleplay" },
+    { title: "Learning Path", desc: "Lộ trình học tập cá nhân hóa từ N5 đến N1.", emoji: "🗺️", href: "/exercises" },
+    { title: "Dịch Thông Minh", desc: "Dịch thuật chính xác với AI, kèm giải thích ngữ pháp.", emoji: "💬", href: "/translate" },
+    { title: "Bài Tập Thực Hành", desc: "Hơn 5000 câu hỏi luyện thi JLPT.", emoji: "📝", href: "/exercises" },
+    { title: "Cộng Đồng Học Tập", desc: "Kết nối và chia sẻ kinh nghiệm học tập.", emoji: "⚔️", href: "/community" }
   ];
+
+  const handleFeatureClick = (idx: number, href: string) => {
+    setLoadingFeature(idx);
+    setTimeout(() => {
+      router.push(href);
+    }, 300);
+  };
 
   return (
     <div className="min-h-screen  text-slate-600 selection:bg-blue-100 selection:text-blue-700 relative">
@@ -66,9 +81,11 @@ export default function Home() {
 
           <div className="grid md:grid-cols-3 gap-6">
             {features.map((item, idx) => (
-              <div
+              <button
                 key={idx}
-                className="group p-6 rounded-xl shadow-md border border-gray-200 flex flex-col items-center text-center transition-all duration-300 hover:-translate-y-1 relative"
+                onClick={() => handleFeatureClick(idx, item.href)}
+                disabled={loadingFeature !== null}
+                className="group p-6 rounded-xl shadow-md border border-gray-200 flex flex-col items-center text-center transition-all duration-300 hover:-translate-y-1 relative bg-white hover:bg-slate-50 disabled:opacity-75 disabled:cursor-not-allowed text-left"
               >
                 <div className="text-4xl mb-3 transform group-hover:scale-110 transition-transform duration-300">
                   {item.emoji}
@@ -79,8 +96,17 @@ export default function Home() {
                 <p className="text-gray-600 text-sm leading-relaxed">
                   {item.desc}
                 </p>
+                
+                {/* Loading State */}
+                {loadingFeature === idx && (
+                  <div className="mt-4 flex items-center justify-center gap-2">
+                    <Loader2 size={16} className="animate-spin text-blue-600" />
+                    <span className="text-sm text-blue-600 font-medium">Đang tải...</span>
+                  </div>
+                )}
+                
                 <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-[3px] bg-blue-500 transition-all duration-300 group-hover:w-3/4 rounded-full"></span>
-              </div>
+              </button>
             ))}
           </div>
         </section>

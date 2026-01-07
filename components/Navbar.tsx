@@ -117,7 +117,7 @@ export default function Navbar() {
   return (
     <>
     {isNavigating && (
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-white px-6 py-4 rounded-full shadow-lg border border-slate-100 z-[999]">
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-3 bg-white px-6 py-4 rounded-full shadow-lg border border-slate-100 z-[999]">
         <Loader size={20} className="animate-spin text-blue-600" />
         <span className="text-slate-700 font-medium">Đang tải...</span>
       </div>
@@ -157,12 +157,12 @@ export default function Navbar() {
 
           <nav className="hidden lg:flex items-center gap-1">
             {NAV_ITEMS.map((item) => (
-              <Link key={item.href} href={item.href} className="p-2.5 text-slate-500 rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-all group relative">
+              <button key={item.href} onClick={() => handleNavClick(item.href)} className="p-2.5 text-slate-500 rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-all group relative disabled:opacity-50" disabled={isNavigating}>
                 <item.icon size={20} />
                 <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
                   {item.label}
                 </span>
-              </Link>
+              </button>
             ))}
           </nav>
         </div>
