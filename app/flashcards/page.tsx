@@ -15,6 +15,7 @@ import {
   Sparkles,
   GraduationCap,
   ArrowRight,
+  Loader2,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -84,12 +85,16 @@ export default function FlashcardsPage() {
     };
 
     if (!isLoading && user) loadDecks();
-    else if (!isLoading && !user) router.push('/login');
   }, [user, isLoading, router]);
 
   // 2. TẠO BỘ THẺ MỚI
   const handleCreateDeck = async () => {
-    if (!user || !newDeckName.trim()) return;
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    
+    if (!newDeckName.trim()) return;
     setIsDataLoading(true);
     try {
         const token = getTokenFromCookie();
@@ -203,8 +208,7 @@ export default function FlashcardsPage() {
     }
   };
 
-  if (isLoading || !user)
-    return <div className="p-10 text-center">Đang tải...</div>;
+  if (isLoading) return <div className="p-10 text-center">Đang tải...</div>;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -214,8 +218,11 @@ export default function FlashcardsPage() {
 
       <main className="container mx-auto px-4 py-8 max-w-6xl relative z-10">
         {isDataLoading && (
-          <div className="fixed bottom-4 right-4 bg-white px-4 py-2 rounded-full shadow border text-blue-600 flex gap-2 animate-pulse z-50">
-            <RotateCw className="animate-spin" size={16} /> Đang xử lý...
+          <div className="fixed inset-0 bg-black/10 backdrop-blur-sm flex items-center justify-center z-[100]">
+            <div className="bg-white rounded-2xl p-8 shadow-xl flex flex-col items-center gap-4">
+              <Loader2 size={40} className="text-blue-600 animate-spin" />
+              <p className="text-slate-700 font-semibold">Đang tải thư viện...</p>
+            </div>
           </div>
         )}
 
@@ -225,7 +232,13 @@ export default function FlashcardsPage() {
             Thư viện của tôi 🎴
           </h1>
           <button
-            onClick={() => setIsCreating(true)}
+            onClick={() => {
+              if (!user) {
+                router.push('/login');
+                return;
+              }
+              setIsCreating(true);
+            }}
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-blue-700"
           >
             <Plus size={20} /> Bộ mới

@@ -2,16 +2,29 @@
 
 import React, { useState } from 'react';
 import { ArrowLeft, MessageSquarePlus, Sparkles, Check } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
+import { useAuth } from '@/context/AuthContext';
 import { CHARACTERS } from './constants';
 import { Character } from './types';
 import ChatSession from '@/components/roleplay/ChatSession';
 
 export default function RoleplayPage() {
+  const { user } = useAuth();
+  const router = useRouter();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedChar, setSelectedChar] = useState<Character | null>(null);
   const [topic, setTopic] = useState('');
   const [hoveredChar, setHoveredChar] = useState<string | null>(null);
+
+  const handleCharacterSelect = (char: Character) => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    setSelectedChar(char);
+    setStep(2);
+  };
 
   const handleStartChat = () => { if (topic.trim()) setStep(3); };
 
@@ -63,7 +76,7 @@ export default function RoleplayPage() {
               {CHARACTERS.map(char => (
                 <div
                   key={char.id}
-                  onClick={() => { setSelectedChar(char); setStep(2); }}
+                  onClick={() => handleCharacterSelect(char)}
                   onMouseEnter={() => setHoveredChar(char.id)}
                   onMouseLeave={() => setHoveredChar(null)}
                   className={`bg-white p-6 rounded-3xl border-2 cursor-pointer transition-all duration-300 ${

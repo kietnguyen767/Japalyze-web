@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Be_Vietnam_Pro } from "next/font/google";
-import SnowEffect from "@/components/SnowEffect";
+import SakuraEffect from "@/components/SakuraEffect";
 import { AuthProvider } from '@/context/AuthContext';
 
 export const metadata: Metadata = {
@@ -24,7 +24,7 @@ export default function RootLayout({
     <html lang="vi">
       
       <body className={`${beVietnamPro.className} antialiased`}>
-        <SnowEffect />
+        <SakuraEffect />
         <AuthProvider>
           
           {children}

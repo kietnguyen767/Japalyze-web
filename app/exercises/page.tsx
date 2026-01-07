@@ -8,7 +8,7 @@ import {
   Apple, Carrot, Music, Cpu, Armchair, Clapperboard, Palette, Globe, Smile, 
   Plane, AlarmClock, Shirt, Heart, PartyPopper, MessageCircle,
   Lock, Crown, MapPin, ShoppingBag, Leaf, UserCheck, Wallet, Stethoscope, Home,
-  Utensils, Map, BookOpen, HandCoins, UtensilsCrossed, Trophy, CheckCircle
+  Utensils, Map, BookOpen, HandCoins, UtensilsCrossed, Trophy, CheckCircle, Loader2
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
@@ -77,12 +77,16 @@ export default function ExercisesPage() {
   const { user } = useAuth();
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [isPremiumUser, setIsPremiumUser] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // --- LOGIC TỰ ĐỘNG CẬP NHẬT (POLLING) ---
   useEffect(() => {
     // 1. Hàm lấy dữ liệu
     const fetchProgress = async () => {
-      if (!user) return;
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
       try {
         const res = await fetch('/api/exercises/progress');
         if (res.ok) {
@@ -93,6 +97,8 @@ export default function ExercisesPage() {
         }
       } catch (error) {
         console.error("Lỗi tải tiến trình", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -152,6 +158,15 @@ export default function ExercisesPage() {
       <div className="sticky top-0 z-50 bg-white shadow-sm"><Navbar /></div>
 
       <main className="container mx-auto px-4 py-8 max-w-6xl relative z-10">
+        {isLoading && user && (
+          <div className="fixed inset-0 bg-black/10 backdrop-blur-sm flex items-center justify-center z-[100]">
+            <div className="bg-white rounded-2xl p-8 shadow-xl flex flex-col items-center gap-4">
+              <Loader2 size={40} className="text-blue-600 animate-spin" />
+              <p className="text-slate-700 font-semibold">Đang cập nhật...</p>
+            </div>
+          </div>
+        )}
+
         <div className="mb-8 border-b border-slate-200 pb-4 flex items-center gap-3">
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
             <LayoutGrid className="text-blue-600" /> Thư viện bài tập
