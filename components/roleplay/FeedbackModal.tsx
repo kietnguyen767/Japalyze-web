@@ -1,3 +1,4 @@
+//app/components/roleplay/FeedbackModal.tsx
 'use client';
 
 import { Star, Sparkles, ArrowLeft } from 'lucide-react';

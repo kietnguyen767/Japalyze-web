@@ -1,3 +1,4 @@
+//app/roleplay/types.ts
 export type Character = {
   id: string;
   name: string;

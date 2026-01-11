@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -18,18 +16,17 @@ model User {
   avatar             String?
   role               String               @default("user")
   isPremium          Boolean              @default(false)
+  analysisUsage   Int      @default(0)
   provider           String               @default("email")
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
-  
-  // Quan hệ ngược (để truy vấn ngược từ User)
-  payments           Payment[]
-  decks              Deck[]
-  translationHistory TranslationHistory[]
-  exerciseProgress   ExerciseProgress[]
-  posts              Post[]
   comments           Comment[]
+  decks              Deck[]
+  exerciseProgress   ExerciseProgress[]
   likes              Like[]
+  payments           Payment[]
+  posts              Post[]
+  translationHistory TranslationHistory[]
 }
 
 model Payment {
@@ -38,24 +35,18 @@ model Payment {
   amount    Int
   status    String
   createdAt DateTime @default(now())
-  
   userId    String
-  // 👇 Thêm onDelete: Cascade
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// --- 1. FLASHCARDS ---
 model Deck {
   id          String   @id @default(uuid())
   title       String
   description String?
   createdAt   DateTime @default(now())
-
   userId      String
-  // 👇 Thêm onDelete: Cascade
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   cards       Card[]
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Card {
@@ -65,75 +56,105 @@ model Card {
   example   String?
   isLearned Boolean  @default(false)
   createdAt DateTime @default(now())
-
   deckId    String
-  // Đã có Cascade (Xóa bộ thẻ -> Xóa thẻ con) -> TỐT
   deck      Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
 }
 
-// --- 2. TRANSLATE HISTORY ---
 model TranslationHistory {
   id         String   @id @default(uuid())
   sourceText String
   targetText String
   createdAt  DateTime @default(now())
-
   userId     String
-  // 👇 Thêm onDelete: Cascade
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// --- 3. EXERCISES ---
+model DictionaryRelation {
+  id        String          @id @default(dbgenerated("(gen_random_uuid())::text"))
+  fromId    String
+  toId      String
+  type      String          @default("related")
+  createdAt DateTime        @default(now()) @db.Timestamptz(6)
+  from      DictionaryEntry @relation("DictRelFrom", fields: [fromId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  to        DictionaryEntry @relation("DictRelTo", fields: [toId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([fromId, toId, type])
+  @@index([fromId], map: "dictrel_fromid_idx")
+  @@index([toId], map: "dictrel_toid_idx")
+}
+
+model DictionaryEntry {
+  id          String               @id @default(uuid())
+  lang        String               @default("ja")
+  lemma       String
+  reading     String?
+  romaji      String?
+  posTag      String
+  meaningVi   String?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  relatedFrom DictionaryRelation[] @relation("DictRelFrom")
+  relatedTo   DictionaryRelation[] @relation("DictRelTo")
+  examples    ExampleSentence[]
+
+  @@index([lang])
+  @@index([lemma])
+  @@index([reading])
+  @@index([romaji])
+  @@index([posTag])
+  @@index([lemma(ops: raw("gin_trgm_ops"))], map: "dictionary_lemma_trgm", type: Gin)
+  @@index([reading(ops: raw("gin_trgm_ops"))], map: "dictionary_reading_trgm", type: Gin)
+  @@index([romaji(ops: raw("gin_trgm_ops"))], map: "dictionary_romaji_trgm", type: Gin)
+}
+
+model ExampleSentence {
+  id        String          @id @default(uuid())
+  jp        String
+  romaji    String?
+  vi        String?
+  createdAt DateTime        @default(now())
+  entryId   String
+  entry     DictionaryEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@index([entryId])
+}
+
 model ExerciseProgress {
   id          String   @id @default(uuid())
   exerciseId  String
   score       Int
   completedAt DateTime @default(now())
-
   userId      String
-  // 👇 Thêm onDelete: Cascade
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// --- 4. COMMUNITY ---
 model Post {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   content   String
-  rating    Int      @default(5) // 👈 Thêm rating (1-5 stars)
-  createdAt DateTime @default(now())
-
+  rating    Int       @default(5)
+  createdAt DateTime  @default(now())
   userId    String
-  // 👇 Thêm onDelete: Cascade
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   comments  Comment[]
   likes     Like[]
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Comment {
   id        String   @id @default(uuid())
   content   String
   createdAt DateTime @default(now())
-
   postId    String
-  // Đã có Cascade (Xóa bài -> Xóa cmt) -> TỐT
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  
   userId    String
-  // 👇 Thêm onDelete: Cascade (Xóa user -> Xóa cmt của user đó)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Like {
   id        String   @id @default(uuid())
   createdAt DateTime @default(now())
-
   postId    String
-  // Đã có Cascade -> TỐT
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  
   userId    String
-  // 👇 Thêm onDelete: Cascade
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId])

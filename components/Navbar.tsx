@@ -4,13 +4,23 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react'; // ✅ Thêm useRef
 import { 
   BookOpen, Zap, MapPin, ClipboardList, Users, 
   Search, LogOut, LogIn, UserPlus, Gift, X, CheckCircle, CreditCard, Loader
 } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
+
+// ✅ Định nghĩa kiểu dữ liệu cho gợi ý (giống bên TranslationPanel)
+type SuggestItem = {
+  id: string;
+  lemma: string;
+  reading?: string | null;
+  romaji?: string | null;
+  posTag: string;
+  meaningVi?: string | null;
+};
 
 const NAV_ITEMS = [
   { href: '/flashcards', label: 'Flashcards', icon: BookOpen },
@@ -20,7 +30,6 @@ const NAV_ITEMS = [
   { href: '/community', label: 'Cộng đồng', icon: Users },
 ];
 
-// 👇 1. Hàm helper để lấy token từ Cookie
 function getCookie(name: string) {
   if (typeof document === 'undefined') return null;
   const value = `; ${document.cookie}`;
@@ -31,7 +40,13 @@ function getCookie(name: string) {
 
 export default function Navbar() {
   const { user, logout, refreshProfile } = useAuth(); 
+  
+  // ✅ States cho Search & Suggest
   const [query, setQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<SuggestItem[]>([]); // Danh sách gợi ý
+  const [showSuggest, setShowSuggest] = useState(false); // Ẩn/hiện dropdown
+  const searchRef = useRef<HTMLFormElement>(null); // Để bắt sự kiện click ra ngoài
+
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
@@ -44,19 +59,71 @@ export default function Navbar() {
     }
   }, []);
 
+  // ✅ Effect: Tự động tắt dropdown khi click ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSuggest(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // ✅ Effect: Gọi API Suggest khi user gõ (Debounce 300ms)
+  useEffect(() => {
+    const q = query.trim();
+    // Điều kiện: phải gõ > 1 ký tự và không chứa khoảng trắng (từ đơn)
+    if (q.length < 2) {
+      setSuggestions([]);
+      setShowSuggest(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/suggest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: q, source: 'ja', limit: 5 }), // Lấy 5 kết quả thôi cho gọn
+        });
+        const data = await res.json();
+        if (data.success && data.items?.length > 0) {
+            setSuggestions(data.items);
+            setShowSuggest(true);
+        } else {
+            setSuggestions([]);
+            setShowSuggest(false);
+        }
+      } catch (error) {
+        console.error("Suggest error", error);
+      }
+    }, 300); // Đợi 300ms sau khi ngừng gõ mới gọi API
+
+    return () => clearTimeout(timer);
+  }, [query]);
+
   const handleNavClick = (href: string) => {
     setIsNavigating(true);
     router.push(href);
-    // Reset after a short delay
     setTimeout(() => setIsNavigating(false), 1000);
   }; 
 
   const handleLogout = () => logout();
 
+  // Submit bằng phím Enter hoặc nút Search
   const onSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
+    setShowSuggest(false); // Tắt gợi ý
     router.push(`/translate?text=${encodeURIComponent(query.trim())}`);
+  };
+
+  // ✅ Click vào một từ trong danh sách gợi ý
+  const handleSelectSuggestion = (lemma: string) => {
+    setQuery(lemma);
+    setShowSuggest(false);
+    router.push(`/translate?text=${encodeURIComponent(lemma)}`);
   };
 
   const handleActivatePremium = async (action: 'trial' | 'buy_1_month') => {
@@ -64,19 +131,15 @@ export default function Navbar() {
     
     setProcessing(true);
     try {
-        // TRƯỜNG HỢP 1: MUA GÓI
         if (action === 'buy_1_month') {
-            // 👇 2. Lấy token từ cookie
             const token = getCookie('session_token');
-
             const res = await fetch('/api/payment/create-link', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    // 👇 3. Gửi kèm Token vào Header
                     'Authorization': token ? `Bearer ${token}` : ''
                 },
-                body: JSON.stringify({}) // Backend tự lấy User ID từ token, không cần gửi email
+                body: JSON.stringify({})
             });
             const data = await res.json();
             
@@ -88,7 +151,6 @@ export default function Navbar() {
             return; 
         }
 
-        // TRƯỜNG HỢP 2: DÙNG THỬ
         const res = await fetch('/api/user/premium', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -137,22 +199,62 @@ export default function Navbar() {
           </Link>
         </div>
 
-        {/* NAV LINK */}
+        {/* NAV LINK & SEARCH */}
         <div className="flex-1 flex items-center justify-center gap-6 px-4">
-          <form onSubmit={onSearchSubmit} className="relative w-full max-w-md group hidden md:block">
+          
+          {/* ✅ SEARCH BAR CÓ DROPDOWN */}
+          <form 
+            ref={searchRef} 
+            onSubmit={onSearchSubmit} 
+            className="relative w-full max-w-md group hidden md:block z-50"
+          >
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors">
               <Search size={18} />
             </div>
             <input
               type="text"
-              placeholder="Tìm kiếm tài liệu..."
+              placeholder="Tra từ nhanh (Nhật - Việt)..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onFocus={() => { if(suggestions.length > 0) setShowSuggest(true); }} // Hiện lại khi focus
               className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-full py-2.5 pl-10 pr-12 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all"
             />
+            {query && (
+                <button 
+                    type="button" 
+                    onClick={() => { setQuery(''); setSuggestions([]); setShowSuggest(false); }}
+                    className="absolute right-10 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500"
+                >
+                    <X size={14} />
+                </button>
+            )}
             <button type="submit" className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-sm">
               <Search size={14} />
             </button>
+
+            {/* ✅ DROPDOWN GỢI Ý */}
+            {showSuggest && suggestions.length > 0 && (
+                <div className="absolute top-full left-0 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2">
+                    <div className="max-h-80 overflow-y-auto">
+                        {suggestions.map((s) => (
+                            <button
+                                key={s.id}
+                                type="button"
+                                onClick={() => handleSelectSuggestion(s.lemma)}
+                                className="w-full text-left px-4 py-3 hover:bg-blue-50 border-b border-slate-50 last:border-0 transition-colors flex items-center justify-between group"
+                            >
+                                <div>
+                                    <div className="font-bold text-slate-800 group-hover:text-blue-700 text-sm">
+                                        {s.lemma} {s.reading && <span className="font-normal text-slate-500 text-xs">({s.reading})</span>}
+                                    </div>
+                                    {s.meaningVi && <div className="text-xs text-slate-500 mt-0.5 line-clamp-1">{s.meaningVi}</div>}
+                                </div>
+                                <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded uppercase">{s.posTag}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
           </form>
 
           <nav className="hidden lg:flex items-center gap-1">
@@ -207,7 +309,7 @@ export default function Navbar() {
       </div>
     </header>
 
-    {/* MODAL */}
+    {/* MODAL - GIỮ NGUYÊN */}
     {showPremiumModal && (
         <div className="fixed inset-0 bg-black/60 z-[999] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden relative flex flex-col md:flex-row">

@@ -12,6 +12,9 @@ type Props = {
   onBack: () => void;
 };
 
+const MAX_TURNS = 20;
+const MAX_HISTORY = 8; // ✅ FIX: giới hạn history
+
 export default function ChatSession({ character, topic, onBack }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -22,7 +25,8 @@ export default function ChatSession({ character, topic, onBack }: Props) {
 
   const [showFeedback, setShowFeedback] = useState<FeedbackData | null>(null);
   const [turnCount, setTurnCount] = useState(0);
-  const MAX_TURNS = 20;
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     initChat();
@@ -35,7 +39,6 @@ export default function ChatSession({ character, topic, onBack }: Props) {
    * =========================
    */
 
-  // Missions: luôn ép về string để tránh object
   const sanitizeMissions = (arr: any): string[] => {
     if (!Array.isArray(arr)) return [];
     return arr.slice(0, 3).map((m) => {
@@ -45,7 +48,6 @@ export default function ChatSession({ character, topic, onBack }: Props) {
     });
   };
 
-  // completed_indices: ép number + floor + clamp 0..2 + unique
   const sanitizeCompletedIndices = (arr: any): number[] => {
     if (!Array.isArray(arr)) return [];
     const out: number[] = [];
@@ -58,11 +60,13 @@ export default function ChatSession({ character, topic, onBack }: Props) {
     return out;
   };
 
-  // feedback: fill default để FeedbackModal không crash
   const normalizeFeedback = (fb: any): FeedbackData | null => {
     if (!fb || typeof fb !== 'object') return null;
 
-    const score = Number.isFinite(Number(fb.score)) ? Math.max(0, Math.min(100, Math.floor(Number(fb.score)))) : 0;
+    const score = Number.isFinite(Number(fb.score))
+      ? Math.max(0, Math.min(100, Math.floor(Number(fb.score))))
+      : 0;
+
     const good_points = typeof fb.good_points === 'string' ? fb.good_points : '';
 
     const mistakesRaw = Array.isArray(fb.mistakes) ? fb.mistakes : [];
@@ -76,10 +80,9 @@ export default function ChatSession({ character, topic, onBack }: Props) {
       .filter((x: any) => x.original || x.fixed || x.reason);
 
     const nextMissions = sanitizeMissions(fb.next_missions);
-    // Nếu thiếu next_missions, vẫn trả mảng 3 phần tử để UI ổn định
     const next_missions = nextMissions.length === 3 ? nextMissions : ['', '', ''];
 
-    return { score, good_points, mistakes, next_missions } as FeedbackData;
+    return { score, good_points, mistakes, next_missions };
   };
 
   /**
@@ -89,8 +92,6 @@ export default function ChatSession({ character, topic, onBack }: Props) {
    */
   const initChat = async () => {
     setIsLoading(true);
-
-    // ✅ Reset toàn bộ state để tránh dính vòng cũ
     setMessages([]);
     setInput('');
     setMissions([]);
@@ -118,6 +119,7 @@ export default function ChatSession({ character, topic, onBack }: Props) {
       });
 
       if (!response.body) return;
+
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let fullText = '';
@@ -133,43 +135,44 @@ export default function ChatSession({ character, topic, onBack }: Props) {
         fullText += chunk;
 
         const [displayText] = fullText.split('[DATA_START]');
-        setMessages((prev) => prev.map((msg) => (msg.id === assistantId ? { ...msg, content: displayText } : msg)));
+        setMessages((prev) =>
+          prev.map((msg) => (msg.id === assistantId ? { ...msg, content: displayText } : msg))
+        );
+      }
+
+      // ✅ FIX: xóa assistant "..." nếu response rỗng
+      if (!fullText.trim()) {
+        setMessages((prev) => prev.filter((m) => m.id !== assistantId));
+        return;
       }
 
       // --- PARSE JSON ---
       const jsonMatch = fullText.match(/\[DATA_START\]([\s\S]*?)\[DATA_END\]/);
       if (!jsonMatch || !jsonMatch[1]) return;
 
-      try {
-        let cleanJson = jsonMatch[1].trim();
-        cleanJson = cleanJson.replace(/^```json/, '').replace(/^```/, '').replace(/```$/, '');
-        const data = JSON.parse(cleanJson);
+      let cleanJson = jsonMatch[1].trim();
+      cleanJson = cleanJson.replace(/^```json/, '').replace(/^```/, '').replace(/```$/, '');
+      const data = JSON.parse(cleanJson);
 
-        // missions
-        if (data.missions && Array.isArray(data.missions)) {
-          const sanitized = sanitizeMissions(data.missions);
-          if (sanitized.length) setMissions(sanitized);
-        }
+      if (Array.isArray(data.missions)) {
+        const sanitized = sanitizeMissions(data.missions);
+        if (sanitized.length) setMissions(sanitized);
+      }
 
-        // completed_indices (cộng dồn)
-        if (data.completed_indices && Array.isArray(data.completed_indices)) {
-          const indices = sanitizeCompletedIndices(data.completed_indices);
-          if (indices.length) {
-            setCompletedMissions((prev) => {
-              const next = [...prev];
-              indices.forEach((i) => (next[i] = true));
-              return next;
-            });
-          }
+      if (Array.isArray(data.completed_indices)) {
+        const indices = sanitizeCompletedIndices(data.completed_indices);
+        if (indices.length) {
+          setCompletedMissions((prev) => {
+            const next = [...prev];
+            indices.forEach((i) => (next[i] = true));
+            return next;
+          });
         }
+      }
 
-        // feedback
-        if (data.feedback) {
-          const fb = normalizeFeedback(data.feedback);
-          if (fb) setShowFeedback(fb);
-        }
-      } catch (e) {
-        console.error('JSON Parse Error', e);
+      if (data.feedback) {
+        const fb = normalizeFeedback(data.feedback);
+        if (fb) setShowFeedback(fb);
       }
     } catch (error) {
       console.error(error);
@@ -185,9 +188,14 @@ export default function ChatSession({ character, topic, onBack }: Props) {
    */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading || !!showFeedback) return;
+    if (!input.trim() || isLoading || showFeedback) return;
 
-    const userMsg = { id: Date.now().toString(), role: 'user' as const, content: input };
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: input
+    };
+
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
     setIsLoading(true);
@@ -196,13 +204,12 @@ export default function ChatSession({ character, topic, onBack }: Props) {
     setTurnCount(currentTurn);
     const isOutOfTurns = currentTurn >= MAX_TURNS;
 
-    const history = [...messages.filter((m) => m.content !== '...'), userMsg].map((m) => ({
-      role: m.role,
-      content: m.content
-    }));
+    // ✅ FIX: giới hạn history
+    const history = [...messages.filter((m) => m.content !== '...'), userMsg]
+      .slice(-MAX_HISTORY)
+      .map((m) => ({ role: m.role, content: m.content }));
 
     const remindPrompt = getRemindPrompt(character, input, isOutOfTurns, missions, completedMissions);
-
     await callAI(history, remindPrompt);
   };
 
@@ -214,21 +221,21 @@ export default function ChatSession({ character, topic, onBack }: Props) {
   const handleNextLevel = () => {
     if (!showFeedback) return;
 
-    // Sanitize next missions
     const nextMissionsSanitized = sanitizeMissions((showFeedback as any).next_missions);
-
     setMissions(nextMissionsSanitized);
     setCompletedMissions([false, false, false]);
     setShowFeedback(null);
     setTurnCount(0);
 
-    // Optional: thông báo vòng mới (giữ nguyên tiếng Việt như code cũ của bạn)
-    const nextMsg = {
-      id: Date.now().toString(),
-      role: 'assistant' as const,
-      content: `(Bắt đầu vòng mới) Nhiệm vụ tiếp theo: ${nextMissionsSanitized.join(', ')}. Cùng cố gắng nhé!`
-    };
-    setMessages((prev) => [...prev, nextMsg]);
+    // giữ UI cũ như bạn yêu cầu
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: `(Bắt đầu vòng mới) Nhiệm vụ tiếp theo: ${nextMissionsSanitized.join(', ')}. Cùng cố gắng nhé!`
+      }
+    ]);
   };
 
   /**
@@ -237,16 +244,20 @@ export default function ChatSession({ character, topic, onBack }: Props) {
    * =========================
    */
   const handleSpeak = (text: string) => {
+    const cleanText = text.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim(); // ✅ FIX
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
+    const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.lang = 'ja-JP';
     window.speechSynthesis.speak(utterance);
   };
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  /* =========================
+   * RENDER (GIỮ NGUYÊN CSS)
+   * ========================= */
 
   return (
     <div className="flex flex-col h-[calc(100vh-80px)] md:h-[600px] bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative z-10">
@@ -316,7 +327,7 @@ export default function ChatSession({ character, topic, onBack }: Props) {
                       : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
                   }`}
                 >
-                  {typeof m.content === 'string' ? m.content : JSON.stringify(m.content)}
+                  {m.content}
                 </div>
                 {m.role !== 'user' && m.content && (
                   <button

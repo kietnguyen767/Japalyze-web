@@ -1,3 +1,4 @@
+//app/roleplay/constants.ts
 import { Character } from './types';
 
 export const CHARACTERS: Character[] = [

@@ -1,4 +1,5 @@
-﻿'use client';
+﻿////app/roleplay/page.tsx
+'use client';
 
 import React, { useState } from 'react';
 import { ArrowLeft, MessageSquarePlus, Sparkles, Check } from 'lucide-react';

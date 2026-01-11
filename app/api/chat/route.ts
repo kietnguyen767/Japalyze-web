@@ -20,7 +20,7 @@ export async function POST(req: Request) {
       // 👇 SỬ DỤNG OPENAI
       // 'gpt-4o-mini': Nhanh, rẻ, tuân thủ luật tốt (Khuyên dùng cho App Roleplay của bạn)
       // 'gpt-4o': Thông minh nhất, nhưng đắt hơn.
-      model: openai('gpt-4o'),
+      model: openai('gpt-4o-mini'),
       
       // System prompt được OpenAI hỗ trợ rất tốt để định hình tính cách
       system: systemPrompt || 'Bạn là trợ lý AI hữu ích.',
