@@ -81,7 +81,7 @@ export default function LoginPage() {
           <div className="relative z-10">
             <Link href="/" className="flex items-center gap-3 mb-8 group">
                <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center group-hover:bg-white/30 transition-all">
-                 <Image src="/logo.png" alt="Logo" width={24} height={24} className="object-contain" />
+                 <Image src="/logo(4).png" alt="Logo" width={24} height={24} className="object-contain" />
                </div>
                <span className="text-2xl font-bold tracking-tight">JapaLyze</span>
             </Link>

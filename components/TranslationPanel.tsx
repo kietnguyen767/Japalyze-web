@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ArrowRightLeft, Copy, Volume2, Check, Bookmark, X, Search, Sparkles, Mic, MicOff } from 'lucide-react';
 import * as wanakana from 'wanakana';
@@ -72,8 +72,6 @@ export default function TranslationPanel() {
   const [translateCached, setTranslateCached] = useState(false);
   const [translateDegraded, setTranslateDegraded] = useState(false);
 
-  // ❌ Đã xóa các state liên quan đến Suggestions Dropdown (suggestions, showSuggest, checkingSuggest, isInvalid)
-
   const [wordDetail, setWordDetail] = useState<WordDetailResponse | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
@@ -81,14 +79,26 @@ export default function TranslationPanel() {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  // ❌ Đã xóa inputWrapperRef vì không còn dropdown để check click outside
-
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [userDecks, setUserDecks] = useState<Deck[]>([]);
   const [selectedDeckId, setSelectedDeckId] = useState<string>('');
   const [newDeckName, setNewDeckName] = useState('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success'>('idle');
   const [processing, setProcessing] = useState(false);
+
+  // ✨ REF cho textarea để xử lý auto-resize
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // ✨ Effect: Tự động điều chỉnh chiều cao textarea khi inputText thay đổi
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      // Reset chiều cao về auto trước để tính toán chính xác khi xóa bớt văn bản
+      textarea.style.height = 'auto';
+      // Set chiều cao mới dựa trên nội dung (scrollHeight)
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+  }, [inputText]);
 
   const getLanguageName = (lang: string) => (lang === 'ja' ? 'Tiếng Nhật (日本語)' : 'Tiếng Việt');
 
@@ -105,8 +115,6 @@ export default function TranslationPanel() {
 
     const fromDetail = wordDetail?.entry?.romaji?.trim();
     if (fromDetail) return fromDetail;
-
-    // ❌ Đã xóa phần fallback tìm trong suggestions
     
     try {
       if (wanakana.isKana(t)) return wanakana.toRomaji(t);
@@ -131,7 +139,6 @@ export default function TranslationPanel() {
     setTargetLanguage(sourceLanguage);
     setInputText(translatedText);
     setTranslatedText(inputText);
-    // ❌ Xóa các reset state suggestion
     setWordDetail(null);
     setAnalysis(null);
     resetTranslateMeta();
@@ -140,12 +147,15 @@ export default function TranslationPanel() {
   const clearAll = () => {
     setInputText('');
     setTranslatedText('');
-    // ❌ Xóa các reset state suggestion
     setWordDetail(null);
     setDetailLoading(false);
     setAnalysis(null);
     resetTranslateMeta();
     window.speechSynthesis.cancel();
+    // Reset height textarea về mặc định
+    if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+    }
   };
 
   // 🎤 Xử lý Voice Input
@@ -236,7 +246,7 @@ export default function TranslationPanel() {
         
         // Xử lý giới hạn Freemium
         if (res.status === 403 && data.error === 'LIMIT_REACHED') {
-            alert(data.message); // Có thể thay bằng Modal Premium đẹp hơn
+            alert(data.message);
             return;
         }
 
@@ -270,14 +280,9 @@ export default function TranslationPanel() {
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      // ❌ Xóa setShowSuggest(false);
       void handleTranslate(inputText);
     }
-    // ❌ Xóa sự kiện Escape tắt suggest
   };
-
-  // ❌ Đã xóa useEffect gọi API Suggest
-  // ❌ Đã xóa helper shouldSuggest
 
   // ===== Word Detail Logic =====
   const loadWordDetailById = async (entryId: string) => {
@@ -299,17 +304,34 @@ export default function TranslationPanel() {
 
   const loadWordDetailByText = async (text: string) => {
     const t = (text || '').trim();
-    const isSingleToken = t.length > 0 && !/\s/.test(t);
-    if (sourceLanguage !== 'ja' || !isSingleToken || t.length < 1 || t.length > 40) {
+    
+    // 1. Kiểm tra độ dài cơ bản
+    if (t.length < 1 || t.length > 40) {
       setWordDetail(null);
       return;
     }
+
+    // 🔴 CODE CŨ (Đang chặn tiếng Việt):
+    // const isSingleToken = t.length > 0 && !/\s/.test(t);
+    // if (sourceLanguage !== 'ja' || !isSingleToken) { ... return; }
+
+    // 🟢 CODE MỚI (Cho phép cả 2 chiều):
+    // Nếu là tiếng Nhật: yêu cầu không có khoảng trắng (từ đơn)
+    // Nếu là tiếng Việt: cho phép khoảng trắng (vì từ tiếng Việt hay có dấu cách, vd: "ăn cơm")
+    if (sourceLanguage === 'ja') {
+        const isSingleToken = !/\s/.test(t);
+        if (!isSingleToken) {
+            setWordDetail(null);
+            return;
+        }
+    }
+
     setDetailLoading(true);
     try {
       const res = await fetch('/api/word-detail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: t, source: sourceLanguage }),
+        body: JSON.stringify({ text: t, source: sourceLanguage }), // Gửi kèm source language
       });
       const data: WordDetailResponse = await res.json();
       setWordDetail(data?.success ? data : null);
@@ -320,10 +342,8 @@ export default function TranslationPanel() {
     }
   };
 
-  // ✅ Giữ lại hàm này để dùng cho nút "Từ liên quan" bên dưới
   const selectSuggestion = async (item: SuggestItem) => {
     setInputText(item.lemma);
-    // ❌ Xóa setShowSuggest/setIsInvalid vì không còn dùng
     await loadWordDetailById(item.id);
     void handleTranslate(item.lemma);
   };
@@ -432,13 +452,14 @@ export default function TranslationPanel() {
         <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
           {/* LEFT: INPUT */}
           <div className="relative flex flex-col p-6 min-h-[300px]">
-            {/* ❌ Đã xóa ref={inputWrapperRef} */}
-            <div className="rounded-2xl transition-all ring-1 ring-transparent">
+            <div className="rounded-2xl transition-all ring-1 ring-transparent flex-1">
               <textarea
+                ref={textareaRef} // 👈 Gắn ref vào đây
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="flex-1 w-full text-lg md:text-xl text-slate-800 bg-transparent outline-none resize-none placeholder:text-slate-300 font-medium p-2"
+                rows={1}
+                className="w-full text-lg md:text-xl text-slate-800 bg-transparent outline-none resize-none placeholder:text-slate-300 font-medium p-2 overflow-hidden min-h-[120px]"
                 placeholder="Nhập văn bản cần dịch..."
                 spellCheck={false}
               />
@@ -450,9 +471,6 @@ export default function TranslationPanel() {
               </div>
             )}
 
-            {/* ❌ Đã xóa Invalid hint */}
-            {/* ❌ Đã xóa Suggestions Dropdown UI */}
-
             {/* Actions */}
             <div className="mt-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -460,7 +478,7 @@ export default function TranslationPanel() {
                 <button 
                     onClick={handleVoiceInput}
                     className={`p-2 rounded-full transition-all ${
-                        isListening 
+                      isListening 
                         ? 'bg-red-100 text-red-600 animate-pulse' 
                         : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'
                     }`}
@@ -653,25 +671,33 @@ export default function TranslationPanel() {
                   )}
                 </div>
 
-                {/* ✅ HIỂN THỊ TỪ LIÊN QUAN */}
-                {!!wordDetail.relatedWords?.length && (
-                    <div className="bg-indigo-50/50 p-3 rounded-lg border border-indigo-100 shadow-sm mt-4">
-                        <span className="block text-xs text-indigo-400 font-bold uppercase mb-2 flex items-center gap-1">
-                            <Sparkles size={10}/> Từ liên quan
-                        </span>
-                        <div className="flex flex-wrap gap-2">
-                            {wordDetail.relatedWords.map((rw) => (
-                                <button 
-                                    key={rw.id}
-                                    onClick={() => selectSuggestion(rw)}
-                                    className="text-xs px-2 py-1 bg-white border border-indigo-200 text-indigo-700 rounded hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all font-medium"
-                                >
-                                    {rw.lemma}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                {/* ✅ HIỂN THỊ TỪ LIÊN QUAN (Đã thêm lọc trùng lặp) */}
+{!!wordDetail.relatedWords?.length && (
+  <div className="bg-indigo-50/50 p-3 rounded-lg border border-indigo-100 shadow-sm mt-4">
+    <span className="block text-xs text-indigo-400 font-bold uppercase mb-2 flex items-center gap-1">
+      <Sparkles size={10}/> Từ liên quan
+    </span>
+    <div className="flex flex-wrap gap-2">
+      {/* --- ĐOẠN MÃ MỚI: Lọc các từ trùng tên với từ đang hiển thị --- */}
+      {wordDetail.relatedWords
+        .filter(rw => rw.lemma !== wordDetail.entry?.lemma) // Ẩn chính nó nếu bị trùng
+        .reduce((unique, item) => {
+             // Lọc trùng lặp trong chính danh sách gợi ý
+             return unique.some(u => u.lemma === item.lemma) ? unique : [...unique, item];
+        }, [] as SuggestItem[])
+        .map((rw) => (
+        <button 
+          key={rw.id}
+          onClick={() => selectSuggestion(rw)}
+          className="text-xs px-2 py-1 bg-white border border-indigo-200 text-indigo-700 rounded hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all font-medium"
+        >
+          {rw.lemma}
+        </button>
+      ))}
+      {/* ------------------------------------------------------------- */}
+    </div>
+  </div>
+)}
               </div>
             </div>
 
