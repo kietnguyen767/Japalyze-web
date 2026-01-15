@@ -12,7 +12,7 @@ import {
   Languages,      // Cho Dịch thuật
   BookOpenText,   // Cho Luyện đọc
   FileText,       // Cho Thi thử
-  Gamepad2        // Cho Trò chơi
+  Gamepad2, Map        // Cho Trò chơi
 } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
@@ -30,13 +30,14 @@ type SuggestItem = {
 // ✅ CẤU HÌNH MENU: Đã thêm lại "Bài tập"
 const NAV_ITEMS = [
   { href: '/translate', label: 'Dịch thuật', icon: Languages },    // 1. Công cụ chính
-  { href: '/flashcards', label: 'Flashcards', icon: BookOpen },    // 2. Học từ vựng
-  { href: '/exercises', label: 'Bài tập', icon: ClipboardList },   // 3. ✅ Đã khôi phục
-  { href: '/community', label: 'Cộng đồng', icon: Users },         // 4. Giao lưu
+  { href: '/flashcards', label: 'Flashcards', icon: BookOpen }, 
+  { href: '/roadmap', label: 'Lộ trình JLPT', icon: Map },   // 2. Học từ vựng
+  { href: '/exercises', label: 'Bài tập', icon: ClipboardList },   // 3. ✅ Đã khôi phục       // 4. Giao lưu
   { href: '/reading', label: 'Luyện đọc', icon: BookOpenText },    // 5. Kỹ năng đọc
   { href: '/tests', label: 'Thi thử', icon: FileText },            // 6. Luyện đề JLPT
   { href: '/roleplay', label: 'Roleplay AI', icon: Zap },          // 7. Luyện nói
-  { href: '/games', label: 'Trò chơi', icon: Gamepad2 },           // 8. Giải trí
+  { href: '/games', label: 'Trò chơi', icon: Gamepad2 },
+  { href: '/community', label: 'Cộng đồng', icon: Users },             // 8. Giải trí
 ];
 
 function getCookie(name: string) {

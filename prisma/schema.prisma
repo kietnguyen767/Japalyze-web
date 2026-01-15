@@ -159,3 +159,16 @@ model Like {
 
   @@unique([postId, userId])
 }
+// Bảng lưu trữ thông tin các lá bài Tarot (Dữ liệu tĩnh)
+model TarotCard {
+  id              String   @id // Ví dụ: "major-0", "cups-3"
+  name            String   // Tên tiếng Anh (The Fool)
+  nameVi          String   // Tên tiếng Việt (Chàng Khờ)
+  image           String   // URL ảnh
+  keywords        String[] // Từ khóa: ["Tự do", "Khởi đầu"]
+  meaningUpright  String   // Ý nghĩa xuôi (để hiển thị cho người chơi)
+  
+  // Các trường phụ (có thể để null nếu lười nhập)
+  meaningReversed String?  
+  element         String?  
+}

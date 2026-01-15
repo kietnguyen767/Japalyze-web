@@ -12,7 +12,7 @@ export default function TranslatePage() {
         </div>
       }
     >
-      <div className="min-h-screen bg-slate-50 pb-20 relative z-10">
+      <div className="min-h-screen pb-20 relative z-10">
         <div className="bg-white shadow-sm">
           <Navbar />
         </div>

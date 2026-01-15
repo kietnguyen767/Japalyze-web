@@ -21,6 +21,7 @@ function isRomajiLike(q: string) {
   return /^[a-zA-Z\s'-]+$/.test(q);
 }
 
+// Type trả về cho Frontend
 type RelatedWordItem = {
   id: string;
   lemma: string;
@@ -28,6 +29,7 @@ type RelatedWordItem = {
   romaji: string;
   posTag: string;
   meaningVi: string;
+  relationType?: string; // Thêm loại quan hệ để frontend biết (nếu cần)
 };
 
 export async function POST(req: Request) {
@@ -43,114 +45,67 @@ export async function POST(req: Request) {
         : "";
 
     if (!text) {
-      return NextResponse.json(
-        { success: false, error: "Missing text" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "Missing text" }, { status: 400 });
     }
 
     if (text.length > 80) {
-      return NextResponse.json(
-        { success: false, error: "Text too long" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "Text too long" }, { status: 400 });
     }
 
     const cacheKey = `dict:word-detail:${source}:${sha1(text.toLowerCase())}`;
-    //const cached = await getCache<any>(cacheKey);
-    //if (cached) return NextResponse.json({ ...cached, cached: true });
+    // const cached = await getCache<any>(cacheKey);
+    // if (cached) return NextResponse.json({ ...cached, cached: true });
 
     let entry = null;
     let spellcheck = { is_correct: true, did_you_mean: null as string | null };
 
     // ==========================================
-    // 🔍 LOGIC TÌM KIẾM
+    // 🔍 LOGIC TÌM KIẾM (Giữ nguyên logic cũ của bạn vì nó tốt)
     // ==========================================
 
     if ("entryId" in body) {
-      // Tìm theo ID
       entry = await prisma.dictionaryEntry.findUnique({
         where: { id: body.entryId },
         include: { examples: { take: 3, orderBy: { createdAt: "asc" } } },
       });
     } else if (source === 'vi') {
-      // 🇻🇳 TÌM VIỆT -> NHẬT
       entry = await prisma.dictionaryEntry.findFirst({
         where: {
-          meaningVi: {
-            contains: text,
-            mode: 'insensitive'
-          }
+          meaningVi: { contains: text, mode: 'insensitive' }
         },
         orderBy: { lemma: 'asc' },
         include: { examples: { take: 3, orderBy: { createdAt: "asc" } } },
       });
-
     } else {
-      // 🇯🇵 TÌM NHẬT -> VIỆT (Đã nâng cấp logic)
-      
       const romajiInput = isRomajiLike(text);
       const textLower = text.toLowerCase();
 
-      // 1. Exact match (SỬA ĐỔI: Dùng findMany thay vì findFirst)
-      // Lý do: Nếu có 2 từ giống nhau (duplicates), ta cần chọn từ nào CÓ VÍ DỤ.
       const candidates = await prisma.dictionaryEntry.findMany({
         where: {
           lang: "ja",
           OR: [{ lemma: text }, { reading: text }, { romaji: textLower }],
         },
-        // Lấy tối đa 5 từ trùng lặp để so sánh
-        take: 5, 
+        take: 5,
         include: { examples: { take: 3, orderBy: { createdAt: "asc" } } },
       });
 
       if (candidates.length > 0) {
-        // ✨ LOGIC CHỌN LỌC:
-        // Sắp xếp ưu tiên:
-        // 1. Từ có nhiều ví dụ hơn (b.examples.length - a.examples.length)
-        // 2. Nếu bằng nhau, ưu tiên từ có nghĩa tiếng Việt đầy đủ hơn
         candidates.sort((a, b) => {
-             const exDiff = b.examples.length - a.examples.length;
-             if (exDiff !== 0) return exDiff;
-             
-             const defA = a.meaningVi ? a.meaningVi.length : 0;
-             const defB = b.meaningVi ? b.meaningVi.length : 0;
-             return defB - defA;
+          const exDiff = b.examples.length - a.examples.length;
+          if (exDiff !== 0) return exDiff;
+          const defA = a.meaningVi ? a.meaningVi.length : 0;
+          const defB = b.meaningVi ? b.meaningVi.length : 0;
+          return defB - defA;
         });
-
-        // Chọn ứng viên tốt nhất (Candidate số 0)
         entry = candidates[0];
       }
 
-      // 2. Fuzzy Search (Chỉ chạy nếu Exact match thất bại)
       if (!entry) {
-        const rows = await prisma.$queryRaw<
-          Array<{
-            id: string;
-            lemma: string;
-            reading: string | null;
-            romaji: string | null;
-            posTag: string;
-            meaningVi: string | null;
-            score: number;
-          }>
-        >(Prisma.sql`
-          SELECT
-            id, lemma, reading, romaji, "posTag", "meaningVi",
-            GREATEST(
-              similarity(lemma, ${text}),
-              similarity(COALESCE(reading, ''), ${text}),
-              similarity(COALESCE(romaji, ''), ${romajiInput ? textLower : text})
-            ) AS score
+        const rows = await prisma.$queryRaw<Array<{ id: string; lemma: string; score: number }>>(Prisma.sql`
+          SELECT id, lemma, GREATEST(similarity(lemma, ${text}), similarity(COALESCE(reading, ''), ${text})) AS score
           FROM "DictionaryEntry"
-          WHERE lang='ja'
-            AND (
-              lemma % ${text}
-              OR COALESCE(reading,'') % ${text}
-              OR COALESCE(romaji,'') % ${romajiInput ? textLower : text}
-            )
-          ORDER BY score DESC
-          LIMIT 1;
+          WHERE lang='ja' AND (lemma % ${text} OR COALESCE(reading,'') % ${text})
+          ORDER BY score DESC LIMIT 1;
         `);
 
         if (rows.length > 0 && rows[0].score >= 0.35) {
@@ -164,52 +119,56 @@ export async function POST(req: Request) {
       }
     }
 
-    // ==========================================
-    // 🛑 KẾT QUẢ KHÔNG TÌM THẤY
-    // ==========================================
     if (!entry) {
-      const payload = { success: false, error: "NOT_FOUND" };
-      await setCache(cacheKey, payload, 30);
-      return NextResponse.json(payload, { status: 404 });
+      return NextResponse.json({ success: false, error: "NOT_FOUND" }, { status: 404 });
     }
 
     // ==========================================
-    // 🔗 LẤY TỪ LIÊN QUAN
+    // 🔗 LẤY TỪ LIÊN QUAN (ĐÃ FIX)
     // ==========================================
-    const relatedRows = await prisma.dictionaryRelation.findMany({
-      where: { fromId: entry.id, type: "related" },
-      take: 8,
-      orderBy: { createdAt: "desc" },
-      include: {
-        to: {
-          select: {
-            id: true,
-            lemma: true,
-            reading: true,
-            romaji: true,
-            posTag: true,
-            meaningVi: true,
-          },
-        },
-      },
+    
+    // 1. Lấy quan hệ Xuôi (Từ này trỏ đến từ khác) - Bỏ lọc type cứng
+    const outgoing = await prisma.dictionaryRelation.findMany({
+      where: { fromId: entry.id },
+      take: 10,
+      include: { to: true }, // Lấy thông tin từ đích
     });
 
-    const relatedWords: RelatedWordItem[] = relatedRows
-      .map((r) => r.to)
-      .filter(Boolean)
-      .map((to) => ({
-        id: to.id,
-        lemma: to.lemma,
-        reading: to.reading ?? "",
-        romaji: (to.romaji ?? "").trim() || (to.reading ? wanakana.toRomaji(to.reading) : ""),
-        posTag: to.posTag,
-        meaningVi: to.meaningVi ?? "",
-      }));
+    // 2. Lấy quan hệ Ngược (Từ khác trỏ đến từ này) - Bỏ lọc type cứng
+    const incoming = await prisma.dictionaryRelation.findMany({
+      where: { toId: entry.id },
+      take: 10,
+      include: { from: true }, // Lấy thông tin từ nguồn
+    });
 
-    // Chuẩn hóa dữ liệu trả về
-    const romaji =
-      (entry.romaji ?? "").trim() || (entry.reading ? wanakana.toRomaji(entry.reading) : "");
+    // 3. Gộp và Map dữ liệu
+    // Chúng ta cần lấy đối tượng "DictionaryEntry" từ cả 2 chiều
+    const rawRelated = [
+      ...outgoing.map(r => ({ ...r.to, relationType: r.type })),   // Lấy 'to'
+      ...incoming.map(r => ({ ...r.from, relationType: r.type }))  // Lấy 'from'
+    ];
 
+    // 4. Lọc trùng lặp (Deduplicate) theo ID và lọc chính nó
+    const uniqueRelated = rawRelated.filter((item, index, self) => 
+      index === self.findIndex((t) => t.id === item.id) && item.id !== entry?.id
+    );
+
+    // 5. Format dữ liệu trả về chuẩn Frontend
+    const relatedWords: RelatedWordItem[] = uniqueRelated.map((item) => ({
+      id: item.id,
+      lemma: item.lemma,
+      reading: item.reading ?? "",
+      romaji: (item.romaji ?? "").trim() || (item.reading ? wanakana.toRomaji(item.reading) : ""),
+      posTag: item.posTag,
+      meaningVi: item.meaningVi ?? "",
+      relationType: item.relationType // Trả thêm cái này nếu muốn hiển thị (trái nghĩa/đồng nghĩa)
+    }));
+
+    // ==========================================
+    // 🏁 TRẢ KẾT QUẢ
+    // ==========================================
+
+    const romaji = (entry.romaji ?? "").trim() || (entry.reading ? wanakana.toRomaji(entry.reading) : "");
     const pos = mapPosFromTags(entry.posTag);
 
     const examples = (entry.examples ?? []).slice(0, 3).map((ex) => ({
@@ -232,7 +191,7 @@ export async function POST(req: Request) {
       },
       examples,
       spellcheck,
-      relatedWords,
+      relatedWords, // ✅ Đã có dữ liệu chuẩn
     };
 
     await setCache(cacheKey, result, 1800);
