@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 export async function POST(req: Request) {
   try {
@@ -22,10 +22,9 @@ export async function POST(req: Request) {
     3. Tương lai: ${cards[2].nameVi} (${cards[2].name}) - Ý nghĩa: ${cards[2].meaning_upright}
 
     **Yêu cầu:**
-    - Xâu chuỗi 3 lá bài thành một câu chuyện liền mạch liên quan đến câu hỏi.
-    - Phân tích sự chuyển biến từ quá khứ đến tương lai.
-    - Đưa ra một lời khuyên hành động cụ thể (Actionable Advice).
-    - Định dạng Markdown. Dùng in đậm cho các từ khóa quan trọng.
+    - Không cần nhắc lại tên của 3 lá bài đã cho ở trên.
+    - Tập trung vào việc liên kết ý nghĩa của các lá bài với câu hỏi đưa ra và đưa ra câu trả lời ngắn ngọn nhất.
+    - Trả lời bằng tóm tắt câu trả lời của 3 lá bài 1 cách chi tiết và đưa ra lời khuyên cụ thể và nhanh chóng 1 cách rõ ràng.
     `;
 
     const result = await model.generateContent(prompt);

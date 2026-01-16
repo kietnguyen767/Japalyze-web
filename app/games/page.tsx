@@ -1,8 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
+import { useAuth } from '@/context/AuthContext';
 import { 
   Gamepad2, Ghost, Keyboard, Sparkles, Play, 
   Zap, Star, Moon, Swords, Flower2
@@ -42,6 +44,17 @@ const GAMES = [
 ];
 
 export default function GamesPage() {
+  const router = useRouter();
+  const { user } = useAuth();
+
+  const handlePlayGame = (href: string) => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    router.push(href);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <Navbar />
@@ -128,11 +141,15 @@ export default function GamesPage() {
 
                   <Link 
                     href={game.href}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handlePlayGame(game.href);
+                    }}
                     className={`
                       px-8 py-3 rounded-xl font-bold text-white shadow-lg 
                       flex items-center gap-2 transition-all transform active:scale-95
                       bg-gradient-to-r ${game.color} ${game.shadow}
-                      group-hover:brightness-110
+                      group-hover:brightness-110 cursor-pointer
                     `}
                   >
                     <Play size={20} fill="currentColor" /> Chơi Ngay
