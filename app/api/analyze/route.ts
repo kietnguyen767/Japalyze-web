@@ -1,13 +1,12 @@
-// app/api/analyze/route.ts
 import { NextResponse } from "next/server";
-import { openai } from "@/lib/openai";
 import prisma from "@/lib/prisma";
-import { getUserId } from "@/lib/get-user"; // Hàm lấy userId từ session của bạn
+import { getUserId } from "@/lib/get-user";
 import { getCache, setCache } from "@/lib/redis";
 import { createHash } from "node:crypto";
+import { geminiModel } from "@/lib/gemini";
 
 export const dynamic = "force-dynamic";
-export const runtime = "nodejs"; // Dùng nodejs runtime để chạy prisma/openai ổn định
+export const runtime = "nodejs";
 
 type AnalyzeBody = {
   text: string;
@@ -22,9 +21,13 @@ function sha1(input: string) {
 
 export async function POST(req: Request) {
   try {
+    // 1. Kiểm tra đăng nhập
     const userId = await getUserId();
     if (!userId) {
-      return NextResponse.json({ error: "Vui lòng đăng nhập để sử dụng tính năng này." }, { status: 401 });
+      return NextResponse.json(
+        { error: "Vui lòng đăng nhập để sử dụng tính năng này." },
+        { status: 401 }
+      );
     }
 
     const body = (await req.json()) as AnalyzeBody;
@@ -32,7 +35,7 @@ export async function POST(req: Request) {
     
     if (!text) return NextResponse.json({ error: "No text provided" }, { status: 400 });
 
-    // 1. Kiểm tra QUOTA (Giới hạn 10 câu)
+    // 2. Kiểm tra QUOTA (Giới hạn 10 câu cho User thường)
     const user = await prisma.user.findUnique({ 
         where: { id: userId },
         select: { isPremium: true, analysisUsage: true } 
@@ -48,50 +51,82 @@ export async function POST(req: Request) {
       }, { status: 403 });
     }
 
-    // 2. Kiểm tra Cache (Nếu đã phân tích câu này rồi thì trả về luôn, KHÔNG TÍNH vào usage)
-    const cacheKey = `analyze:${sha1(text)}`;
+    // 3. Kiểm tra Cache
+    const cacheKey = `analyze:gemini:${sha1(text)}`;
     const cachedData = await getCache(cacheKey);
+    
     if (cachedData) {
-      return NextResponse.json({ success: true, data: cachedData, cached: true, usageLeft: user.isPremium ? 'Unlimited' : 10 - user.analysisUsage });
+      return NextResponse.json({ 
+        success: true, 
+        data: cachedData, 
+        cached: true, 
+        usageLeft: user.isPremium ? 'Unlimited' : 10 - user.analysisUsage 
+      });
     }
 
-    // 3. Gọi OpenAI (Phần tốn tiền)
+    // 4. Gọi Google Gemini
+    // 👇👇👇 PHẦN QUAN TRỌNG: PROMPT ĐÃ ĐƯỢC CHỈNH SỬA 👇👇👇
     const prompt = `
-      Analyze the following Japanese sentence for a Vietnamese learner.
-      Original: "${text}"
-      Translation: "${body.translatedText}"
+      Analyze the following Japanese sentence deeply for a Vietnamese learner.
+      Original Text: "${text}"
+      Context/Translation: "${body.translatedText}"
 
-      Output ONLY valid JSON with this structure:
+      Please return a STRICT JSON object with this exact structure:
       {
         "sentence_structure": [
-          { "text": "word/part", "romaji": "...", "role": "Subject/Verb/Particle...", "meaning": "...", "explanation": "Grammar explanation" }
+          { 
+            "text": "word (kanji)", 
+            "romaji": "reading", 
+            "role": "Part of Speech (Verb/Noun/Particle...)", 
+            "meaning": "Meaning in Vietnamese", 
+            "explanation": "Brief grammatical function" 
+          }
         ],
         "grammar_points": [
-          { "point": "Grammar Name", "explanation": "Detailed explanation why it is used here" }
+          { 
+            "point": "Grammar Formula (e.g. Danh từ + の + Danh từ)", 
+            "explanation": "Short definition. Example: [Short Example]. (Keep it concise like: 'danh từ trước bổ nghĩa cho danh từ sau. Ví dụ: AのB = B của A')" 
+          }
         ],
-        "nuance": "Explain the tone (polite/casual) and nuance.",
-        "corrections": "If the original sentence is unnatural or wrong, fix it. Else null.",
+        "nuance": "Explain the tone (polite/casual/formal) and nuance in Vietnamese.",
+        "corrections": "If the original sentence is unnatural or wrong, fix it. Else return null.",
         "alternatives": [
-          { "text": "...", "tone": "Polite/Casual", "explanation": "..." }
+          { 
+            "text": "Similar Japanese sentence", 
+            "tone": "Formal/Casual", 
+            "explanation": "Meaning in Vietnamese" 
+          }
         ]
       }
+
+      IMPORTANT REQUIREMENTS:
+      1. All explanations must be in VIETNAMESE.
+      2. **Grammar Points Style**: Must be concise. Format: Formula + Short Usage + Short Example.
+         Example output: 
+         - Point: "Danh từ + の + Danh từ"
+         - Explanation: "Dùng để chỉ sự sở hữu hoặc bổ nghĩa. Ví dụ: 私の本 = Sách của tôi."
+      3. Do NOT wrap the output in markdown blocks (like \`\`\`json). Just return the raw JSON string.
     `;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4-turbo-preview", // Hoặc gpt-3.5-turbo-0125 (rẻ hơn)
-      messages: [{ role: "system", content: "You are a Japanese grammar expert." }, { role: "user", content: prompt }],
-      response_format: { type: "json_object" }, // Bắt buộc trả về JSON
-    });
+    const result = await geminiModel.generateContent(prompt);
+    const response = await result.response;
+    let textResponse = response.text();
 
-    const resultRaw = response.choices[0].message.content;
-    if (!resultRaw) throw new Error("No analysis returned");
+    // Làm sạch JSON
+    textResponse = textResponse.replace(/```json/g, "").replace(/```/g, "").trim();
     
-    const analysisData = JSON.parse(resultRaw);
+    let analysisData;
+    try {
+        analysisData = JSON.parse(textResponse);
+    } catch (e) {
+        console.error("Gemini JSON Parse Error:", textResponse);
+        throw new Error("AI trả về định dạng không hợp lệ.");
+    }
 
-    // 4. Lưu Cache (để lần sau không tốn tiền)
-    await setCache(cacheKey, analysisData, 86400 * 7); // Cache 7 ngày
+    // 5. Lưu Cache (7 ngày)
+    await setCache(cacheKey, analysisData, 86400 * 7); 
 
-    // 5. Tăng biến đếm Usage (Trừ lượt dùng)
+    // 6. Tăng biến đếm Usage
     if (!user.isPremium) {
       await prisma.user.update({
         where: { id: userId },

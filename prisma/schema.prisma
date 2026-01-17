@@ -159,16 +159,29 @@ model Like {
 
   @@unique([postId, userId])
 }
-// Bảng lưu trữ thông tin các lá bài Tarot (Dữ liệu tĩnh)
+// Bảng lưu thông tin lá bài (Dữ liệu tĩnh)
 model TarotCard {
-  id              String   @id // Ví dụ: "major-0", "cups-3"
-  name            String   // Tên tiếng Anh (The Fool)
-  nameVi          String   // Tên tiếng Việt (Chàng Khờ)
-  image           String   // URL ảnh
-  keywords        String[] // Từ khóa: ["Tự do", "Khởi đầu"]
-  meaningUpright  String   // Ý nghĩa xuôi (để hiển thị cho người chơi)
+  id             String   @id // VD: "major-0"
+  name           String   // Tên tiếng Anh
+  nameVi         String   // Tên tiếng Việt
+  image          String   // Đường dẫn ảnh local: "/images/tarot/major-0.jpg"
+  keywords       String[] // Từ khóa
+  meaningUpright String   // Ý nghĩa xuôi (AI sẽ đọc cái này)
   
-  // Các trường phụ (có thể để null nếu lười nhập)
+  // Các trường phụ
   meaningReversed String?  
   element         String?  
+}
+
+model ReadingArticle {
+  id             String   @id @default(uuid())
+  title          String
+  excerpt        String?
+  content        String   // Nội dung Nhật (có format Kanji[furi])
+  contentRomaji  String?  // <--- THÊM MỚI: Nội dung Romaji
+  contentMeaning String?  // <--- THÊM MỚI: Dịch nghĩa tiếng Việt
+  level          String
+  topic          String?
+  image          String?
+  createdAt      DateTime @default(now())
 }

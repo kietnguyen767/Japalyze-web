@@ -1,43 +1,48 @@
-// app/api/translate/route.ts
 import { NextResponse } from "next/server";
 import { getCache, setCache } from "@/lib/redis";
 import prisma from "@/lib/prisma";
 import { getUserId } from "@/lib/get-user";
-import { openai } from "@/lib/openai";
 import { createHash } from "node:crypto";
+import { geminiModel } from "@/lib/gemini"; // Import model Gemini đã cấu hình
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 type TranslateBody = {
   text: string;
-  source?: string; // 'ja'
-  target?: string; // 'vi'
+  source?: string;
+  target?: string;
 };
 
+// Hàm tạo hash để làm key cho Redis
 function sha1(input: string) {
   return createHash("sha1").update(input).digest("hex");
 }
 
+// Chuẩn hóa mã ngôn ngữ
 function normalizeLang(code: string) {
   const c = (code || "").trim().toLowerCase();
   return c || "ja";
 }
 
-function buildInstructions(source: string, target: string) {
-  return [
-    "Bạn là chuyên gia dịch thuật phong cách học thuật (academic).",
-    `Dịch từ ${source} sang ${target}.`,
-    "Yêu cầu:",
-    "- Ưu tiên chính xác ngữ nghĩa, đúng ngữ pháp, câu văn tự nhiên.",
-    "- Giữ nguyên tên riêng (nếu là tên người/địa danh/tổ chức).",
-    "- Giữ nguyên ký hiệu, số liệu, dấu câu, xuống dòng, bullet, trích dẫn.",
-    "- Nếu có thuật ngữ chuyên môn, chọn từ tương đương chuẩn; nếu cần, dùng cách diễn đạt rõ ràng.",
-    "- Không thêm thông tin không có trong văn bản gốc.",
-    "Chỉ trả về bản dịch, không giải thích.",
-  ].join("\n");
+// Prompt dành cho Gemini: Chỉ tập trung dịch chuẩn ngữ pháp
+function buildGeminiPrompt(text: string, source: string, target: string) {
+  return `
+    Translate the following text from ${source} to ${target}.
+    
+    Requirements:
+    - Focus strictly on grammatical correctness and accuracy.
+    - Maintain a natural flow but keep an academic/formal tone suitable for learning.
+    - Do NOT add explanations, notes, or extra text.
+    - Keep formatting (bullets, lines, punctuation) intact.
+    - Only return the translated text.
+
+    Text to translate:
+    "${text}"
+  `;
 }
 
+// Hàm fallback: Dịch bằng MyMemory (Miễn phí)
 async function translateWithMyMemory(text: string, source: string, target: string) {
   const apiUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(
     text
@@ -65,6 +70,7 @@ export async function POST(request: Request) {
     const source = normalizeLang(body.source ?? "ja");
     const target = normalizeLang(body.target ?? "vi");
 
+    // Validate Input
     if (!text) {
       return NextResponse.json({ error: "Missing required field: text" }, { status: 400 });
     }
@@ -73,9 +79,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Text too long (max 8000 characters)" }, { status: 400 });
     }
 
-    // 1) Redis cache (24h)
-    const cacheKey = `translation:${sha1(text)}:${source}:${target}`;
+    // 1) Kiểm tra Redis Cache (Lưu trong 24h)
+    const cacheKey = `translation:gemini:${sha1(text)}:${source}:${target}`;
     const cachedValue = await getCache<string>(cacheKey);
+    
     if (cachedValue) {
       return NextResponse.json({
         success: true,
@@ -86,46 +93,41 @@ export async function POST(request: Request) {
     }
 
     let finalTranslation = "";
-    let provider: "OpenAI" | "MyMemory" = "OpenAI";
+    let provider: "Gemini" | "MyMemory" = "Gemini";
 
-    // 2) Try OpenAI first (academic)
+    // 2) Thử dịch bằng Google Gemini trước
     try {
-      if (!process.env.OPENAI_API_KEY) {
-        throw new Error("Missing OPENAI_API_KEY");
-      }
-
-      const model = process.env.OPENAI_MODEL || "gpt-4.1";
-      const instructions = buildInstructions(source, target);
-
-      const response = await openai.responses.create({
-        model,
-        instructions,
-        input: text,
-        store: false,
-      });
-
-      finalTranslation = (response.output_text || "").trim();
+      const prompt = buildGeminiPrompt(text, source, target);
+      
+      // Gọi Gemini API
+      const result = await geminiModel.generateContent(prompt);
+      const response = await result.response;
+      
+      finalTranslation = response.text().trim();
+      
       if (!finalTranslation) {
-        throw new Error("Empty translation from OpenAI");
+        throw new Error("Empty translation from Gemini");
       }
-    } catch (err: any) {
-      // 3) Fallback MyMemory nếu OpenAI lỗi (quota/rate limit/network/...)
-      const status = err?.status || err?.response?.status;
 
-      console.error("OpenAI translate failed -> fallback MyMemory", {
-        status,
-        code: err?.code,
+    } catch (err: any) {
+      // 3) Fallback sang MyMemory nếu Gemini lỗi (hết quota, mạng lỗi...)
+      console.error("Gemini translate failed -> fallback MyMemory", {
         message: err?.message,
       });
 
       provider = "MyMemory";
-      finalTranslation = await translateWithMyMemory(text, source, target);
+      try {
+        finalTranslation = await translateWithMyMemory(text, source, target);
+      } catch (fallbackErr) {
+        console.error("MyMemory fallback also failed", fallbackErr);
+        return NextResponse.json({ error: "Translation services unavailable" }, { status: 503 });
+      }
     }
 
-    // 4) Cache 24h
+    // 4) Lưu vào Cache (24h)
     await setCache(cacheKey, finalTranslation, 86400);
 
-    // 5) Save history into Postgres (async)
+    // 5) Lưu lịch sử vào Postgres (Chạy ngầm, không await để phản hồi nhanh)
     const userId = await getUserId();
     if (userId) {
       prisma.translationHistory
@@ -139,15 +141,15 @@ export async function POST(request: Request) {
         .catch((err) => console.error("Lỗi lưu lịch sử:", err));
     }
 
-    // 6) Return
+    // 6) Trả về kết quả
     return NextResponse.json({
       success: true,
       translation: finalTranslation,
       cached: false,
       provider,
-      // optional: báo cho UI biết đang fallback
-      degraded: provider === "MyMemory",
+      degraded: provider === "MyMemory", // Báo cho UI biết nếu phải dùng fallback
     });
+
   } catch (error: any) {
     console.error("Translation error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

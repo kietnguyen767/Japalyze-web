@@ -39,7 +39,7 @@ type WordDetailResponse = {
 
 type TranslateApiResponse = {
   translation?: string;
-  provider?: 'OpenAI' | 'MyMemory' | 'Redis' | string;
+  provider?: 'Gemini' | 'MyMemory' | 'Redis' | string;
   cached?: boolean;
   degraded?: boolean;
   error?: string;
@@ -68,7 +68,7 @@ export default function TranslationPanel() {
   const [sourceLanguage, setSourceLanguage] = useState<'ja' | 'vi'>('ja');
   const [targetLanguage, setTargetLanguage] = useState<'ja' | 'vi'>('vi');
 
-  const [translateProvider, setTranslateProvider] = useState<'OpenAI' | 'MyMemory' | 'Redis' | ''>('');
+  const [translateProvider, setTranslateProvider] = useState<'Gemini' | 'MyMemory' | 'Redis' | ''>('');
   const [translateCached, setTranslateCached] = useState(false);
   const [translateDegraded, setTranslateDegraded] = useState(false);
 
@@ -100,7 +100,7 @@ export default function TranslationPanel() {
     }
   }, [inputText]);
 
-  const getLanguageName = (lang: string) => (lang === 'ja' ? 'Tiếng Nhật (日本語)' : 'Tiếng Việt');
+  const getLanguageName = (lang: string) => (lang === 'ja' ? 'Tiếng Nhật' : 'Tiếng Việt');
 
   const resetTranslateMeta = () => {
     setTranslateProvider('');
@@ -404,19 +404,19 @@ export default function TranslationPanel() {
   };
 
   const renderTranslateBadge = () => {
-    if (!translatedText || !translateProvider) return null;
-    const cls =
-      translateProvider === 'OpenAI'
-        ? 'bg-green-50 text-green-700 border-green-200'
-        : translateProvider === 'MyMemory'
-          ? 'bg-amber-50 text-amber-700 border-amber-200'
-          : 'bg-slate-50 text-slate-700 border-slate-200';
-    return (
-      <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${cls}`}>
-        {translateProvider} {translateCached ? '• Cache' : ''}
-      </span>
-    );
-  };
+  if (!translatedText || !translateProvider) return null;
+  const cls =
+    translateProvider === 'Gemini' // Đổi OpenAI -> Gemini
+      ? 'bg-blue-50 text-blue-700 border-blue-200' // Đổi màu xanh Blue cho Gemini
+      : translateProvider === 'MyMemory'
+        ? 'bg-amber-50 text-amber-700 border-amber-200'
+        : 'bg-slate-50 text-slate-700 border-slate-200';
+  return (
+    <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${cls}`}>
+      {translateProvider} {translateCached ? '• Cache' : ''}
+    </span>
+  );
+};
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6">
@@ -551,7 +551,7 @@ export default function TranslationPanel() {
                 onClick={handleAnalyze}
                 className="flex items-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-indigo-200 hover:scale-105 hover:shadow-xl transition-all"
             >
-                <Sparkles size={18} /> Phân tích ngữ pháp chuyên sâu (AI)
+                <Sparkles size={18} /> Phân tích ngữ pháp chuyên sâu
             </button>
         </div>
       )}

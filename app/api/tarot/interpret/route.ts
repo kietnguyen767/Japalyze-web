@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     2. Hiện tại: ${cards[1].nameVi} (${cards[1].name}) - Ý nghĩa: ${cards[1].meaning_upright}
     3. Tương lai: ${cards[2].nameVi} (${cards[2].name}) - Ý nghĩa: ${cards[2].meaning_upright}
 
-    **Yêu cầu:**
+    Yêu cầu:
     - Không cần nhắc lại tên của 3 lá bài đã cho ở trên.
     - Tập trung vào việc liên kết ý nghĩa của các lá bài với câu hỏi đưa ra và đưa ra câu trả lời ngắn ngọn nhất.
     - Trả lời bằng tóm tắt câu trả lời của 3 lá bài 1 cách chi tiết và đưa ra lời khuyên cụ thể và nhanh chóng 1 cách rõ ràng.
