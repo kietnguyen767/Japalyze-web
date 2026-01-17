@@ -222,23 +222,37 @@ export default function AdminDashboard() {
 
   // --- READING ACTIONS (Updated) ---
   
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Code trong Admin Dashboard (Giữ nguyên)
+const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
     setIsUploading(true);
+
     try {
         const formData = new FormData();
         formData.append("file", file);
-        const res = await fetch("/api/upload", { method: "POST", body: formData });
+
+        // Gọi API vừa sửa ở trên
+        const res = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+        });
+
         if (!res.ok) throw new Error("Upload thất bại");
+
         const data = await res.json();
+        
+        // data.url bây giờ là link Cloudinary (https://res.cloudinary.com/...)
+        // Chứ không phải link localhost nữa
         setNewArticle({ ...newArticle, image: data.url });
+        
     } catch (error) {
         alert("Lỗi upload ảnh!");
+        console.error(error);
     } finally {
         setIsUploading(false);
     }
-  };
+};
 
   const handleSaveArticle = async (e: React.FormEvent) => {
       e.preventDefault();

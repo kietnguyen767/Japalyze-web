@@ -19,6 +19,7 @@
     "@upstash/redis": "^1.36.0",
     "ai": "^6.0.6",
     "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.9.0",
     "dotenv": "^17.2.3",
     "enhanced-resolve": "^5.18.3",
     "framer-motion": "^12.26.2",
