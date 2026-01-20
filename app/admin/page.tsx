@@ -127,16 +127,16 @@ export default function AdminDashboard() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const resUsers = await fetch('/api/admin/users');
+        const resUsers = await fetch('/api/admin/users', { credentials: 'include' });
         if (resUsers.ok) setUsers((await resUsers.json()).users || []);
 
-        const resPosts = await fetch('/api/community/posts');
+        const resPosts = await fetch('/api/community/posts', { credentials: 'include' });
         if (resPosts.ok) {
             const data = await resPosts.json();
             setPosts(Array.isArray(data) ? data : []);
         }
 
-        const resArticles = await fetch('/api/admin/reading');
+        const resArticles = await fetch('/api/admin/reading', { credentials: 'include' });
         if (resArticles.ok) setArticles(await resArticles.json());
 
       } catch (error) {
@@ -157,7 +157,8 @@ export default function AdminDashboard() {
       const res = await fetch('/api/admin/users', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email }),
+        credentials: 'include'
       });
       if (!res.ok) throw new Error("Lỗi xóa");
     } catch (error) {
@@ -175,7 +176,8 @@ export default function AdminDashboard() {
       const res = await fetch('/api/admin/users', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: user.email, role: newRole })
+        body: JSON.stringify({ email: user.email, role: newRole }),
+        credentials: 'include'
       });
       if (!res.ok) throw new Error("Lỗi update");
     } catch (error) {
@@ -193,7 +195,8 @@ export default function AdminDashboard() {
       const res = await fetch('/api/admin/users', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: user.email, type: 'premium', value: newStatus })
+        body: JSON.stringify({ email: user.email, type: 'premium', value: newStatus }),
+        credentials: 'include'
       });
       if (!res.ok) throw new Error("Lỗi update");
     } catch (error) {
@@ -211,7 +214,8 @@ export default function AdminDashboard() {
         const res = await fetch('/api/admin/posts', {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ postId })
+            body: JSON.stringify({ postId }),
+            credentials: 'include'
         });
         if (!res.ok) throw new Error("Lỗi xóa post");
     } catch (error) {
@@ -236,6 +240,7 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const res = await fetch("/api/upload", {
             method: "POST",
             body: formData,
+            credentials: 'include'
         });
 
         if (!res.ok) throw new Error("Upload thất bại");
@@ -265,7 +270,8 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
           const res = await fetch('/api/admin/reading', {
               method: method,
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(body)
+              body: JSON.stringify(body),
+              credentials: 'include'
           });
           
           if (res.ok) {
@@ -325,7 +331,8 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       try {
           await fetch('/api/admin/reading', {
               method: 'DELETE',
-              body: JSON.stringify({ id })
+              body: JSON.stringify({ id }),
+              credentials: 'include'
           });
       } catch (error) {
           setArticles(prev);
@@ -339,7 +346,7 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setShowProgressModal(true);
     setUserProgress([]);
     try {
-      const res = await fetch(`/api/admin/users/progress?email=${email}`);
+      const res = await fetch(`/api/admin/users/progress?email=${email}`, { credentials: 'include' });
       const data = await res.json();
       setUserProgress(data.completed || []);
     } catch (error) {
@@ -363,7 +370,8 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
           email: selectedUserEmail,
           lessonId,
           action: currentStatus ? 'remove' : 'add'
-        })
+        }),
+        credentials: 'include'
       });
       if (!res.ok) throw new Error("API Error");
     } catch (error) {
