@@ -31,7 +31,7 @@ type SuggestItem = {
 const NAV_ITEMS = [
   { href: '/translate', label: 'Dịch thuật', icon: Languages },    // 1. Công cụ chính
   { href: '/flashcards', label: 'Flashcards', icon: BookOpen }, 
-  { href: '/roadmap', label: 'Lộ trình JLPT', icon: Map },   // 2. Học từ vựng
+  { href: '/roadmap', label: 'Lộ trình JLPT', icon: Map },   
   { href: '/exercises', label: 'Bài tập', icon: ClipboardList },   // 3. ✅ Đã khôi phục       // 4. Giao lưu
   { href: '/reading', label: 'Luyện đọc', icon: BookOpenText },    // 5. Kỹ năng đọc
   { href: '/tests', label: 'Thi thử', icon: FileText },            // 6. Luyện đề JLPT
