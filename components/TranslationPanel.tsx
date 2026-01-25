@@ -385,7 +385,6 @@ export default function TranslationPanel() {
         example: `(Từ Translate)`,
       });
       setSaveStatus('success');
-      alert('✅ Lưu thẻ thành công!');
       setTimeout(() => {
         setShowSaveModal(false);
         setInputText('');
