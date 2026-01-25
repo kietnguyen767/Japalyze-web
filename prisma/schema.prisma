@@ -27,6 +27,7 @@ model User {
   payments           Payment[]
   posts              Post[]
   translationHistory TranslationHistory[]
+  testResults TestResult[]
 }
 
 model Payment {
@@ -184,4 +185,46 @@ model ReadingArticle {
   topic          String?
   image          String?
   createdAt      DateTime @default(now())
+}
+
+// --- MOCK TEST MODELS (THI THỬ) ---
+
+model MockTest {
+  id          String     @id @default(uuid())
+  title       String
+  level       String     // N5, N4, N3, N2, N1
+  duration    Int        // Thời gian làm bài (phút)
+  isPremium   Boolean    @default(false)
+  questions   Question[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  // Quan hệ lưu kết quả thi của user (nếu muốn lưu lịch sử sau này)
+  testResults TestResult[]
+}
+
+model Question {
+  id          String   @id @default(uuid())
+  content     String   // Nội dung câu hỏi
+  type        String   // vocab, grammar, reading
+  options     String[] // Mảng 4 đáp án [A, B, C, D]
+  correctAnswer Int    // Index đáp án đúng (0, 1, 2, 3)
+  explanation String?  // Giải thích chi tiết
+  
+  testId      String
+  test        MockTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+}
+
+model TestResult {
+  id          String   @id @default(uuid())
+  score       Int      // Điểm số (0-100 hoặc số câu đúng)
+  totalQuestions Int
+  answers     Json     // Lưu bài làm của user: { questionId: selectedIndex }
+  completedAt DateTime @default(now())
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  testId      String
+  test        MockTest @relation(fields: [testId], references: [id], onDelete: Cascade)
 }
