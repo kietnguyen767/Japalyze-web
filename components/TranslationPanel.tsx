@@ -365,8 +365,8 @@ export default function TranslationPanel() {
     }
   };
 
-  const handleSaveToDeck = async () => {
-    if (!user || !inputText.trim() || !translatedText.trim()) {
+  const handleSaveToDeck = async (editedFront: string, editedBack: string) => {
+    if (!user || !editedFront.trim() || !editedBack.trim()) {
       alert('❌ Vui lòng nhập dữ liệu đầy đủ');
       return;
     }
@@ -380,8 +380,8 @@ export default function TranslationPanel() {
       }
       if (!targetDeckId) return alert('❌ Vui lòng chọn hoặc tạo bộ thẻ!');
       await FlashcardService.addCardToDeck(targetDeckId, {
-        front: inputText.trim(),
-        back: translatedText.trim(),
+        front: editedFront.trim(),
+        back: editedBack.trim(),
         example: `(Từ Translate)`,
       });
       setSaveStatus('success');
