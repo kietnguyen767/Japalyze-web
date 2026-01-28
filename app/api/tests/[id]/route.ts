@@ -23,6 +23,8 @@ export async function GET(
             content: true,
             type: true,
             options: true,
+            imageUrl: true, 
+            audioUrl: true,
             correctAnswer: true,
             explanation: true
           }

@@ -30,8 +30,7 @@ type SuggestItem = {
 // ✅ CẤU HÌNH MENU: Đã thêm lại "Bài tập"
 const NAV_ITEMS = [
   { href: '/translate', label: 'Dịch thuật', icon: Languages },    // 1. Công cụ chính
-  { href: '/flashcards', label: 'Flashcards', icon: BookOpen }, 
-  { href: '/roadmap', label: 'Lộ trình JLPT', icon: Map },   
+  { href: '/flashcards', label: 'Flashcards', icon: BookOpen },   
   { href: '/exercises', label: 'Bài tập', icon: ClipboardList },   // 3. ✅ Đã khôi phục       // 4. Giao lưu
   { href: '/reading', label: 'Luyện đọc', icon: BookOpenText },    // 5. Kỹ năng đọc
   { href: '/tests', label: 'Thi thử', icon: FileText },            // 6. Luyện đề JLPT
@@ -49,7 +48,7 @@ function getCookie(name: string) {
 }
 
 export default function Navbar() {
-  const { user, logout, refreshProfile } = useAuth(); 
+  const { user, logout, refreshUser } = useAuth(); 
   const router = useRouter();
   
   // --- STATES ---
@@ -67,7 +66,7 @@ export default function Navbar() {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false); 
 
   useEffect(() => {
-    if (user) refreshProfile();
+    if (user) refreshUser();
   }, []);
 
   useEffect(() => {

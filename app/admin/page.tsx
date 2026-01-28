@@ -32,6 +32,8 @@ export type QuestionInput = {
   options: [string, string, string, string];
   correctAnswer: number;
   explanation: string;
+  imageUrl?: string; 
+  audioUrl?: string;
 };
 
 export type MockTest = {

@@ -205,7 +205,7 @@ export default function ReadingPracticePage() {
   if (!article) return <div className="h-screen flex items-center justify-center text-slate-500">Bài đọc không tồn tại.</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
       <Navbar />
 
       <div className="flex-1 max-w-4xl mx-auto w-full p-4 md:p-8 flex flex-col">

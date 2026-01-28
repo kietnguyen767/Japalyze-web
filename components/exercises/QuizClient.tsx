@@ -1,10 +1,10 @@
-//// components/exercises/QuizClient.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, CheckCircle, XCircle, RefreshCw, Trophy, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, RefreshCw, Trophy, AlertTriangle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation'; // 👈 Import router
 
 // Helper trộn mảng
 function shuffleArray(array: any[]) {
@@ -17,13 +17,17 @@ function shuffleArray(array: any[]) {
 }
 
 type QuizClientProps = {
-  data: any[];       
+  data: any[];
   title: string;
   lessonId: string;
+  isRoadmapMode?: boolean; // 👈 Thêm
+  questId?: string;        // 👈 Thêm
 };
 
-export default function QuizClient({ data, title, lessonId }: QuizClientProps) {
+export default function QuizClient({ data, title, lessonId, isRoadmapMode, questId }: QuizClientProps) {
   const { user } = useAuth();
+  const router = useRouter(); // 👈 Khởi tạo router
+  
   const [quizData, setQuizData] = useState<any[]>([]);
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
   const [score, setScore] = useState(0);
@@ -54,24 +58,38 @@ export default function QuizClient({ data, title, lessonId }: QuizClientProps) {
 
   const handleRestart = () => window.location.reload();
 
+  // Hàm chuyển bước tiếp theo trong lộ trình
+  const handleNextStep = () => {
+      router.push('/roadmap/n5/phase1/reading');
+  };
+
   const answeredCount = Object.keys(userAnswers).length;
   const totalCount = quizData.length;
   const isAllDone = answeredCount === totalCount && totalCount > 0;
-  const isPerfectScore = score === totalCount; // Kiểm tra điểm tuyệt đối
+  const isPerfectScore = score === totalCount; 
 
-  // === 🔥 LOGIC MỚI: CHỈ LƯU KHI ĐIỂM TUYỆT ĐỐI 🔥 ===
+  // === 🔥 LOGIC LƯU ĐIỂM (Gộp cả Roadmap và Bài tập thường) 🔥 ===
   useEffect(() => {
     if (isAllDone && isPerfectScore && user) {
-        // 👇 GỌI API MỚI
+        
+        // 1. Lưu tiến độ bài tập thường (như cũ)
         fetch('/api/exercises/progress', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ lessonId }) // Bỏ email
-        }).then(() => console.log("Đã lưu hoàn thành bài học (100% điểm)"));
-    }
-  }, [isAllDone, isPerfectScore, user, lessonId]);
+            body: JSON.stringify({ lessonId })
+        }).then(() => console.log("Đã lưu bài tập thường"));
 
-  // 🔥 TỰ ĐỘNG SCROLL LÊN TRÊN KHI HOÀN THÀNH
+        // 2. 👇 LOGIC MỚI: Lưu tiến độ Roadmap (Nếu có questId)
+        if (isRoadmapMode && questId) {
+             fetch('/api/user/complete-quest', {
+                method: 'POST',
+                body: JSON.stringify({ questId })
+             }).then(() => console.log("✅ Đã lưu Quest Roadmap"));
+        }
+    }
+  }, [isAllDone, isPerfectScore, user, lessonId, isRoadmapMode, questId]);
+
+  // Tự động scroll lên khi xong
   useEffect(() => {
     if (isAllDone) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -83,11 +101,19 @@ export default function QuizClient({ data, title, lessonId }: QuizClientProps) {
 
   return (
     <div className="max-w-3xl mx-auto pb-10">
+      
       {/* Header Sticky */}
       <div className="flex justify-between items-center mb-6 sticky top-20 z-40 backdrop-blur py-2">
-        <Link href="/exercises" className="text-slate-500 hover:text-blue-600 flex items-center gap-1 font-medium">
-          <ArrowLeft size={20} /> Thư viện
-        </Link>
+        {/* Nút Back thông minh */}
+        {isRoadmapMode ? (
+            <Link href="/roadmap/n5/phase1/practice" className="text-slate-500 hover:text-blue-600 flex items-center gap-1 font-medium">
+                <ArrowLeft size={20} /> Chọn bộ khác
+            </Link>
+        ) : (
+            <Link href="/exercises" className="text-slate-500 hover:text-blue-600 flex items-center gap-1 font-medium">
+                <ArrowLeft size={20} /> Thư viện
+            </Link>
+        )}
 
         <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-full shadow-sm border border-slate-200">
            <span className="font-bold text-slate-700 hidden sm:inline">{title}</span>
@@ -108,17 +134,27 @@ export default function QuizClient({ data, title, lessonId }: QuizClientProps) {
                </h2>
                <p className="opacity-90 mt-1">
                  {isPerfectScore 
-                    ? "Bạn đã trả lời đúng tất cả câu hỏi. Bài học đã được đánh dấu hoàn thành." 
+                    ? "Bạn đã trả lời đúng tất cả câu hỏi." 
                     : `Bạn chỉ đúng ${score}/${totalCount} câu. Hãy làm lại để đạt 100% nhé.`}
                </p>
             </div>
-            <button onClick={handleRestart} className="bg-white text-slate-800 px-5 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-slate-100 shadow-md">
-               <RefreshCw size={18}/> Làm lại ngay
-            </button>
+            
+            <div className="flex gap-3">
+                <button onClick={handleRestart} className="bg-white/20 hover:bg-white/30 text-white px-5 py-2 rounded-lg font-bold flex items-center gap-2 transition-all">
+                    <RefreshCw size={18}/> Làm lại
+                </button>
+
+                {/* 👇 NÚT TIẾP THEO (Chỉ hiện khi Roadmap + 100 điểm) */}
+                {isRoadmapMode && isPerfectScore && (
+                    <button onClick={handleNextStep} className="bg-white text-green-700 px-6 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-green-50 shadow-md animate-pulse">
+                        Bài tiếp theo <ArrowRight size={18}/>
+                    </button>
+                )}
+            </div>
          </div>
       )}
 
-      {/* Danh sách câu hỏi */}
+      {/* Danh sách câu hỏi (Giữ nguyên phần này) */}
       <div className="space-y-6">
         {quizData.map((q, index) => {
           const userAnswer = userAnswers[q.id];

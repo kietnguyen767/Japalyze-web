@@ -8,27 +8,57 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// ==========================================
+// 1. USER & AUTHENTICATION
+// ==========================================
+
 model User {
-  id                 String               @id @default(uuid())
-  email              String               @unique
-  name               String?
-  password           String?
-  avatar             String?
-  role               String               @default("user")
-  isPremium          Boolean              @default(false)
-  analysisUsage   Int      @default(0)
-  provider           String               @default("email")
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
-  comments           Comment[]
-  decks              Deck[]
-  exerciseProgress   ExerciseProgress[]
-  likes              Like[]
-  payments           Payment[]
-  posts              Post[]
-  translationHistory TranslationHistory[]
-  testResults TestResult[]
+  id                  String               @id @default(uuid())
+  email               String               @unique
+  name                String?
+  password            String?
+  avatar              String?
+  role                String               @default("user") // "admin" | "user"
+  isPremium           Boolean              @default(false)
+  analysisUsage       Int                  @default(0)
+  provider            String               @default("email")
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  // --- Relations ---
+  comments            Comment[]
+  decks               Deck[]
+  exerciseProgress    ExerciseProgress[]   // Lưu điểm số bài tập cũ
+  likes               Like[]
+  payments            Payment[]
+  posts               Post[]
+  translationHistory  TranslationHistory[]
+  testResults         TestResult[]
+
+  // --- Gamification & Roadmap Fields ---
+  onboardingCompleted Boolean              @default(false)
+  currentLevel        String?              // "N5", "N4"...
+  currentPhase        Int                  @default(1) // Giai đoạn hiện tại (1-5)
+  
+  // Quan hệ lưu danh sách các Quest đã hoàn thành
+  progress            UserProgress[]       
 }
+
+// 🔥 MODEL MỚI: Lưu tiến độ làm nhiệm vụ (Quest)
+model UserProgress {
+  id          String   @id @default(uuid())
+  userId      String
+  questId     String   // ID của nhiệm vụ (VD: 'q1_1', 'q1_2'...)
+  completedAt DateTime @default(now())
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questId]) // Đảm bảo 1 nhiệm vụ chỉ hoàn thành 1 lần
+}
+
+// ==========================================
+// 2. PAYMENT
+// ==========================================
 
 model Payment {
   id        String   @id @default(uuid())
@@ -39,6 +69,10 @@ model Payment {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+// ==========================================
+// 3. FLASHCARD SYSTEM
+// ==========================================
 
 model Deck {
   id          String   @id @default(uuid())
@@ -60,6 +94,10 @@ model Card {
   deckId    String
   deck      Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
 }
+
+// ==========================================
+// 4. TRANSLATION & DICTIONARY
+// ==========================================
 
 model TranslationHistory {
   id         String   @id @default(uuid())
@@ -120,14 +158,22 @@ model ExampleSentence {
   @@index([entryId])
 }
 
+// ==========================================
+// 5. EXERCISE & PROGRESS (Score Tracking)
+// ==========================================
+
 model ExerciseProgress {
-  id          String   @id @default(uuid())
-  exerciseId  String
-  score       Int
+  id         String   @id @default(uuid())
+  exerciseId String
+  score      Int
   completedAt DateTime @default(now())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+// ==========================================
+// 6. COMMUNITY (Posts, Comments, Likes)
+// ==========================================
 
 model Post {
   id        String    @id @default(uuid())
@@ -160,71 +206,72 @@ model Like {
 
   @@unique([postId, userId])
 }
-// Bảng lưu thông tin lá bài (Dữ liệu tĩnh)
+
+// ==========================================
+// 7. CONTENT MODELS (Tarot, Reading, Tests)
+// ==========================================
+
 model TarotCard {
-  id             String   @id // VD: "major-0"
-  name           String   // Tên tiếng Anh
-  nameVi         String   // Tên tiếng Việt
-  image          String   // Đường dẫn ảnh local: "/images/tarot/major-0.jpg"
-  keywords       String[] // Từ khóa
-  meaningUpright String   // Ý nghĩa xuôi (AI sẽ đọc cái này)
-  
-  // Các trường phụ
+  id             String   @id 
+  name           String   
+  nameVi         String   
+  image          String   
+  keywords       String[] 
+  meaningUpright String   
   meaningReversed String?  
-  element         String?  
+  element        String?  
 }
 
 model ReadingArticle {
   id             String   @id @default(uuid())
   title          String
   excerpt        String?
-  content        String   // Nội dung Nhật (có format Kanji[furi])
-  contentRomaji  String?  // <--- THÊM MỚI: Nội dung Romaji
-  contentMeaning String?  // <--- THÊM MỚI: Dịch nghĩa tiếng Việt
+  content        String   
+  contentRomaji  String?  
+  contentMeaning String?  
   level          String
   topic          String?
   image          String?
   createdAt      DateTime @default(now())
 }
 
-// --- MOCK TEST MODELS (THI THỬ) ---
-
 model MockTest {
   id          String     @id @default(uuid())
   title       String
-  level       String     // N5, N4, N3, N2, N1
-  duration    Int        // Thời gian làm bài (phút)
+  level       String     
+  duration    Int        
   isPremium   Boolean    @default(false)
   questions   Question[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   
-  // Quan hệ lưu kết quả thi của user (nếu muốn lưu lịch sử sau này)
   testResults TestResult[]
 }
 
 model Question {
-  id          String   @id @default(uuid())
-  content     String   // Nội dung câu hỏi
-  type        String   // vocab, grammar, reading
-  options     String[] // Mảng 4 đáp án [A, B, C, D]
-  correctAnswer Int    // Index đáp án đúng (0, 1, 2, 3)
-  explanation String?  // Giải thích chi tiết
+  id            String   @id @default(uuid())
+  content       String   
+  imageUrl      String?  
+  audioUrl      String?
+  type          String   
+  options       String[] 
+  correctAnswer Int    
+  explanation   String?  
   
-  testId      String
-  test        MockTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  testId        String
+  test          MockTest @relation(fields: [testId], references: [id], onDelete: Cascade)
 }
 
 model TestResult {
-  id          String   @id @default(uuid())
-  score       Int      // Điểm số (0-100 hoặc số câu đúng)
+  id             String   @id @default(uuid())
+  score          Int      
   totalQuestions Int
-  answers     Json     // Lưu bài làm của user: { questionId: selectedIndex }
-  completedAt DateTime @default(now())
+  answers        Json     
+  completedAt    DateTime @default(now())
   
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  testId      String
-  test        MockTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  testId         String
+  test           MockTest @relation(fields: [testId], references: [id], onDelete: Cascade)
 }

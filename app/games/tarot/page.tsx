@@ -119,7 +119,7 @@ export default function TarotGamePage() {
   const allCardsFlipped = flippedIndices.every(Boolean);
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white flex flex-col font-sans selection:bg-purple-500 overflow-x-hidden">
+    <div className="min-h-screen bg-[#0f172a] text-white flex flex-col selection:bg-purple-500 overflow-x-hidden">
       {/* Background Effect */}
       <div className="fixed inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30 pointer-events-none"></div>
       <div className="fixed top-0 left-0 w-full h-full bg-gradient-to-b from-indigo-900/20 via-slate-900/50 to-slate-900 pointer-events-none"></div>
