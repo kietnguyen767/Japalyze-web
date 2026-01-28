@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { 
   BookOpenText, Search, Signal, Play, Clock, Mic, Star, 
@@ -42,13 +42,19 @@ const FuriganaText = ({ text, showFurigana }: { text: string, showFurigana: bool
 // --- MAIN PAGE COMPONENT ---
 
 export default function ReadingPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+    const router = useRouter();
 
-  // 👇 CHECK MODE: Có phải đang làm nhiệm vụ Roadmap không?
-  const mode = searchParams.get('mode'); // 'challenge'
-  const questId = searchParams.get('questId');
-  const isChallengeMode = mode === 'challenge';
+    // Read URL search params on client-side to avoid prerender/SSR issues
+    const [modeParam, setModeParam] = useState<string | null>(null);
+    const [questId, setQuestId] = useState<string | null>(null);
+    const isChallengeMode = modeParam === 'challenge';
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const sp = new URLSearchParams(window.location.search);
+        setModeParam(sp.get('mode'));
+        setQuestId(sp.get('questId'));
+    }, []);
 
   // --- STATE CHO LIST VIEW (Code cũ) ---
   const [articles, setArticles] = useState<any[]>([]);

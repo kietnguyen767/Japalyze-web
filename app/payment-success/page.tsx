@@ -6,15 +6,15 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 
 export default function PaymentSuccessPage() {
-  const { user, refreshProfile } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
 
     const checkStatus = async () => {
-      // Gọi hàm refreshProfile để lấy dữ liệu mới nhất từ server
-      await refreshProfile();
+      // Gọi hàm refreshUser để lấy dữ liệu mới nhất từ server
+      await refreshUser();
     };
 
     // Nếu user chưa có Premium, cứ 2 giây check lại 1 lần
@@ -28,7 +28,7 @@ export default function PaymentSuccessPage() {
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [user, refreshProfile]); // Chạy lại mỗi khi user thay đổi
+  }, [user, refreshUser]); // Chạy lại mỗi khi user thay đổi
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4 relative z-10">

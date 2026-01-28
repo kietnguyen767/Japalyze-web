@@ -38,7 +38,7 @@ type Deck = {
 };
 
 export default function FlashcardsPage() {
-  const { user, isLoading } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const [decks, setDecks] = useState<Deck[]>([]);
 
@@ -85,8 +85,8 @@ export default function FlashcardsPage() {
       }
     };
 
-    if (!isLoading && user) loadDecks();
-  }, [user, isLoading, router]);
+    if (!loading && user) loadDecks();
+  }, [user, loading, router]);
 
   // 2. TẠO BỘ THẺ MỚI
   const handleCreateDeck = async () => {
@@ -209,7 +209,7 @@ export default function FlashcardsPage() {
     }
   };
 
-  if (isLoading) return <div className="p-10 text-center">Đang tải...</div>;
+  if (loading) return <div className="p-10 text-center">Đang tải...</div>;
 
   return (
     <div className="min-h-screen bg-slate-50">
