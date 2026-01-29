@@ -8,7 +8,7 @@ export async function POST(req: Request) {
   try {
     const { messages, systemPrompt } = await req.json();
 
-    const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+    const apiKey = process.env.GOOGLE_AI_API_KEY;
     if (!apiKey) {
         throw new Error("Chưa cấu hình GOOGLE_GENERATIVE_AI_API_KEY");
     }
