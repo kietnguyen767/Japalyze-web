@@ -1,8 +1,7 @@
-// pages/api/mobile/login.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { prisma } from '@/lib/prisma'; // chỉnh path cho đúng dự án bạn
+import { prisma } from '@/lib/prisma';
 
 export default async function handler(
   req: NextApiRequest,
@@ -27,14 +26,18 @@ export default async function handler(
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid) {
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) {
       return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      return res.status(500).json({ message: 'JWT_SECRET not set' });
     }
 
     const token = jwt.sign(
       { userId: user.id },
-      process.env.JWT_SECRET!,
+      process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
@@ -47,8 +50,8 @@ export default async function handler(
         currentLevel: user.currentLevel,
       },
     });
-  } catch (error) {
-    console.error(error);
+  } catch (e) {
+    console.error('MOBILE LOGIN ERROR:', e);
     return res.status(500).json({ message: 'Internal server error' });
   }
 }
