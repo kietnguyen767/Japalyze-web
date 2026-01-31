@@ -39,7 +39,7 @@ export default function Phase1PracticeMenu() {
                 href="/exercises/hiragana?context=roadmap&questId=q1_2" 
                 className="group bg-white rounded-[2rem] p-8 border border-slate-200 shadow-sm hover:border-blue-400 hover:shadow-xl hover:-translate-y-1 transition-all text-center relative overflow-hidden"
             >
-                <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                <div className="w-20 h-20 bg-white text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
                     <span className="text-4xl font-black">あ</span>
                 </div>
                 <h2 className="text-xl font-bold text-slate-800 mb-2 group-hover:text-blue-600">Luyện Hiragana</h2>
@@ -55,12 +55,12 @@ export default function Phase1PracticeMenu() {
                 href="/exercises/katakana?context=roadmap&questId=q1_2" 
                 className="group bg-white rounded-[2rem] p-8 border border-slate-200 shadow-sm hover:border-orange-400 hover:shadow-xl hover:-translate-y-1 transition-all text-center relative overflow-hidden"
             >
-                <div className="w-20 h-20 bg-orange-50 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                <div className="w-20 h-20 bg-white text-orange-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
                     <span className="text-4xl font-black">ア</span>
                 </div>
                 <h2 className="text-xl font-bold text-slate-800 mb-2 group-hover:text-orange-600">Luyện Katakana</h2>
                 <p className="text-sm text-slate-500">Ôn tập bảng chữ cứng qua bài tập trắc nghiệm.</p>
-                <div className="mt-6 py-3 px-6 bg-slate-50 rounded-xl text-orange-600 font-bold text-sm group-hover:bg-orange-600 transition-colors">
+                <div className="mt-6 py-3 px-6 bg-slate-50 rounded-xl text-orange-600 font-bold text-sm hover:bg-orange-600 transition-colors">
                     Bắt đầu ngay
                 </div>
             </Link>

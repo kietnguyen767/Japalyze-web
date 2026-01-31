@@ -49,14 +49,13 @@ export default function Home() {
 }
 
 // ==================================================================================
-// 2. DASHBOARD COMPONENT (Xử lý chung cho cả User & Khách)
+// 2. DASHBOARD COMPONENT (Đã fix lỗi Menu Mobile bị đè)
 // ==================================================================================
 
 function Dashboard({ user, onOpenSurvey }: { user: any, onOpenSurvey: () => void }) {
   const [data, setData] = useState<any>(null);
   const [loadingData, setLoadingData] = useState(false);
 
-  // Fetch dữ liệu Dashboard (Chỉ khi là User)
   useEffect(() => {
     if (user) {
       setLoadingData(true);
@@ -68,16 +67,14 @@ function Dashboard({ user, onOpenSurvey }: { user: any, onOpenSurvey: () => void
         .then((json) => setData(json))
         .catch((err) => {
             console.error("Lỗi tải dashboard:", err);
-            // Nếu lỗi thì set null để giao diện không bị crash
             setData(null);
         })
         .finally(() => setLoadingData(false));
     } else {
-        setData(null); // Khách thì không có data
+        setData(null);
     }
   }, [user]);
 
-  // Safe destructuring dữ liệu
   const history = data?.history || { translation: [], decks: [], test: null };
   const progress = data?.progress || { 
       currentLevel: null, 
@@ -88,19 +85,19 @@ function Dashboard({ user, onOpenSurvey }: { user: any, onOpenSurvey: () => void
   
   const hasLevel = user?.currentLevel; 
   const streakDays = user ? 1 : 0; 
-
-  // 🔥 LOGIC N5: Chỉ N5 là Active
   const isN5 = hasLevel === 'N5';
   const isLevelActive = hasLevel && isN5;
 
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-700 selection:bg-indigo-100 selection:text-indigo-700 flex flex-col">
-      <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
+      
+      {/* 🔥 FIX 1: Tăng z-index lên 999 và dùng nền đặc (bg-white) thay vì trong suốt để menu không bị xuyên thấu */}
+      <div className="sticky top-0 z-[999] bg-white border-b border-slate-200">
         <Navbar />
       </div>
 
-      {/* HERO SECTION */}
-      <div className="pt-10 pb-16 px-4 bg-white border-b border-slate-100">
+      {/* 🔥 FIX 2: relative z-0 để ép nội dung này luôn nằm dưới Navbar */}
+      <div className="relative z-0 pt-10 pb-16 px-4 bg-white border-b border-slate-100">
         <div className="max-w-6xl mx-auto">
           
           {/* HEADER INFO */}
@@ -138,7 +135,7 @@ function Dashboard({ user, onOpenSurvey }: { user: any, onOpenSurvey: () => void
           {/* MAIN CARD GRID */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
              
-             {/* --- CARD 1: LỘ TRÌNH TỔNG (TOTAL N5 PROGRESS) --- */}
+             {/* --- CARD 1: LỘ TRÌNH TỔNG --- */}
              <div className={`md:col-span-2 rounded-[2rem] p-8 text-white shadow-xl relative overflow-hidden group hover:scale-[1.01] transition-transform duration-300 flex flex-col justify-between
                 ${isLevelActive 
                     ? 'bg-gradient-to-br from-blue-600 to-indigo-700 shadow-blue-200/50' 
@@ -187,7 +184,7 @@ function Dashboard({ user, onOpenSurvey }: { user: any, onOpenSurvey: () => void
                         }
                     </p>
 
-                    {/* 🔥 THANH TIẾN ĐỘ TỔNG (TOTAL PROGRESS) */}
+                    {/* Progress Bar */}
                     {isLevelActive ? (
                         <div className="bg-black/20 rounded-xl p-4 backdrop-blur-sm border border-white/10 mb-6 max-w-lg">
                             <div className="flex justify-between items-end mb-2">
@@ -243,21 +240,17 @@ function Dashboard({ user, onOpenSurvey }: { user: any, onOpenSurvey: () => void
                 </div>
              </div>
 
-             {/* --- CARD 2: CHI TIẾT GIAI ĐOẠN HIỆN TẠI (Thay thế Flashcard cũ) --- */}
+             {/* --- CARD 2: CHI TIẾT GIAI ĐOẠN HIỆN TẠI --- */}
              <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm hover:shadow-lg hover:border-green-100 transition-all group flex flex-col relative overflow-hidden">
-                 
-                 {/* Decor */}
                  <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity rotate-12">
                      <Target size={120} />
                  </div>
 
                  <div className="flex-1">
-                     {/* Icon Phase */}
                      <div className="w-14 h-14 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-sm">
                          <Target size={28} fill="currentColor" className="opacity-80"/>
                      </div>
 
-                     {/* Title Phase */}
                      <div className="mb-4">
                         <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Trạng thái hiện tại</span>
                         <h3 className="font-bold text-slate-800 text-xl mt-1">
@@ -268,7 +261,6 @@ function Dashboard({ user, onOpenSurvey }: { user: any, onOpenSurvey: () => void
                         </p>
                      </div>
 
-                     {/* 🔥 THANH TIẾN ĐỘ GIAI ĐOẠN (PHASE PROGRESS) */}
                      {isLevelActive && (
                         <div className="mt-2">
                              <div className="flex justify-between items-center mb-1.5">
@@ -293,8 +285,8 @@ function Dashboard({ user, onOpenSurvey }: { user: any, onOpenSurvey: () => void
         </div>
       </div>
 
-      {/* CONTENT GRID */}
-      <div className="max-w-6xl mx-auto px-4 mt-12 grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+      {/* CONTENT GRID - FIX 2: relative z-0 để không đè lên menu */}
+      <div className="relative z-0 max-w-6xl mx-auto px-4 mt-12 grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
         <div className="lg:col-span-2 space-y-8">
             <SectionBox title="Lịch sử Dịch thuật" icon={<Languages className="text-blue-500"/>} link="/translate" linkText="Mở công cụ">
                 {loadingData ? <SkeletonList /> : (user && history.translation.length > 0) ? (
