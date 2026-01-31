@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import { useParams, useSearchParams } from 'next/navigation'; // 👈 THÊM useSearchParams
 import Link from 'next/link';
+
 
 // Import dữ liệu bài học
 import { 
@@ -30,8 +31,9 @@ export default function LessonPage() {
   const lessonId = params?.lessonId as string;
 
   // 👇 LOGIC ROADMAP: Lấy thông tin từ URL
-  const context = searchParams.get('context'); 
-  const questId = searchParams.get('questId');
+  const [context, setContext] = useState<string | null>(null);
+  const [questId, setQuestId] = useState<string | null>(null);
+
   
   // Tạo bộ props chung để truyền xuống component con
   const roadmapProps = {

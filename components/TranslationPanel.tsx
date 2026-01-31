@@ -125,14 +125,15 @@ export default function TranslationPanel() {
   }, [inputText, sourceLanguage, wordDetail]);
 
   useEffect(() => {
-    const textFromUrl = searchParams.get('text');
-    if (textFromUrl) {
-      setInputText(textFromUrl);
-      void loadWordDetailByText(textFromUrl);
-      void handleTranslate(textFromUrl);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  if (!searchParams) return;
+
+  const textFromUrl = searchParams.get('text');
+  if (textFromUrl) {
+    setInputText(textFromUrl);
+    void loadWordDetailByText(textFromUrl);
+  }
+}, [searchParams]);
+
 
   // ===== Actions =====
   const swapLanguages = () => {
