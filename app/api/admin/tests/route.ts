@@ -72,21 +72,19 @@ export async function PUT(req: Request) {
       // 2. Delete old questions
       await tx.question.deleteMany({ where: { testId: id } });
 
-      // 3. Create new questions
-      for (const q of questions) {
-        await tx.question.create({
-          data: {
+      // 3. Create new questions (tối ưu dùng createMany)
+      if (questions && questions.length > 0) {
+        await tx.question.createMany({
+          data: questions.map((q: any) => ({
             testId: id,
             content: q.content,
             type: q.type,
             options: q.options,
             correctAnswer: Number(q.correctAnswer),
             explanation: q.explanation || "",
-            // --- CẬP NHẬT MỚI: Thêm 2 trường này ---
             imageUrl: q.imageUrl || null,
             audioUrl: q.audioUrl || null,
-            // ---------------------------------------
-          }
+          })),
         });
       }
       return test;

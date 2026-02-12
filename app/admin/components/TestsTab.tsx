@@ -115,7 +115,7 @@ export default function TestsTab({ mockTests, setMockTests }: TestsTabProps) {
 
   if (isTestFormOpen) {
     return (
-      <div className="fixed inset-0 z-[100] bg-slate-100 flex flex-col">
+      <div className="fixed inset-0 z-100 bg-slate-100 flex flex-col">
         {/* Editor Header */}
         <div className="bg-white px-6 py-4 border-b flex justify-between items-center shadow-sm shrink-0">
           <div className="flex items-center gap-4">
@@ -159,7 +159,7 @@ export default function TestsTab({ mockTests, setMockTests }: TestsTabProps) {
               {questions.map((q, idx) => (
                 <div key={idx} onClick={() => setActiveQuestionIndex(idx)} className={`p-3 rounded-lg cursor-pointer flex justify-between items-center group transition-all ${activeQuestionIndex === idx ? 'bg-blue-50 text-blue-700 font-bold border-blue-100 border shadow-sm' : 'hover:bg-slate-50 text-slate-600'}`}>
                   <span className="text-sm truncate flex items-center gap-2">
-                    <span className="w-5 h-5 flex-shrink-0 bg-white border rounded text-[10px] flex items-center justify-center">{idx + 1}</span>
+                    <span className="w-5 h-5 shrink-0 bg-white border rounded text-[10px] flex items-center justify-center">{idx + 1}</span>
                     <span className="truncate">{q.content || 'Câu hỏi trống...'}</span>
                   </span>
                   <button onClick={(e) => { e.stopPropagation(); handleRemoveQuestion(idx); }} className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all"><Trash2 size={14}/></button>
