@@ -62,20 +62,20 @@ export default function FlashcardsPage() {
         const headers = createAuthHeaders(token);
 
         const res = await fetch('/api/flashcards/decks', { headers });
-        
+
         console.log('📥 [Flashcards] Response status:', res.status);
-        
+
         if (res.ok) {
-            const data = await res.json();
-            console.log('✅ [Flashcards] Lấy thành công:', data.decks?.length || 0, 'decks');
-            setDecks(data.decks || []);
+          const data = await res.json();
+          console.log('✅ [Flashcards] Lấy thành công:', data.decks?.length || 0, 'decks');
+          setDecks(data.decks || []);
         } else if (is401Error(res.status)) {
-            console.error('❌ [Flashcards] 401 Unauthorized');
-            handle401Error(router);
+          console.error('❌ [Flashcards] 401 Unauthorized');
+          handle401Error(router);
         } else {
-            const errorText = await res.text();
-            console.error('❌ [Flashcards] Lỗi load decks:', res.status, errorText);
-            alert('❌ Lỗi tải dữ liệu. Vui lòng thử lại.');
+          const errorText = await res.text();
+          console.error('❌ [Flashcards] Lỗi load decks:', res.status, errorText);
+          alert('❌ Lỗi tải dữ liệu. Vui lòng thử lại.');
         }
       } catch (e) {
         console.error('❌ [Flashcards] Exception:', e);
@@ -94,49 +94,49 @@ export default function FlashcardsPage() {
       router.push('/login');
       return;
     }
-    
+
     if (!newDeckName.trim()) return;
     setIsDataLoading(true);
     try {
-        const token = getTokenFromCookie();
-        if (!token) {
-          alert('❌ Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
-          router.push('/login');
-          return;
-        }
+      const token = getTokenFromCookie();
+      if (!token) {
+        alert('❌ Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+        router.push('/login');
+        return;
+      }
 
-        const headers = createAuthHeaders(token);
+      const headers = createAuthHeaders(token);
 
-        const res = await fetch('/api/flashcards/decks', {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({ title: newDeckName.trim() })
-        });
-        
-        if (res.ok) {
-            const newDeck = await res.json();
-            console.log('✅ Deck tạo thành công:', newDeck.id);
-            setDecks(prev => [{ ...newDeck, cards: [] }, ...prev]); 
-            setNewDeckName('');
-            setIsCreating(false);
-        } else if (is401Error(res.status)) {
-            handle401Error(router);
-        } else {
-            console.error('❌ Lỗi tạo deck:', res.status);
-            alert('❌ Lỗi tạo deck. Vui lòng thử lại.');
-        }
+      const res = await fetch('/api/flashcards/decks', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ title: newDeckName.trim() })
+      });
+
+      if (res.ok) {
+        const newDeck = await res.json();
+        console.log('✅ Deck tạo thành công:', newDeck.id);
+        setDecks(prev => [{ ...newDeck, cards: [] }, ...prev]);
+        setNewDeckName('');
+        setIsCreating(false);
+      } else if (is401Error(res.status)) {
+        handle401Error(router);
+      } else {
+        console.error('❌ Lỗi tạo deck:', res.status);
+        alert('❌ Lỗi tạo deck. Vui lòng thử lại.');
+      }
     } catch (e) {
-        console.error(e);
-        alert('❌ Lỗi: ' + (e as any).message);
+      console.error(e);
+      alert('❌ Lỗi: ' + (e as any).message);
     } finally {
-        setIsDataLoading(false);
+      setIsDataLoading(false);
     }
   };
 
   // 3. XÓA DECK
   const handleDeleteDeck = async (deckId: string) => {
     if (!confirm('Bạn chắc chắn muốn xóa bộ thẻ này?')) return;
-    
+
     setDeletingDeckId(deckId);
     try {
       const token = getTokenFromCookie();
@@ -186,7 +186,7 @@ export default function FlashcardsPage() {
 
       const res = await fetch(`/api/flashcards/decks/${deckId}`, {
         method: 'PATCH',
-        headers: { 
+        headers: {
           ...createAuthHeaders(token)
         },
         body: JSON.stringify({ title: editingName.trim() })
@@ -247,29 +247,29 @@ export default function FlashcardsPage() {
         </header>
 
         {isCreating && (
-  <div className="mb-8 bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex gap-2">
-    <input
-      autoFocus
-      value={newDeckName}
-      onChange={(e) => setNewDeckName(e.target.value)}
-      placeholder="Nhập tên bộ thẻ mới..."
-      // 👇 QUAN TRỌNG: outline-none để tắt viền đen, focus:border-blue-500 để hiện màu xanh khi nhập
-      className="flex-1 border border-slate-300 p-2 rounded-lg outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-all text-slate-800"
-    />
-    <button
-      onClick={handleCreateDeck}
-      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold transition-colors"
-    >
-      Lưu
-    </button>
-    <button
-      onClick={() => setIsCreating(false)}
-      className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg transition-colors"
-    >
-      Hủy
-    </button>
-  </div>
-)}
+          <div className="mb-8 bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex gap-2">
+            <input
+              autoFocus
+              value={newDeckName}
+              onChange={(e) => setNewDeckName(e.target.value)}
+              placeholder="Nhập tên bộ thẻ mới..."
+              // 👇 QUAN TRỌNG: outline-none để tắt viền đen, focus:border-blue-500 để hiện màu xanh khi nhập
+              className="flex-1 border border-slate-300 p-2 rounded-lg outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-all text-slate-800"
+            />
+            <button
+              onClick={handleCreateDeck}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold transition-colors"
+            >
+              Lưu
+            </button>
+            <button
+              onClick={() => setIsCreating(false)}
+              className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg transition-colors"
+            >
+              Hủy
+            </button>
+          </div>
+        )}
 
         {/* EMPTY STATE + LIST */}
         {decks.length === 0 && !isDataLoading ? (
@@ -338,8 +338,8 @@ export default function FlashcardsPage() {
                 const progress =
                   deck.cards.length > 0
                     ? Math.round(
-                        (learnedCount / deck.cards.length) * 100
-                      )
+                      (learnedCount / deck.cards.length) * 100
+                    )
                     : 0;
 
                 return (

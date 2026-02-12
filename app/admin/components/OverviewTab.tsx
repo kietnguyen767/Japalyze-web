@@ -26,7 +26,7 @@ export default function OverviewTab({ counts }: OverviewTabProps) {
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-slate-500 font-bold text-sm uppercase tracking-wider">{stat.label}</h3>
             <div className={`p-2 rounded-lg ${stat.bg}`}>
-              <stat.icon className={stat.color} size={20}/>
+              <stat.icon className={stat.color} size={20} />
             </div>
           </div>
           <p className="text-4xl font-black text-slate-800">{stat.count}</p>

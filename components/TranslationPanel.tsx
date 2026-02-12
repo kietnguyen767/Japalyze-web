@@ -1,14 +1,17 @@
-//components/TranslationPanel.tsx
 'use client';
 
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ArrowRightLeft, Copy, Volume2, Check, Bookmark, X, Search, Sparkles, Mic, MicOff } from 'lucide-react';
+import {
+  ArrowRightLeft, Copy, Volume2, Check, Bookmark, X, Search, Sparkles,
+  Mic, MicOff, History, Clock, BookOpen, ChevronRight
+} from 'lucide-react';
 import * as wanakana from 'wanakana';
 
 import { FlashcardService, Deck } from '@/lib/flashcardService';
 import { useAuth } from '@/context/AuthContext';
 import SaveFlashcardModal from '@/components/SaveFlashcardModal';
+import { getDashboardVocabulary, getTranslationHistory } from '@/app/actions/translation-data';
 
 // --- Types ---
 type SuggestItem = {
@@ -46,13 +49,26 @@ type TranslateApiResponse = {
   error?: string;
 };
 
-// Type cho kết quả phân tích chuyên sâu
 type AnalysisResult = {
   sentence_structure: { text: string; romaji: string; role: string; meaning: string; explanation: string }[];
   grammar_points: { point: string; explanation: string }[];
   nuance: string;
   corrections: string | null;
   alternatives: { text: string; tone: string; explanation: string }[];
+};
+
+type DashboardVocabData = {
+  nouns: SuggestItem[];
+  verbs: SuggestItem[];
+  adjs: SuggestItem[];
+  others: SuggestItem[];
+};
+
+type HistoryItem = {
+  id: string;
+  sourceText: string;
+  targetText: string;
+  createdAt: Date;
 };
 
 export default function TranslationPanel() {
@@ -63,9 +79,9 @@ export default function TranslationPanel() {
   const [inputText, setInputText] = useState('');
   const [translatedText, setTranslatedText] = useState('');
   const [isTranslating, setIsTranslating] = useState(false);
-  const [isListening, setIsListening] = useState(false); // 🎤 Voice state
+  const [isListening, setIsListening] = useState(false);
   const [copied, setCopied] = useState(false);
-  
+
   const [sourceLanguage, setSourceLanguage] = useState<'ja' | 'vi'>('ja');
   const [targetLanguage, setTargetLanguage] = useState<'ja' | 'vi'>('vi');
 
@@ -76,7 +92,6 @@ export default function TranslationPanel() {
   const [wordDetail, setWordDetail] = useState<WordDetailResponse | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  // 🤖 Analysis States
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
@@ -87,16 +102,53 @@ export default function TranslationPanel() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success'>('idle');
   const [processing, setProcessing] = useState(false);
 
-  // ✨ REF cho textarea để xử lý auto-resize
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyList, setHistoryList] = useState<HistoryItem[]>([]);
+  const [vocabData, setVocabData] = useState<DashboardVocabData | null>(null);
+  const [isLoadingDashboard, setIsLoadingDashboard] = useState(true);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // ✨ Effect: Tự động điều chỉnh chiều cao textarea khi inputText thay đổi
+  // [LOGIC MỚI] Hàm riêng để tải từ vựng mới
+  const refreshDashboardVocab = async () => {
+    setIsLoadingDashboard(true);
+    try {
+      const vocabRes = await getDashboardVocabulary();
+      if (vocabRes.success && vocabRes.data) {
+        setVocabData(vocabRes.data as unknown as DashboardVocabData);
+      }
+    } catch (e) {
+      console.error("Lỗi tải từ vựng:", e);
+    } finally {
+      setIsLoadingDashboard(false);
+    }
+  };
+
+  // ===== EFFECTS =====
+  useEffect(() => {
+    const initData = async () => {
+      // 1. Tải từ vựng lần đầu tiên
+      if (!vocabData) {
+        await refreshDashboardVocab();
+      }
+
+      // 2. Tải lịch sử
+      if (user?.id) {
+        try {
+          const historyRes = await getTranslationHistory(user.id);
+          if (historyRes.success) {
+            setHistoryList(historyRes.data as HistoryItem[]);
+          }
+        } catch (e) { console.error(e); }
+      }
+    };
+    initData();
+  }, [user]);
+
   useEffect(() => {
     const textarea = textareaRef.current;
     if (textarea) {
-      // Reset chiều cao về auto trước để tính toán chính xác khi xóa bớt văn bản
       textarea.style.height = 'auto';
-      // Set chiều cao mới dựa trên nội dung (scrollHeight)
       textarea.style.height = `${textarea.scrollHeight}px`;
     }
   }, [inputText]);
@@ -113,27 +165,22 @@ export default function TranslationPanel() {
     const t = inputText.trim();
     const isSingleToken = t.length > 0 && !/\s/.test(t);
     if (sourceLanguage !== 'ja' || !isSingleToken) return '';
-
     const fromDetail = wordDetail?.entry?.romaji?.trim();
     if (fromDetail) return fromDetail;
-    
     try {
       if (wanakana.isKana(t)) return wanakana.toRomaji(t);
-    } catch {}
-
+    } catch { }
     return '';
   }, [inputText, sourceLanguage, wordDetail]);
 
   useEffect(() => {
-  if (!searchParams) return;
-
-  const textFromUrl = searchParams.get('text');
-  if (textFromUrl) {
-    setInputText(textFromUrl);
-    void loadWordDetailByText(textFromUrl);
-  }
-}, [searchParams]);
-
+    if (!searchParams) return;
+    const textFromUrl = searchParams.get('text');
+    if (textFromUrl) {
+      setInputText(textFromUrl);
+      void loadWordDetailByText(textFromUrl);
+    }
+  }, [searchParams]);
 
   // ===== Actions =====
   const swapLanguages = () => {
@@ -154,40 +201,40 @@ export default function TranslationPanel() {
     setAnalysis(null);
     resetTranslateMeta();
     window.speechSynthesis.cancel();
-    // Reset height textarea về mặc định
     if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = 'auto';
     }
   };
 
-  // 🎤 Xử lý Voice Input
+  const handleQuickSelect = (text: string) => {
+    setInputText(text);
+    setShowHistory(false);
+    void handleTranslate(text);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleVoiceInput = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert("Trình duyệt không hỗ trợ nhập giọng nói.");
       return;
     }
-
     if (isListening) {
       setIsListening(false);
       return;
     }
-
     const recognition = new SpeechRecognition();
     recognition.lang = sourceLanguage === 'ja' ? 'ja-JP' : 'vi-VN';
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
-
     setIsListening(true);
     recognition.start();
-
     recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
       setInputText(transcript);
       setIsListening(false);
       void handleTranslate(transcript);
     };
-
     recognition.onerror = () => setIsListening(false);
     recognition.onend = () => setIsListening(false);
   };
@@ -198,8 +245,9 @@ export default function TranslationPanel() {
 
     setIsTranslating(true);
     setTranslatedText('');
-    setAnalysis(null); // Reset phân tích cũ
+    setAnalysis(null);
     resetTranslateMeta();
+    setShowHistory(false);
 
     try {
       const response = await fetch('/api/translate', {
@@ -218,6 +266,11 @@ export default function TranslationPanel() {
       setTranslateDegraded(!!data.degraded);
 
       void loadWordDetailByText(textToTranslate);
+
+      if (user?.id) {
+        getTranslationHistory(user.id).then(res => res.success && setHistoryList(res.data as HistoryItem[]));
+      }
+
     } catch (error) {
       console.error('Lỗi dịch:', error);
       setTranslatedText('Xin lỗi, hệ thống đang bận hoặc không thể dịch từ này.');
@@ -227,37 +280,31 @@ export default function TranslationPanel() {
     }
   };
 
-  // 🤖 Xử lý Phân tích ngữ pháp (Analyze)
   const handleAnalyze = async () => {
     if (!translatedText || !inputText) return;
     setIsAnalyzing(true);
     setAnalysis(null);
-
     try {
-        const res = await fetch('/api/analyze', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                text: inputText, 
-                translatedText: translatedText,
-                source: sourceLanguage 
-            }),
-        });
-
-        const data = await res.json();
-        
-        // Xử lý giới hạn Freemium
-        if (res.status === 403 && data.error === 'LIMIT_REACHED') {
-            alert(data.message);
-            return;
-        }
-
-        if (!res.ok) throw new Error(data.error);
-        setAnalysis(data.data);
+      const res = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: inputText,
+          translatedText: translatedText,
+          source: sourceLanguage
+        }),
+      });
+      const data = await res.json();
+      if (res.status === 403 && data.error === 'LIMIT_REACHED') {
+        alert(data.message);
+        return;
+      }
+      if (!res.ok) throw new Error(data.error);
+      setAnalysis(data.data);
     } catch (err: any) {
-        alert("Lỗi phân tích: " + err.message);
+      alert("Lỗi phân tích: " + err.message);
     } finally {
-        setIsAnalyzing(false);
+      setIsAnalyzing(false);
     }
   };
 
@@ -286,7 +333,6 @@ export default function TranslationPanel() {
     }
   };
 
-  // ===== Word Detail Logic =====
   const loadWordDetailById = async (entryId: string) => {
     setDetailLoading(true);
     try {
@@ -306,34 +352,23 @@ export default function TranslationPanel() {
 
   const loadWordDetailByText = async (text: string) => {
     const t = (text || '').trim();
-    
-    // 1. Kiểm tra độ dài cơ bản
     if (t.length < 1 || t.length > 40) {
       setWordDetail(null);
       return;
     }
-
-    // 🔴 CODE CŨ (Đang chặn tiếng Việt):
-    // const isSingleToken = t.length > 0 && !/\s/.test(t);
-    // if (sourceLanguage !== 'ja' || !isSingleToken) { ... return; }
-
-    // 🟢 CODE MỚI (Cho phép cả 2 chiều):
-    // Nếu là tiếng Nhật: yêu cầu không có khoảng trắng (từ đơn)
-    // Nếu là tiếng Việt: cho phép khoảng trắng (vì từ tiếng Việt hay có dấu cách, vd: "ăn cơm")
     if (sourceLanguage === 'ja') {
-        const isSingleToken = !/\s/.test(t);
-        if (!isSingleToken) {
-            setWordDetail(null);
-            return;
-        }
+      const isSingleToken = !/\s/.test(t);
+      if (!isSingleToken) {
+        setWordDetail(null);
+        return;
+      }
     }
-
     setDetailLoading(true);
     try {
       const res = await fetch('/api/word-detail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: t, source: sourceLanguage }), // Gửi kèm source language
+        body: JSON.stringify({ text: t, source: sourceLanguage }),
       });
       const data: WordDetailResponse = await res.json();
       setWordDetail(data?.success ? data : null);
@@ -344,13 +379,20 @@ export default function TranslationPanel() {
     }
   };
 
+  // [LOGIC MỚI] Xử lý khi click vào từ gợi ý
   const selectSuggestion = async (item: SuggestItem) => {
+    // 1. Dịch từ đó
     setInputText(item.lemma);
     await loadWordDetailById(item.id);
     void handleTranslate(item.lemma);
+
+    // 2. Cuộn lên đầu
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // 3. Làm mới danh sách từ gợi ý (Chỉ đổi khi click chọn từ gợi ý)
+    void refreshDashboardVocab();
   };
 
-  // ===== Flashcard Logic =====
   const openSaveModal = async () => {
     if (!user) return alert('❌ Vui lòng đăng nhập để sử dụng tính năng này!');
     if (!translatedText.trim()) return alert('❌ Vui lòng dịch trước khi lưu!');
@@ -405,24 +447,53 @@ export default function TranslationPanel() {
   };
 
   const renderTranslateBadge = () => {
-  if (!translatedText || !translateProvider) return null;
-  const cls =
-    translateProvider === 'Gemini' // Đổi OpenAI -> Gemini
-      ? 'bg-blue-50 text-blue-700 border-blue-200' // Đổi màu xanh Blue cho Gemini
-      : translateProvider === 'MyMemory'
-        ? 'bg-amber-50 text-amber-700 border-amber-200'
-        : 'bg-slate-50 text-slate-700 border-slate-200';
-  return (
-    <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${cls}`}>
-      {translateProvider} {translateCached ? '• Cache' : ''}
-    </span>
+    if (!translatedText || !translateProvider) return null;
+    const cls =
+      translateProvider === 'Gemini'
+        ? 'bg-blue-50 text-blue-700 border-blue-200'
+        : translateProvider === 'MyMemory'
+          ? 'bg-amber-50 text-amber-700 border-amber-200'
+          : 'bg-slate-50 text-slate-700 border-slate-200';
+    return (
+      <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${cls}`}>
+        {translateProvider} {translateCached ? '• Cache' : ''}
+      </span>
+    );
+  };
+
+  const renderVocabCard = (word: any) => (
+    <div
+      key={word.id}
+      onClick={() => selectSuggestion(word)}
+      // Card tự động chiều cao (h-auto)
+      className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm hover:shadow-md hover:border-blue-300 hover:-translate-y-1 transition-all cursor-pointer group flex flex-col gap-2 h-auto"
+    >
+      <div>
+        <div className="flex justify-between items-start mb-1">
+          {/* Tự động xuống dòng (break-words) */}
+          <div className="font-bold text-slate-800 text-lg group-hover:text-blue-600 break-words pr-2">{word.lemma}</div>
+          {word.posTag && (
+            <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase shrink-0 whitespace-nowrap">
+              {word.posTag.split(',')[0].replace('n', 'N').replace('v', 'V')}
+            </span>
+          )}
+        </div>
+        <div className="text-xs text-slate-500 break-words leading-relaxed">{word.meaningVi}</div>
+      </div>
+      {word.romaji && (
+        <div className="text-[10px] text-slate-300 font-mono pt-2 border-t border-slate-50 break-words">
+          {word.romaji}
+        </div>
+      )}
+    </div>
   );
-};
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6">
+
       {/* 1. TRANSLATION BOX */}
-      <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
+      <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden relative z-20">
+
         {/* Toolbar */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
           <div className="flex items-center gap-4">
@@ -435,8 +506,19 @@ export default function TranslationPanel() {
             </button>
             <div className="text-blue-600 font-bold text-sm uppercase tracking-wide">{getLanguageName(targetLanguage)}</div>
           </div>
+
           <div className="flex items-center gap-2">
             {renderTranslateBadge()}
+
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className={`p-2 rounded-lg transition-all flex items-center gap-2 border ${showHistory ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-white text-slate-400 border-transparent hover:text-blue-600 hover:bg-blue-50'}`}
+              title="Lịch sử dịch"
+            >
+              <History size={18} />
+              <span className="text-xs font-bold hidden sm:inline">Lịch sử</span>
+            </button>
+
             {inputText && (
               <button
                 onClick={clearAll}
@@ -449,13 +531,51 @@ export default function TranslationPanel() {
           </div>
         </div>
 
+        {/* PANEL LỊCH SỬ */}
+        {showHistory && (
+          <div className="bg-slate-50 border-b border-slate-200 animate-in slide-in-from-top-2 overflow-hidden">
+            <div className="p-4">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+                  <Clock size={14} /> Gần đây
+                </h3>
+                <button onClick={() => setShowHistory(false)} className="text-slate-400 hover:text-slate-600"><X size={14} /></button>
+              </div>
+
+              {!user ? (
+                <div className="text-center py-6 text-slate-400 text-sm">
+                  <Bookmark size={24} className="mx-auto mb-2 opacity-50" />
+                  Đăng nhập để lưu lịch sử dịch của bạn.
+                </div>
+              ) : historyList.length === 0 ? (
+                <div className="text-center py-6 text-slate-400 text-sm italic">Chưa có lịch sử dịch.</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                  {historyList.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => handleQuickSelect(item.sourceText)}
+                      className="text-left bg-white p-3 rounded-xl border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all group relative"
+                    >
+                      <div className="font-bold text-slate-700 line-clamp-1 group-hover:text-blue-600 text-sm">{item.sourceText}</div>
+                      <div className="text-xs text-slate-500 line-clamp-1 mt-1 opacity-80">{item.targetText}</div>
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <ChevronRight size={14} className="text-blue-400" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Input & Output */}
         <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
-          {/* LEFT: INPUT */}
           <div className="relative flex flex-col p-6 min-h-[300px]">
             <div className="rounded-2xl transition-all ring-1 ring-transparent flex-1">
               <textarea
-                ref={textareaRef} // 👈 Gắn ref vào đây
+                ref={textareaRef}
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -465,35 +585,28 @@ export default function TranslationPanel() {
                 spellCheck={false}
               />
             </div>
-
             {romajiPreview && (
               <div className="text-sm text-blue-500 font-mono mt-2 pt-2 border-t border-slate-100 border-dashed">
                 {romajiPreview}
               </div>
             )}
-
-            {/* Actions */}
             <div className="mt-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {/* 🎤 Voice Input Button */}
-                <button 
-                    onClick={handleVoiceInput}
-                    className={`p-2 rounded-full transition-all ${
-                      isListening 
-                        ? 'bg-red-100 text-red-600 animate-pulse' 
-                        : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'
+                <button
+                  onClick={handleVoiceInput}
+                  className={`p-2 rounded-full transition-all ${isListening
+                    ? 'bg-red-100 text-red-600 animate-pulse'
+                    : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'
                     }`}
-                    title="Nhập bằng giọng nói"
+                  title="Nhập bằng giọng nói"
                 >
-                    {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+                  {isListening ? <MicOff size={20} /> : <Mic size={20} />}
                 </button>
-
                 {inputText && (
                   <button onClick={() => handleSpeak(inputText, sourceLanguage)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all">
                     <Volume2 size={20} />
                   </button>
                 )}
-
                 <button
                   onClick={() => handleTranslate(inputText)}
                   disabled={!inputText.trim() || isTranslating}
@@ -507,7 +620,6 @@ export default function TranslationPanel() {
             </div>
           </div>
 
-          {/* RIGHT: OUTPUT */}
           <div className="relative flex flex-col p-6 min-h-[300px] bg-slate-50/30">
             {isTranslating ? (
               <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-3 animate-pulse">
@@ -539,108 +651,101 @@ export default function TranslationPanel() {
                 </div>
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-slate-300 italic">Bản dịch sẽ hiện ở đây...</div>
+              <div className="flex-1 flex items-center justify-center text-slate-300 italic">
+                Bản dịch sẽ hiện ở đây...
+              </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* 2. ✨ NÚT PHÂN TÍCH CHUYÊN SÂU (JapaLyze Feature) */}
+      {/* 2. NÚT PHÂN TÍCH CHUYÊN SÂU */}
       {translatedText && !isAnalyzing && !analysis && (
         <div className="flex justify-center animate-fade-in">
-            <button 
-                onClick={handleAnalyze}
-                className="flex items-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-indigo-200 hover:scale-105 hover:shadow-xl transition-all"
-            >
-                <Sparkles size={18} /> Phân tích ngữ pháp chuyên sâu
-            </button>
+          <button
+            onClick={handleAnalyze}
+            className="flex items-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-indigo-200 hover:scale-105 hover:shadow-xl transition-all"
+          >
+            <Sparkles size={18} /> Phân tích ngữ pháp chuyên sâu
+          </button>
         </div>
       )}
 
       {/* LOADING ANALYSIS */}
       {isAnalyzing && (
         <div className="bg-white p-6 rounded-2xl shadow-lg border border-indigo-100 flex flex-col items-center justify-center gap-3 animate-pulse">
-            <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-indigo-600 font-medium">Đang phân tích cấu trúc ngữ pháp...</p>
+          <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-indigo-600 font-medium">Đang phân tích cấu trúc ngữ pháp...</p>
         </div>
       )}
 
-      {/* 3. 📊 KẾT QUẢ PHÂN TÍCH (Analysis Result) */}
+      {/* 3. KẾT QUẢ PHÂN TÍCH */}
       {analysis && (
         <div className="bg-white rounded-2xl border border-indigo-100 shadow-xl overflow-hidden animate-in slide-in-from-bottom-5">
-            <div className="bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-4 text-white font-bold flex items-center gap-2 text-lg">
-                <Sparkles size={24} className="text-yellow-300" /> JapaLyze Analysis
+          <div className="bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-4 text-white font-bold flex items-center gap-2 text-lg">
+            <Sparkles size={24} className="text-yellow-300" /> JapaLyze Analysis
+          </div>
+          <div className="p-6 space-y-8">
+            {analysis.corrections && (
+              <div className="bg-red-50 border border-red-200 p-4 rounded-xl">
+                <h4 className="text-red-700 font-bold mb-1 flex items-center gap-2">⚠️ Gợi ý sửa lỗi:</h4>
+                <p className="text-slate-800 font-medium">{analysis.corrections}</p>
+              </div>
+            )}
+            <div>
+              <h4 className="text-slate-500 font-bold uppercase text-xs tracking-wider mb-3">Cấu trúc câu</h4>
+              <div className="flex flex-wrap gap-2">
+                {analysis.sentence_structure.map((item, idx) => (
+                  <div key={idx} className="group relative bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl hover:border-indigo-300 hover:bg-indigo-50 transition-all cursor-help text-center min-w-[80px]">
+                    <div className="text-lg font-bold text-slate-800">{item.text}</div>
+                    <div className="text-xs text-slate-400 uppercase font-semibold mt-1">{item.role}</div>
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-56 bg-slate-800 text-white text-xs p-3 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-xl">
+                      <div className="font-bold text-yellow-300 mb-1 text-sm">{item.meaning} ({item.romaji})</div>
+                      <div className="leading-relaxed opacity-90">{item.explanation}</div>
+                      <div className="absolute bottom-[-6px] left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-800 rotate-45"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            
-            <div className="p-6 space-y-8">
-                {/* Sửa lỗi */}
-                {analysis.corrections && (
-                    <div className="bg-red-50 border border-red-200 p-4 rounded-xl">
-                        <h4 className="text-red-700 font-bold mb-1 flex items-center gap-2">⚠️ Gợi ý sửa lỗi:</h4>
-                        <p className="text-slate-800 font-medium">{analysis.corrections}</p>
-                    </div>
-                )}
-
-                {/* Cấu trúc câu */}
-                <div>
-                    <h4 className="text-slate-500 font-bold uppercase text-xs tracking-wider mb-3">Cấu trúc câu (Sentence Structure)</h4>
-                    <div className="flex flex-wrap gap-2">
-                        {analysis.sentence_structure.map((item, idx) => (
-                            <div key={idx} className="group relative bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl hover:border-indigo-300 hover:bg-indigo-50 transition-all cursor-help text-center min-w-[80px]">
-                                <div className="text-lg font-bold text-slate-800">{item.text}</div>
-                                <div className="text-xs text-slate-400 uppercase font-semibold mt-1">{item.role}</div>
-                                {/* Tooltip */}
-                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-56 bg-slate-800 text-white text-xs p-3 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-xl">
-                                    <div className="font-bold text-yellow-300 mb-1 text-sm">{item.meaning} ({item.romaji})</div>
-                                    <div className="leading-relaxed opacity-90">{item.explanation}</div>
-                                    <div className="absolute bottom-[-6px] left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-800 rotate-45"></div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Ngữ pháp & Sắc thái */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-blue-50/50 p-5 rounded-2xl border border-blue-100">
-                        <h4 className="text-blue-700 font-bold mb-3 flex items-center gap-2">📚 Điểm ngữ pháp</h4>
-                        <ul className="space-y-3">
-                            {analysis.grammar_points.map((g, i) => (
-                                <li key={i} className="text-sm text-slate-700 leading-relaxed">
-                                    <span className="font-bold bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-600 mr-2">{g.point}</span>
-                                    {g.explanation}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                    <div className="bg-purple-50/50 p-5 rounded-2xl border border-purple-100 h-full">
-                        <h4 className="text-purple-700 font-bold mb-3 flex items-center gap-2">🎨 Sắc thái & Văn phong</h4>
-                        <p className="text-sm text-slate-700 leading-relaxed italic border-l-4 border-purple-300 pl-3">
-                            "{analysis.nuance}"
-                        </p>
-                    </div>
-                </div>
-
-                {/* Cách nói khác */}
-                <div>
-                    <h4 className="text-slate-500 font-bold uppercase text-xs tracking-wider mb-3">Cách diễn đạt khác (Alternatives)</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {analysis.alternatives.map((alt, i) => (
-                            <div key={i} className="flex flex-col bg-slate-50 p-4 rounded-xl border border-slate-100 hover:border-indigo-200 transition-colors">
-                                <div className="flex items-center justify-between mb-2">
-                                    <div className="text-xs font-bold text-slate-500 bg-white px-2 py-1 rounded border border-slate-200 uppercase">{alt.tone}</div>
-                                </div>
-                                <div className="font-bold text-slate-800 text-lg mb-1">{alt.text}</div>
-                                <div className="text-xs text-slate-500">{alt.explanation}</div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-blue-50/50 p-5 rounded-2xl border border-blue-100">
+                <h4 className="text-blue-700 font-bold mb-3 flex items-center gap-2">📚 Điểm ngữ pháp</h4>
+                <ul className="space-y-3">
+                  {analysis.grammar_points.map((g, i) => (
+                    <li key={i} className="text-sm text-slate-700 leading-relaxed">
+                      <span className="font-bold bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-600 mr-2">{g.point}</span>
+                      {g.explanation}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="bg-purple-50/50 p-5 rounded-2xl border border-purple-100 h-full">
+                <h4 className="text-purple-700 font-bold mb-3 flex items-center gap-2">🎨 Sắc thái & Văn phong</h4>
+                <p className="text-sm text-slate-700 leading-relaxed italic border-l-4 border-purple-300 pl-3">
+                  "{analysis.nuance}"
+                </p>
+              </div>
             </div>
+            <div>
+              <h4 className="text-slate-500 font-bold uppercase text-xs tracking-wider mb-3">Cách diễn đạt khác</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {analysis.alternatives.map((alt, i) => (
+                  <div key={i} className="flex flex-col bg-slate-50 p-4 rounded-xl border border-slate-100 hover:border-indigo-200 transition-colors">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-xs font-bold text-slate-500 bg-white px-2 py-1 rounded border border-slate-200 uppercase">{alt.tone}</div>
+                    </div>
+                    <div className="font-bold text-slate-800 text-lg mb-1">{alt.text}</div>
+                    <div className="text-xs text-slate-500">{alt.explanation}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* 4. WORD DETAIL SECTION (Dictionary) */}
+      {/* 4. WORD DETAIL SECTION */}
       {detailLoading ? (
         <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm flex items-center justify-center gap-3 text-slate-400">
           <span className="animate-spin text-2xl">⏳</span> Đang tra từ điển...
@@ -649,21 +754,17 @@ export default function TranslationPanel() {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
           <div className="bg-blue-600 p-1 h-1 w-full"></div>
           <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
-            {/* Col 1: Thông tin từ */}
             <div className="p-6 lg:col-span-1 bg-blue-50/30">
               <div className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2 flex items-center gap-2">
                 <Search size={14} /> Từ điển Nhật - Việt
               </div>
-
               <h2 className="text-4xl font-black text-slate-800 mb-1">{wordDetail.entry.lemma}</h2>
               <div className="text-xl text-slate-500 font-light mb-4">{wordDetail.entry.reading}</div>
-
               <div className="space-y-3">
                 <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
                   <span className="block text-xs text-slate-400 font-bold uppercase mb-1">Romaji</span>
                   <span className="font-mono text-blue-600 font-medium">{wordDetail.entry.romaji}</span>
                 </div>
-
                 <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
                   <span className="block text-xs text-slate-400 font-bold uppercase mb-1">Loại từ</span>
                   <span className="font-medium text-slate-700">{wordDetail.entry.pos.vi}</span>
@@ -671,38 +772,29 @@ export default function TranslationPanel() {
                     <span className="text-slate-400 text-xs ml-2">({wordDetail.entry.pos.extra.group})</span>
                   )}
                 </div>
-
-                {/* ✅ HIỂN THỊ TỪ LIÊN QUAN (Đã thêm lọc trùng lặp) */}
-{!!wordDetail.relatedWords?.length && (
-  <div className="bg-indigo-50/50 p-3 rounded-lg border border-indigo-100 shadow-sm mt-4">
-    <span className="block text-xs text-indigo-400 font-bold uppercase mb-2 flex items-center gap-1">
-      <Sparkles size={10}/> Từ liên quan
-    </span>
-    <div className="flex flex-wrap gap-2">
-      {/* --- ĐOẠN MÃ MỚI: Lọc các từ trùng tên với từ đang hiển thị --- */}
-      {wordDetail.relatedWords
-        .filter(rw => rw.lemma !== wordDetail.entry?.lemma) // Ẩn chính nó nếu bị trùng
-        .reduce((unique, item) => {
-             // Lọc trùng lặp trong chính danh sách gợi ý
-             return unique.some(u => u.lemma === item.lemma) ? unique : [...unique, item];
-        }, [] as SuggestItem[])
-        .map((rw) => (
-        <button 
-          key={rw.id}
-          onClick={() => selectSuggestion(rw)}
-          className="text-xs px-2 py-1 bg-white border border-indigo-200 text-indigo-700 rounded hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all font-medium"
-        >
-          {rw.lemma}
-        </button>
-      ))}
-      {/* ------------------------------------------------------------- */}
-    </div>
-  </div>
-)}
+                {!!wordDetail.relatedWords?.length && (
+                  <div className="bg-indigo-50/50 p-3 rounded-lg border border-indigo-100 shadow-sm mt-4">
+                    <span className="block text-xs text-indigo-400 font-bold uppercase mb-2 flex items-center gap-1">
+                      <Sparkles size={10} /> Từ liên quan
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {wordDetail.relatedWords
+                        .filter(rw => rw.lemma !== wordDetail.entry?.lemma)
+                        .slice(0, 5)
+                        .map((rw) => (
+                          <button
+                            key={rw.id}
+                            onClick={() => selectSuggestion(rw)}
+                            className="text-xs px-2 py-1 bg-white border border-indigo-200 text-indigo-700 rounded hover:bg-indigo-600 hover:text-white transition-all font-medium"
+                          >
+                            {rw.lemma}
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-
-            {/* Col 2-3: Nghĩa & Ví dụ */}
             <div className="p-6 lg:col-span-2">
               <div className="mb-6">
                 <h3 className="text-lg font-bold text-slate-800 mb-2 flex items-center gap-2">
@@ -712,7 +804,6 @@ export default function TranslationPanel() {
                   {wordDetail.entry.meaningVi}
                 </p>
               </div>
-
               {!!wordDetail.examples?.length && (
                 <div>
                   <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Ví dụ mẫu câu</h3>
@@ -731,6 +822,41 @@ export default function TranslationPanel() {
           </div>
         </div>
       ) : null}
+
+      {/* 5. VOCAB DASHBOARD (LUÔN HIỂN THỊ) */}
+      <div className="border-t border-slate-100 pt-8 mt-10">
+        <div className="text-center mb-6">
+          <h2 className="text-xl font-bold text-slate-700 flex items-center justify-center gap-2">
+            <BookOpen className="text-blue-500" size={24} /> Khám phá từ vựng
+          </h2>
+          <p className="text-slate-400 text-sm mt-1">Gợi ý từ mới dành cho bạn</p>
+        </div>
+
+        {isLoadingDashboard ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map(i => <div key={i} className="h-28 bg-slate-100 rounded-xl animate-pulse"></div>)}
+          </div>
+        ) : vocabData ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold text-emerald-600 uppercase tracking-wide px-2">Danh từ (名詞)</h3>
+              {vocabData.nouns.map(renderVocabCard)}
+            </div>
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold text-red-500 uppercase tracking-wide px-2">Động từ (動詞)</h3>
+              {vocabData.verbs.map(renderVocabCard)}
+            </div>
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold text-amber-600 uppercase tracking-wide px-2">Tính từ (形容詞)</h3>
+              {vocabData.adjs.map(renderVocabCard)}
+            </div>
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold text-purple-500 uppercase tracking-wide px-2">Khác (その他)</h3>
+              {vocabData.others.map(renderVocabCard)}
+            </div>
+          </div>
+        ) : null}
+      </div>
 
       <SaveFlashcardModal
         open={showSaveModal}

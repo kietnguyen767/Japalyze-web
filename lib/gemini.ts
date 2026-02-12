@@ -8,5 +8,5 @@ if (!apiKey) {
 
 const genAI = new GoogleGenerativeAI(apiKey);
 
-// Sử dụng model gemini-1.5-flash cho tốc độ nhanh hoặc gemini-1.5-pro cho độ chính xác cao
-export const geminiModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+export const geminiModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });

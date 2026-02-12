@@ -10,20 +10,20 @@ import TestsTab from './components/TestsTab';
 import ProgressModal from './components/ProgressModal';
 
 // --- TYPES (Export để các components con có thể sử dụng) ---
-export type UserData = { 
-  email: string; name: string; role: 'admin' | 'user'; 
-  createdAt: string; isPremium?: boolean; 
+export type UserData = {
+  email: string; name: string; role: 'admin' | 'user';
+  createdAt: string; isPremium?: boolean;
 };
 
-export type PostData = { 
-  id: string; user: { name: string | null; email: string; }; 
-  content: string; createdAt: string; 
+export type PostData = {
+  id: string; user: { name: string | null; email: string; };
+  content: string; createdAt: string;
 };
 
-export type ReadingArticle = { 
-  id: string; title: string; excerpt: string; content: string; 
-  contentRomaji?: string; contentMeaning?: string; 
-  level: string; topic: string; image: string; createdAt: string; 
+export type ReadingArticle = {
+  id: string; title: string; excerpt: string; content: string;
+  contentRomaji?: string; contentMeaning?: string;
+  level: string; topic: string; image: string; createdAt: string;
 };
 
 export type QuestionInput = {
@@ -32,7 +32,7 @@ export type QuestionInput = {
   options: [string, string, string, string];
   correctAnswer: number;
   explanation: string;
-  imageUrl?: string; 
+  imageUrl?: string;
   audioUrl?: string;
 };
 
@@ -154,11 +154,10 @@ export default function AdminDashboard() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab as any)}
-              className={`px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap capitalize transition-all ${
-                activeTab === tab 
-                  ? 'bg-white text-blue-600 shadow-sm' 
+              className={`px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap capitalize transition-all ${activeTab === tab
+                  ? 'bg-white text-blue-600 shadow-sm'
                   : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
-              }`}
+                }`}
             >
               {tab === 'tests' ? 'Đề thi' : tab === 'reading' ? 'Luyện đọc' : tab}
             </button>
@@ -169,51 +168,51 @@ export default function AdminDashboard() {
       <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
         {/* Từng tab nội dung đã được tách thành Component con */}
         {activeTab === 'overview' && (
-          <OverviewTab 
-            counts={{ 
-              users: users.length, 
-              posts: posts.length, 
-              articles: articles.length, 
-              tests: mockTests.length 
-            }} 
+          <OverviewTab
+            counts={{
+              users: users.length,
+              posts: posts.length,
+              articles: articles.length,
+              tests: mockTests.length
+            }}
           />
         )}
 
         {activeTab === 'users' && (
-          <UsersTab 
-            users={users} 
-            setUsers={setUsers} 
-            openProgressModal={setSelectedUserEmail} 
+          <UsersTab
+            users={users}
+            setUsers={setUsers}
+            openProgressModal={setSelectedUserEmail}
           />
         )}
 
         {activeTab === 'posts' && (
-          <PostsTab 
-            posts={posts} 
-            setPosts={setPosts} 
+          <PostsTab
+            posts={posts}
+            setPosts={setPosts}
           />
         )}
 
         {activeTab === 'reading' && (
-          <ReadingTab 
-            articles={articles} 
-            setArticles={setArticles} 
+          <ReadingTab
+            articles={articles}
+            setArticles={setArticles}
           />
         )}
 
         {activeTab === 'tests' && (
-          <TestsTab 
-            mockTests={mockTests} 
-            setMockTests={setMockTests} 
+          <TestsTab
+            mockTests={mockTests}
+            setMockTests={setMockTests}
           />
         )}
       </div>
 
       {/* MODAL TIẾN ĐỘ (Dùng chung cho tab Users) */}
       {selectedUserEmail && (
-        <ProgressModal 
-          email={selectedUserEmail} 
-          onClose={() => setSelectedUserEmail(null)} 
+        <ProgressModal
+          email={selectedUserEmail}
+          onClose={() => setSelectedUserEmail(null)}
         />
       )}
     </div>

@@ -1,21 +1,40 @@
-//app/api/reading/[id]/route.ts
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
+import redis from '@/lib/redis';
 
 export async function GET(
   request: Request,
-  // 👇 SỬA ĐỔI QUAN TRỌNG: params là Promise
   props: { params: Promise<{ id: string }> }
 ) {
   try {
-    // 👇 PHẢI AWAIT PARAMS TRƯỚC
+    // 1. Kiểm tra đăng nhập (Session Token)
+    const cookieStore = await cookies();
+    let token = cookieStore.get('session_token')?.value;
+
+    if (!token) {
+      const authHeader = request.headers.get('Authorization');
+      if (authHeader) {
+        token = authHeader.replace('Bearer ', '');
+      }
+    }
+
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // 2. Validate Token với Redis
+    const userId = await redis.get(`session:${token}`);
+    if (!userId) {
+      return NextResponse.json({ error: 'Session expired' }, { status: 401 });
+    }
+
+    // 3. Lấy ID bài viết
     const params = await props.params;
     const id = params.id;
-    
-    console.log(">>> SERVER ĐÃ NHẬN ID:", id); // Sẽ in ra ID đúng: 10622fdd...
 
     if (!id) {
-        return NextResponse.json({ error: 'Thiếu ID bài viết' }, { status: 400 });
+      return NextResponse.json({ error: 'Thiếu ID bài viết' }, { status: 400 });
     }
 
     const article = await prisma.readingArticle.findUnique({
