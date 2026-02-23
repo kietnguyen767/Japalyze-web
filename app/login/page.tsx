@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
-// 👇 Thêm ArrowLeft vào import
 import { Mail, Lock, ArrowRight, Loader2, LogIn, ArrowLeft } from 'lucide-react';
 
 export default function LoginPage() {
@@ -94,7 +93,7 @@ export default function LoginPage() {
           </div>
 
           <div className="relative z-10 text-sm text-blue-200 mt-8">
-            © 2024 JapaLyze Inc. All rights reserved.
+            © 2026 JapaLyze Inc. All rights reserved.
           </div>
         </div>
 

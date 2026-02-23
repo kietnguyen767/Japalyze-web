@@ -7,13 +7,14 @@ import Link from 'next/link';
 
 
 // Import dữ liệu bài học
-import { 
-  HIRAGANA_QUIZ, KATAKANA_QUIZ, 
-  NUMBER_LESSON_DATA, FOOD_LESSON_DATA, SPORT_LESSON_DATA, 
-  WEATHER_LESSON_DATA, SCHOOL_LESSON_DATA, JOB_LESSON_DATA, 
-  ANIMAL_LESSON_DATA, FAMILY_LESSON_DATA, FRUIT_LESSON_DATA, 
-  VEGETABLE_LESSON_DATA, ELECTRONIC_LESSON_DATA, HOUSEHOLD_LESSON_DATA, 
-  MEDIA_LESSON_DATA ,HOBBY_LESSON_DATA, COUNTRY_LESSON_DATA, EMOTION_LESSON_DATA, TRAVEL_LESSON_DATA,
+import {
+  HIRAGANA_QUIZ, KATAKANA_QUIZ,
+  HIRAGANA_DAKUTEN_QUIZ, KATAKANA_DAKUTEN_QUIZ,
+  NUMBER_LESSON_DATA, FOOD_LESSON_DATA, SPORT_LESSON_DATA,
+  WEATHER_LESSON_DATA, SCHOOL_LESSON_DATA, JOB_LESSON_DATA,
+  ANIMAL_LESSON_DATA, FAMILY_LESSON_DATA, FRUIT_LESSON_DATA,
+  VEGETABLE_LESSON_DATA, ELECTRONIC_LESSON_DATA, HOUSEHOLD_LESSON_DATA,
+  MEDIA_LESSON_DATA, HOBBY_LESSON_DATA, COUNTRY_LESSON_DATA, EMOTION_LESSON_DATA, TRAVEL_LESSON_DATA,
   ROUTINE_LESSON_DATA, HOUSEWORK_LESSON_DATA, CASUAL_TALK_LESSON_DATA, LOVE_LESSON_DATA, FESTIVAL_LESSON_DATA
 } from '@/lib/lessonData';
 
@@ -26,15 +27,14 @@ import ConversationClient from '@/components/exercises/ConversationClient';
 
 export default function LessonPage() {
   const params = useParams();
-  const searchParams = useSearchParams(); // 👈 Lấy params từ URL
-  
+  const searchParams = useSearchParams();
+
   const lessonId = params?.lessonId as string;
 
-  // 👇 LOGIC ROADMAP: Lấy thông tin từ URL
-  const [context, setContext] = useState<string | null>(null);
-  const [questId, setQuestId] = useState<string | null>(null);
+  // 👇 Đọc trực tiếp từ URL (searchParams đã được khởi tạo ở trên)
+  const context = searchParams?.get('context');
+  const questId = searchParams?.get('questId');
 
-  
   // Tạo bộ props chung để truyền xuống component con
   const roadmapProps = {
     isRoadmapMode: context === 'roadmap',
@@ -58,15 +58,21 @@ export default function LessonPage() {
     } else {
       content = <div className="p-10 text-center">Không tìm thấy bài hội thoại này.</div>;
     }
-  } 
+  }
   // 2. Kiểm tra Bảng chữ cái (QuizClient)
   else if (lessonId === 'hiragana') {
     // 👇 Truyền roadmapProps vào đây
     content = <QuizClient data={HIRAGANA_QUIZ} title="Bảng Hiragana" lessonId="hiragana" {...roadmapProps} />;
-  } 
+  }
   else if (lessonId === 'katakana') {
     content = <QuizClient data={KATAKANA_QUIZ} title="Bảng Katakana" lessonId="katakana" {...roadmapProps} />;
-  } 
+  }
+  else if (lessonId === 'hiragana-dakuten') {
+    content = <QuizClient data={HIRAGANA_DAKUTEN_QUIZ} title="Hiragana – Âm đục (濁音・半濁音)" lessonId="hiragana-dakuten" {...roadmapProps} />;
+  }
+  else if (lessonId === 'katakana-dakuten') {
+    content = <QuizClient data={KATAKANA_DAKUTEN_QUIZ} title="Katakana – Âm đục (濁音・半濁音)" lessonId="katakana-dakuten" {...roadmapProps} />;
+  }
   // 3. Kiểm tra Từ vựng theo chủ đề (VocabClient)
   else if (lessonId === 'numbers') {
     content = <VocabClient sections={NUMBER_LESSON_DATA} title="Số đếm & Thời gian" lessonId="numbers" {...roadmapProps} />;

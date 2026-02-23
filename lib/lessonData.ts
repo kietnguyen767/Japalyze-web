@@ -28,6 +28,34 @@ export const KATAKANA_QUIZ = [
   { romaji: 'wa', kana: 'ワ' }, { romaji: 'wo', kana: 'ヲ' }, { romaji: 'n', kana: 'ン' }
 ];
 
+// --- ÂM ĐỤC Hiragana (濁音・半濁音) ---
+export const HIRAGANA_DAKUTEN_QUIZ = [
+  // が行
+  { romaji: 'ga', kana: 'が' }, { romaji: 'gi', kana: 'ぎ' }, { romaji: 'gu', kana: 'ぐ' }, { romaji: 'ge', kana: 'げ' }, { romaji: 'go', kana: 'ご' },
+  // ざ行
+  { romaji: 'za', kana: 'ざ' }, { romaji: 'ji', kana: 'じ' }, { romaji: 'zu', kana: 'ず' }, { romaji: 'ze', kana: 'ぜ' }, { romaji: 'zo', kana: 'ぞ' },
+  // だ行
+  { romaji: 'da', kana: 'だ' }, { romaji: 'di', kana: 'ぢ' }, { romaji: 'du', kana: 'づ' }, { romaji: 'de', kana: 'で' }, { romaji: 'do', kana: 'ど' },
+  // ば行
+  { romaji: 'ba', kana: 'ば' }, { romaji: 'bi', kana: 'び' }, { romaji: 'bu', kana: 'ぶ' }, { romaji: 'be', kana: 'べ' }, { romaji: 'bo', kana: 'ぼ' },
+  // ぱ行 (半濁音)
+  { romaji: 'pa', kana: 'ぱ' }, { romaji: 'pi', kana: 'ぴ' }, { romaji: 'pu', kana: 'ぷ' }, { romaji: 'pe', kana: 'ぺ' }, { romaji: 'po', kana: 'ぽ' },
+];
+
+// --- ÂM ĐỤC Katakana (濁音・半濁音) ---
+export const KATAKANA_DAKUTEN_QUIZ = [
+  // ガ行
+  { romaji: 'ga', kana: 'ガ' }, { romaji: 'gi', kana: 'ギ' }, { romaji: 'gu', kana: 'グ' }, { romaji: 'ge', kana: 'ゲ' }, { romaji: 'go', kana: 'ゴ' },
+  // ザ行
+  { romaji: 'za', kana: 'ザ' }, { romaji: 'ji', kana: 'ジ' }, { romaji: 'zu', kana: 'ズ' }, { romaji: 'ze', kana: 'ゼ' }, { romaji: 'zo', kana: 'ゾ' },
+  // ダ行
+  { romaji: 'da', kana: 'ダ' }, { romaji: 'di', kana: 'ヂ' }, { romaji: 'du', kana: 'ヅ' }, { romaji: 'de', kana: 'デ' }, { romaji: 'do', kana: 'ド' },
+  // バ行
+  { romaji: 'ba', kana: 'バ' }, { romaji: 'bi', kana: 'ビ' }, { romaji: 'bu', kana: 'ブ' }, { romaji: 'be', kana: 'ベ' }, { romaji: 'bo', kana: 'ボ' },
+  // パ行 (半濁音)
+  { romaji: 'pa', kana: 'パ' }, { romaji: 'pi', kana: 'ピ' }, { romaji: 'pu', kana: 'プ' }, { romaji: 'pe', kana: 'ペ' }, { romaji: 'po', kana: 'ポ' },
+];
+
 // --- DỮ LIỆU SỐ ĐẾM (GIỮ NGUYÊN) ---
 export type VocabItem = {
   kana: string;

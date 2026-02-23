@@ -2,7 +2,7 @@
 'use client';
 
 import { Star, Sparkles, ArrowLeft } from 'lucide-react';
-import { FeedbackData } from '@/app/roleplay/types';
+import { FeedbackData } from '@/app/roleplay/logic';
 
 type Props = {
   data: FeedbackData;
@@ -13,9 +13,10 @@ type Props = {
 
 export default function FeedbackModal({ data, turnCount, maxTurns, onNext }: Props) {
   // ✅ Defensive: tránh crash nếu backend thiếu field
-  const mistakes = (data as any).mistakes ?? [];
-  const score = Number.isFinite(Number((data as any).score)) ? Number((data as any).score) : 0;
-  const goodPoints = typeof (data as any).good_points === 'string' ? (data as any).good_points : '';
+  const mistakes = data.mistakes ?? [];
+  const score = Number.isFinite(Number(data.score)) ? Number(data.score) : 0;
+  const goodPoints = typeof data.good_points === 'string' ? data.good_points : '';
+  const comment = typeof data.comment === 'string' ? data.comment : '';
 
   return (
     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
@@ -29,6 +30,9 @@ export default function FeedbackModal({ data, turnCount, maxTurns, onNext }: Pro
           </h2>
           <p className="text-slate-500">Kết quả đánh giá năng lực.</p>
           <div className="text-4xl font-black text-blue-600 mt-2">{score}/100</div>
+          {comment && (
+            <div className="text-base text-slate-700 mt-2 font-medium">{comment}</div>
+          )}
         </div>
 
         <div className="space-y-4 mb-6">

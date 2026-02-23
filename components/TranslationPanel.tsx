@@ -1,3 +1,4 @@
+//components/TranslationPanel.tsx
 'use client';
 
 import React, { useEffect, useMemo, useState, useRef } from 'react';
@@ -746,11 +747,7 @@ export default function TranslationPanel() {
       )}
 
       {/* 4. WORD DETAIL SECTION */}
-      {detailLoading ? (
-        <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm flex items-center justify-center gap-3 text-slate-400">
-          <span className="animate-spin text-2xl">⏳</span> Đang tra từ điển...
-        </div>
-      ) : wordDetail?.success && wordDetail.entry ? (
+      {wordDetail?.success && wordDetail.entry && !isTranslating ? (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
           <div className="bg-blue-600 p-1 h-1 w-full"></div>
           <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">

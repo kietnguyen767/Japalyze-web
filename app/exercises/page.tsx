@@ -3,12 +3,12 @@
 
 import React, { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
-import { 
-  BookA, Type, LayoutGrid, Hash, CloudSun, School, Briefcase, PawPrint, Users, 
-  Apple, Carrot, Music, Cpu, Armchair, Clapperboard, Palette, Globe, Smile, 
+import {
+  BookA, Type, LayoutGrid, Hash, CloudSun, School, Briefcase, PawPrint, Users,
+  Apple, Carrot, Music, Cpu, Armchair, Clapperboard, Palette, Globe, Smile,
   Plane, AlarmClock, Shirt, Heart, PartyPopper, MessageCircle,
   Lock, Crown, MapPin, ShoppingBag, Leaf, UserCheck, Wallet, Stethoscope, Home,
-  Utensils, Map, BookOpen, HandCoins, UtensilsCrossed, Trophy, CheckCircle, Loader2
+  Utensils, Map, BookOpen, HandCoins, UtensilsCrossed, Trophy, CheckCircle, X
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
@@ -54,7 +54,7 @@ const CATEGORIES = [
   {
     title: "Luyện giao tiếp (Nhập vai)",
     lessons: [
-     { id: 'conv_1_intro', title: '1. Giới thiệu bản thân', icon: UserCheck, color: 'text-indigo-600 bg-indigo-50' },
+      { id: 'conv_1_intro', title: '1. Giới thiệu bản thân', icon: UserCheck, color: 'text-indigo-600 bg-indigo-50' },
       { id: 'conv_2_hometown', title: '2. Quê quán', icon: MapPin, color: 'text-green-600 bg-green-50' },
       { id: 'conv_3_friends', title: '3. Bạn thân', icon: Users, color: 'text-pink-600 bg-pink-50' },
       { id: 'conv_4_subject', title: '4. Môn học yêu thích', icon: BookOpen, color: 'text-blue-600 bg-blue-50' },
@@ -77,42 +77,43 @@ export default function ExercisesPage() {
   const { user } = useAuth();
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [isPremiumUser, setIsPremiumUser] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [lockedModal, setLockedModal] = useState<{ id: string; title: string }[] | null>(null);
 
-  // --- LOGIC TỰ ĐỘNG CẬP NHẬT (POLLING) ---
-  useEffect(() => {
-    // 1. Hàm lấy dữ liệu
-    const fetchProgress = async () => {
-      if (!user) {
-        setIsLoading(false);
-        return;
+  // Fetch tiến trình âm thầm, không có loading indicator
+  const fetchProgress = async () => {
+    if (!user) return;
+    try {
+      const res = await fetch('/api/exercises/progress');
+      if (res.ok) {
+        const data = await res.json();
+        setCompletedLessons(data.completed || []);
+        setIsPremiumUser(data.isPremium || false);
       }
-      try {
-        const res = await fetch('/api/exercises/progress');
-        if (res.ok) {
-           const data = await res.json();
-           // Cập nhật State: Nếu có thay đổi so với cũ thì React sẽ tự render lại tích xanh
-           setCompletedLessons(data.completed || []);
-           setIsPremiumUser(data.isPremium || false);
-        }
-      } catch (error) {
-        console.error("Lỗi tải tiến trình", error);
-      } finally {
-        setIsLoading(false);
+    } catch (error) {
+      console.error("Lỗi tải tiến trình", error);
+    }
+  };
+
+  useEffect(() => {
+    // Fetch lần đầu khi vào trang
+    fetchProgress();
+
+    // Refetch ngay lập tức khi có bài hoàn thành (BroadcastChannel)
+    const channel = new BroadcastChannel('exercise-progress');
+    channel.onmessage = () => fetchProgress();
+
+    // Refetch khi user quay lại tab
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchProgress();
       }
     };
 
-    // 2. Gọi ngay khi vừa vào trang
-    fetchProgress();
-
-    // 3. Cài đặt gọi lại sau mỗi 5 giây (5000ms)
-    const intervalId = setInterval(() => {
-        fetchProgress();
-    }, 5000);
-
-    // 4. Dọn dẹp bộ nhớ khi user thoát trang
-    return () => clearInterval(intervalId);
-
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      channel.close();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [user]);
 
   // --- LOGIC HIỂN THỊ TÊN BÀI HỌC ---
@@ -130,27 +131,27 @@ export default function ExercisesPage() {
 
     // Nếu là VIP thì mở hết
     if (isPremiumUser && convData) {
-      return { isLocked: false, missingTitles: [] };
+      return { isLocked: false, missingItems: [] };
     }
 
     if (!convData || !convData.prerequisites || convData.prerequisites.length === 0) {
-      return { isLocked: false, missingTitles: [] };
+      return { isLocked: false, missingItems: [] };
     }
 
     const missingIds = convData.prerequisites.filter(id => !completedLessons.includes(id));
     if (missingIds.length > 0) {
       return {
         isLocked: true,
-        missingTitles: missingIds.map(id => getLessonTitle(id))
+        missingItems: missingIds.map(id => ({ id, title: getLessonTitle(id) }))
       };
     }
 
-    return { isLocked: false, missingTitles: [] };
+    return { isLocked: false, missingItems: [] };
   };
 
-  const handleLockedClick = (e: React.MouseEvent, missingTitles: string[]) => {
+  const handleLockedClick = (e: React.MouseEvent, missingItems: { id: string; title: string }[]) => {
     e.preventDefault();
-    alert(`🔒 BÀI HỌC BỊ KHÓA!\n\nBạn cần hoàn thành:\n- ${missingTitles.join('\n- ')}`);
+    setLockedModal(missingItems);
   };
 
   return (
@@ -158,15 +159,6 @@ export default function ExercisesPage() {
       <div className="sticky top-0 z-50 bg-white shadow-sm"><Navbar /></div>
 
       <main className="container mx-auto px-4 py-8 max-w-6xl relative z-10">
-        {isLoading && user && (
-          <div className="fixed inset-0 bg-black/10 backdrop-blur-sm flex items-center justify-center z-[100]">
-            <div className="bg-white rounded-2xl p-8 shadow-xl flex flex-col items-center gap-4">
-              <Loader2 size={40} className="text-blue-600 animate-spin" />
-              <p className="text-slate-700 font-semibold">Đang cập nhật...</p>
-            </div>
-          </div>
-        )}
-
         <div className="mb-8 border-b border-slate-200 pb-4 flex items-center gap-3">
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
             <LayoutGrid className="text-blue-600" /> Thư viện bài tập
@@ -193,13 +185,13 @@ export default function ExercisesPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {cat.lessons.map((lesson) => {
                   const isCompleted = completedLessons.includes(lesson.id);
-                  const { isLocked, missingTitles } = checkLockStatus(lesson.id);
+                  const { isLocked, missingItems } = checkLockStatus(lesson.id);
 
                   return (
                     <Link
                       key={lesson.id}
                       href={`/exercises/${lesson.id}`}
-                      onClick={(e) => isLocked ? handleLockedClick(e, missingTitles) : null}
+                      onClick={(e) => isLocked ? handleLockedClick(e, missingItems) : null}
                       className={`relative flex items-center gap-3 p-4 bg-white rounded-xl border shadow-sm transition
                         ${isCompleted ? 'border-green-200 bg-green-50/30' : 'border-slate-200'}
                         ${isLocked ? 'opacity-60 cursor-not-allowed grayscale' : 'hover:border-blue-400 hover:shadow-md'}
@@ -207,7 +199,7 @@ export default function ExercisesPage() {
                     >
                       <div className={`p-3 rounded-lg ${lesson.color}`}>
                         <lesson.icon size={20} />
-                        
+
                       </div>
 
                       <div>
@@ -218,9 +210,9 @@ export default function ExercisesPage() {
                       </div>
 
                       {isCompleted && (
-                         <div className="absolute top-2 right-2 text-green-500">
-                            <CheckCircle size={14} />
-                         </div>
+                        <div className="absolute top-2 right-2 text-green-500">
+                          <CheckCircle size={14} />
+                        </div>
                       )}
 
                       {isLocked && (
@@ -236,6 +228,65 @@ export default function ExercisesPage() {
           ))}
         </div>
       </main>
+
+      {/* LOCKED LESSON MODAL */}
+      {lockedModal && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+          onClick={() => setLockedModal(null)}
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+
+          {/* Modal card */}
+          <div
+            className="relative bg-white rounded-3xl shadow-2xl max-w-sm w-full p-8 flex flex-col items-center gap-5 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setLockedModal(null)}
+              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+            >
+              <X size={18} />
+            </button>
+
+            {/* Lock icon */}
+            <div className="w-16 h-16 rounded-2xl bg-amber-50 border-2 border-amber-200 flex items-center justify-center">
+              <Lock size={32} className="text-amber-500" />
+            </div>
+
+            <div className="text-center">
+              <h3 className="text-xl font-bold text-slate-800 mb-1">Bài học bị khóa</h3>
+              <p className="text-sm text-slate-500">Hoàn thành các bài sau để mở khóa</p>
+              <p className="text-sm text-slate-500"> Hoặc nâng cấp gói Premium</p>
+            </div>
+
+            {/* Prerequisites list */}
+            <div className="w-full space-y-2">
+              {lockedModal.map((item) => (
+                <Link
+                  key={item.id}
+                  href={`/exercises/${item.id}`}
+                  onClick={() => setLockedModal(null)}
+                  className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 hover:border-blue-400 hover:bg-blue-50 transition-colors group"
+                >
+                  <CheckCircle size={16} className="text-slate-300 group-hover:text-blue-400 shrink-0 transition-colors" />
+                  <span className="text-sm font-medium text-slate-700 group-hover:text-blue-600 flex-1">{item.title}</span>
+                  <span className="text-xs text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity font-medium"> Đến </span>
+                </Link>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setLockedModal(null)}
+              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-colors"
+            >
+              Đã hiểu
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

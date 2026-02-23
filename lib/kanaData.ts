@@ -5,6 +5,8 @@ export type KanaChar = {
   kana: string;
 };
 
+// ── Gojuon (清音) ─────────────────────────────────────────────────────────────
+
 export const HIRAGANA_DATA: KanaChar[] = [
   { romaji: 'a', kana: 'あ' }, { romaji: 'i', kana: 'い' }, { romaji: 'u', kana: 'う' }, { romaji: 'e', kana: 'え' }, { romaji: 'o', kana: 'お' },
   { romaji: 'ka', kana: 'か' }, { romaji: 'ki', kana: 'き' }, { romaji: 'ku', kana: 'く' }, { romaji: 'ke', kana: 'け' }, { romaji: 'ko', kana: 'こ' },
@@ -29,4 +31,32 @@ export const KATAKANA_DATA: KanaChar[] = [
   { romaji: 'ya', kana: 'ヤ' }, { romaji: 'yu', kana: 'ユ' }, { romaji: 'yo', kana: 'ヨ' },
   { romaji: 'ra', kana: 'ラ' }, { romaji: 'ri', kana: 'リ' }, { romaji: 'ru', kana: 'ル' }, { romaji: 're', kana: 'レ' }, { romaji: 'ro', kana: 'ロ' },
   { romaji: 'wa', kana: 'ワ' }, { romaji: 'wo', kana: 'ヲ' }, { romaji: 'n', kana: 'ン' },
+];
+
+// ── Dakuten 濁音 (Voiced) ─────────────────────────────────────────────────────
+
+export const HIRAGANA_DAKUTEN: KanaChar[] = [
+  // が行 (GA)
+  { romaji: 'ga', kana: 'が' }, { romaji: 'gi', kana: 'ぎ' }, { romaji: 'gu', kana: 'ぐ' }, { romaji: 'ge', kana: 'げ' }, { romaji: 'go', kana: 'ご' },
+  // ざ行 (ZA)
+  { romaji: 'za', kana: 'ざ' }, { romaji: 'ji', kana: 'じ' }, { romaji: 'zu', kana: 'ず' }, { romaji: 'ze', kana: 'ぜ' }, { romaji: 'zo', kana: 'ぞ' },
+  // だ行 (DA)
+  { romaji: 'da', kana: 'だ' }, { romaji: 'di', kana: 'ぢ' }, { romaji: 'du', kana: 'づ' }, { romaji: 'de', kana: 'で' }, { romaji: 'do', kana: 'ど' },
+  // ば行 (BA)
+  { romaji: 'ba', kana: 'ば' }, { romaji: 'bi', kana: 'び' }, { romaji: 'bu', kana: 'ぶ' }, { romaji: 'be', kana: 'べ' }, { romaji: 'bo', kana: 'ぼ' },
+  // ぱ行 (PA – handakuten 半濁音)
+  { romaji: 'pa', kana: 'ぱ' }, { romaji: 'pi', kana: 'ぴ' }, { romaji: 'pu', kana: 'ぷ' }, { romaji: 'pe', kana: 'ぺ' }, { romaji: 'po', kana: 'ぽ' },
+];
+
+export const KATAKANA_DAKUTEN: KanaChar[] = [
+  // ガ行 (GA)
+  { romaji: 'ga', kana: 'ガ' }, { romaji: 'gi', kana: 'ギ' }, { romaji: 'gu', kana: 'グ' }, { romaji: 'ge', kana: 'ゲ' }, { romaji: 'go', kana: 'ゴ' },
+  // ザ行 (ZA)
+  { romaji: 'za', kana: 'ザ' }, { romaji: 'ji', kana: 'ジ' }, { romaji: 'zu', kana: 'ズ' }, { romaji: 'ze', kana: 'ゼ' }, { romaji: 'zo', kana: 'ゾ' },
+  // ダ行 (DA)
+  { romaji: 'da', kana: 'ダ' }, { romaji: 'di', kana: 'ヂ' }, { romaji: 'du', kana: 'ヅ' }, { romaji: 'de', kana: 'デ' }, { romaji: 'do', kana: 'ド' },
+  // バ行 (BA)
+  { romaji: 'ba', kana: 'バ' }, { romaji: 'bi', kana: 'ビ' }, { romaji: 'bu', kana: 'ブ' }, { romaji: 'be', kana: 'ベ' }, { romaji: 'bo', kana: 'ボ' },
+  // パ行 (PA – handakuten 半濁音)
+  { romaji: 'pa', kana: 'パ' }, { romaji: 'pi', kana: 'ピ' }, { romaji: 'pu', kana: 'プ' }, { romaji: 'pe', kana: 'ペ' }, { romaji: 'po', kana: 'ポ' },
 ];
