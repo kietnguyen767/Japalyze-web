@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   ArrowRightLeft, Copy, Volume2, Check, Bookmark, X, Search, Sparkles,
-  Mic, MicOff, History, Clock, BookOpen, ChevronRight
+  Mic, MicOff, History, Clock, BookOpen, ChevronRight, Loader2
 } from 'lucide-react';
 import * as wanakana from 'wanakana';
 
@@ -102,6 +102,7 @@ export default function TranslationPanel() {
   const [newDeckName, setNewDeckName] = useState('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success'>('idle');
   const [processing, setProcessing] = useState(false);
+  const [fetchingDecks, setFetchingDecks] = useState(false);
 
   const [showHistory, setShowHistory] = useState(false);
   const [historyList, setHistoryList] = useState<HistoryItem[]>([]);
@@ -125,26 +126,42 @@ export default function TranslationPanel() {
     }
   };
 
+  const isInitialLoaded = useRef(false);
+  const lastUserId = useRef<string | null>(null);
+
   // ===== EFFECTS =====
   useEffect(() => {
     const initData = async () => {
-      // 1. Tải từ vựng lần đầu tiên
-      if (!vocabData) {
-        await refreshDashboardVocab();
-      }
+      // Tránh fetch lại nếu đã load và userId chưa đổi
+      if (isInitialLoaded.current && lastUserId.current === user?.id) return;
 
-      // 2. Tải lịch sử
-      if (user?.id) {
-        try {
-          const historyRes = await getTranslationHistory(user.id);
-          if (historyRes.success) {
-            setHistoryList(historyRes.data as HistoryItem[]);
-          }
-        } catch (e) { console.error(e); }
+      setIsLoadingDashboard(true);
+      try {
+        const tasks: Promise<any>[] = [getDashboardVocabulary()];
+        if (user?.id) {
+          tasks.push(getTranslationHistory(user.id));
+        }
+
+        const [vocabRes, historyRes] = await Promise.all(tasks);
+
+        if (vocabRes.success && vocabRes.data) {
+          setVocabData(vocabRes.data as unknown as DashboardVocabData);
+        }
+
+        if (historyRes && historyRes.success) {
+          setHistoryList(historyRes.data as HistoryItem[]);
+        }
+
+        isInitialLoaded.current = true;
+        lastUserId.current = user?.id || null;
+      } catch (e) {
+        console.error("Lỗi khởi tạo dữ liệu:", e);
+      } finally {
+        setIsLoadingDashboard(false);
       }
     };
     initData();
-  }, [user]);
+  }, [user?.id]); // Chỉ trigger khi userId thay đổi thực sự
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -152,7 +169,26 @@ export default function TranslationPanel() {
       textarea.style.height = 'auto';
       textarea.style.height = `${textarea.scrollHeight}px`;
     }
-  }, [inputText]);
+
+    // [TÍNH NĂNG MỚI] Tự động nhận diện ngôn ngữ khi đang gõ (Debounced)
+    const t = inputText.trim();
+    if (t.length < 2) return;
+
+    const timer = setTimeout(() => {
+      const isVietnamese = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(t);
+      const isJapanese = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f]/u.test(t);
+
+      if (isVietnamese && sourceLanguage !== 'vi') {
+        setSourceLanguage('vi');
+        setTargetLanguage('ja');
+      } else if ((isJapanese || (wanakana.isRomaji(t) && t.length >= 3)) && sourceLanguage !== 'ja') {
+        setSourceLanguage('ja');
+        setTargetLanguage('vi');
+      }
+    }, 600); // 600ms delay để không bị nhảy liên tục khi đang gõ dở
+
+    return () => clearTimeout(timer);
+  }, [inputText, sourceLanguage]);
 
   const getLanguageName = (lang: string) => (lang === 'ja' ? 'Tiếng Nhật' : 'Tiếng Việt');
 
@@ -179,7 +215,14 @@ export default function TranslationPanel() {
     const textFromUrl = searchParams.get('text');
     if (textFromUrl) {
       setInputText(textFromUrl);
-      void loadWordDetailByText(textFromUrl);
+
+      // Tự động nhận diện ngôn ngữ của text từ URL để gọi handleTranslate đúng hướng
+      const isVietnamese = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(textFromUrl);
+      const sLang = isVietnamese ? 'vi' : 'ja';
+      const tLang = isVietnamese ? 'ja' : 'vi';
+
+      // Gọi handleTranslate (hàm này đã bao gồm cả loadWordDetailByText bên trong)
+      void handleTranslate(textFromUrl, sLang, tLang);
     }
   }, [searchParams]);
 
@@ -240,9 +283,12 @@ export default function TranslationPanel() {
     recognition.onend = () => setIsListening(false);
   };
 
-  const handleTranslate = async (text?: string) => {
+  const handleTranslate = async (text?: string, forceSource?: 'ja' | 'vi', forceTarget?: 'ja' | 'vi') => {
     const textToTranslate = (text ?? inputText).trim();
     if (!textToTranslate) return;
+
+    const sLang = forceSource ?? sourceLanguage;
+    const tLang = forceTarget ?? targetLanguage;
 
     setIsTranslating(true);
     setTranslatedText('');
@@ -251,11 +297,17 @@ export default function TranslationPanel() {
     setShowHistory(false);
 
     try {
-      const response = await fetch('/api/translate', {
+      // 2. Chạy dịch và lấy chi tiết từ song song
+      const translateTask = fetch('/api/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: textToTranslate, source: sourceLanguage, target: targetLanguage }),
+        body: JSON.stringify({ text: textToTranslate, source: sLang, target: tLang }),
       });
+
+      const [response] = await Promise.all([
+        translateTask,
+        loadWordDetailByText(textToTranslate, sLang)
+      ]);
 
       const data: TranslateApiResponse = await response.json();
       if (!response.ok) throw new Error(data.error || 'Lỗi kết nối server');
@@ -265,8 +317,6 @@ export default function TranslationPanel() {
       setTranslateProvider(p === 'OpenAI' || p === 'MyMemory' || p === 'Redis' ? p : '');
       setTranslateCached(!!data.cached);
       setTranslateDegraded(!!data.degraded);
-
-      void loadWordDetailByText(textToTranslate);
 
       if (user?.id) {
         getTranslationHistory(user.id).then(res => res.success && setHistoryList(res.data as HistoryItem[]));
@@ -334,13 +384,14 @@ export default function TranslationPanel() {
     }
   };
 
-  const loadWordDetailById = async (entryId: string) => {
+  const loadWordDetailById = async (entryId: string, lang?: 'ja' | 'vi') => {
     setDetailLoading(true);
     try {
+      const sLang = lang ?? sourceLanguage;
       const res = await fetch('/api/word-detail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entryId, source: sourceLanguage }),
+        body: JSON.stringify({ entryId, source: sLang }),
       });
       const data: WordDetailResponse = await res.json();
       setWordDetail(data?.success ? data : null);
@@ -351,13 +402,31 @@ export default function TranslationPanel() {
     }
   };
 
-  const loadWordDetailByText = async (text: string) => {
+  const loadWordDetailByText = async (text: string, lang?: 'ja' | 'vi') => {
     const t = (text || '').trim();
     if (t.length < 1 || t.length > 40) {
       setWordDetail(null);
       return;
     }
-    if (sourceLanguage === 'ja') {
+
+    // Tự động nhận diện nếu không có lang truyền vào
+    let sLang = lang ?? sourceLanguage;
+    const isVietnamese = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(t);
+    // Nhận diện tiếng Nhật: Kanji hoặc Kana
+    const isJapanese = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f]/u.test(t);
+
+    if (isVietnamese && sLang !== 'vi') {
+      setSourceLanguage('vi');
+      setTargetLanguage('ja');
+      sLang = 'vi';
+    } else if ((isJapanese || (wanakana.isRomaji(t) && t.length >= 3)) && sLang !== 'ja') {
+      // Nếu là tiếng Nhật hoặc Romaji (>=3 ký tự) thì đổi về Nhật
+      setSourceLanguage('ja');
+      setTargetLanguage('vi');
+      sLang = 'ja';
+    }
+
+    if (sLang === 'ja') {
       const isSingleToken = !/\s/.test(t);
       if (!isSingleToken) {
         setWordDetail(null);
@@ -369,7 +438,7 @@ export default function TranslationPanel() {
       const res = await fetch('/api/word-detail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: t, source: sourceLanguage }),
+        body: JSON.stringify({ text: t, source: sLang }),
       });
       const data: WordDetailResponse = await res.json();
       setWordDetail(data?.success ? data : null);
@@ -382,10 +451,16 @@ export default function TranslationPanel() {
 
   // [LOGIC MỚI] Xử lý khi click vào từ gợi ý
   const selectSuggestion = async (item: SuggestItem) => {
-    // 1. Dịch từ đó
+    // 0. Chuyển chế độ sang Nhật -> Việt nếu đang ở Việt -> Nhật
+    setSourceLanguage('ja');
+    setTargetLanguage('vi');
+
+    // 1. Dịch từ và tra từ điển song song
     setInputText(item.lemma);
-    await loadWordDetailById(item.id);
-    void handleTranslate(item.lemma);
+    void Promise.all([
+      loadWordDetailById(item.id, 'ja'),
+      handleTranslate(item.lemma, 'ja', 'vi')
+    ]);
 
     // 2. Cuộn lên đầu
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -397,6 +472,7 @@ export default function TranslationPanel() {
   const openSaveModal = async () => {
     if (!user) return alert('❌ Vui lòng đăng nhập để sử dụng tính năng này!');
     if (!translatedText.trim()) return alert('❌ Vui lòng dịch trước khi lưu!');
+    setFetchingDecks(true);
     try {
       const decks = await FlashcardService.getDecks();
       setUserDecks(decks);
@@ -406,6 +482,8 @@ export default function TranslationPanel() {
       setShowSaveModal(true);
     } catch (error: any) {
       alert('❌ Lỗi tải decks: ' + error.message);
+    } finally {
+      setFetchingDecks(false);
     }
   };
 
@@ -646,8 +724,13 @@ export default function TranslationPanel() {
                     {copied ? <Check size={20} /> : <Copy size={20} />}
                   </button>
                   <div className="h-4 w-px bg-slate-300 mx-2"></div>
-                  <button onClick={openSaveModal} className="flex items-center gap-2 px-4 py-2 bg-orange-100 text-orange-700 hover:bg-orange-200 hover:text-orange-800 rounded-full text-sm font-bold transition-all ml-auto">
-                    <Bookmark size={16} /> Lưu thẻ
+                  <button
+                    onClick={openSaveModal}
+                    disabled={fetchingDecks}
+                    className="flex items-center gap-2 px-4 py-2 bg-orange-100 text-orange-700 hover:bg-orange-200 hover:text-orange-800 rounded-full text-sm font-bold transition-all ml-auto disabled:opacity-50"
+                  >
+                    {fetchingDecks ? <Loader2 size={16} className="animate-spin" /> : <Bookmark size={16} />}
+                    Lưu thẻ
                   </button>
                 </div>
               </>

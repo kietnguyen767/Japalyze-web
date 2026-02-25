@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCache, setCache } from "@/lib/redis";
 import { createHash } from "node:crypto";
-import { Prisma } from "@prisma/client";
+import { Prisma, DictionaryEntry, ExampleSentence } from "@prisma/client";
 import * as wanakana from "wanakana";
 import { mapPosFromTags } from "@/lib/dictionary/pos";
 
@@ -13,6 +13,20 @@ type WordDetailRequest =
   | { entryId: string; text?: never; source?: "ja" | "vi" }
   | { text: string; entryId?: never; source?: "ja" | "vi" };
 
+type RelatedWordItem = {
+  id: string;
+  lemma: string;
+  reading: string;
+  romaji: string;
+  posTag: string;
+  meaningVi: string;
+  relationType?: string;
+};
+
+type EntryWithExamples = DictionaryEntry & {
+  examples: ExampleSentence[];
+};
+
 function sha1(s: string) {
   return createHash("sha1").update(s).digest("hex");
 }
@@ -21,28 +35,18 @@ function isRomajiLike(q: string) {
   return /^[a-zA-Z\s'-]+$/.test(q);
 }
 
-// Type trả về cho Frontend
-type RelatedWordItem = {
-  id: string;
-  lemma: string;
-  reading: string;
-  romaji: string;
-  posTag: string;
-  meaningVi: string;
-  relationType?: string; // Thêm loại quan hệ để frontend biết (nếu cần)
-};
 
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as WordDetailRequest;
-    const source = (body as any).source ?? "ja";
+    const source = body.source ?? "ja";
 
     const text =
       "text" in body && typeof body.text === "string"
         ? body.text.trim()
         : "entryId" in body
-        ? String(body.entryId ?? "").trim()
-        : "";
+          ? String(body.entryId ?? "").trim()
+          : "";
 
     if (!text) {
       return NextResponse.json({ success: false, error: "Missing text" }, { status: 400 });
@@ -53,10 +57,10 @@ export async function POST(req: Request) {
     }
 
     const cacheKey = `dict:word-detail:${source}:${sha1(text.toLowerCase())}`;
-    // const cached = await getCache<any>(cacheKey);
-    // if (cached) return NextResponse.json({ ...cached, cached: true });
+    const cached = await getCache<any>(cacheKey);
+    if (cached) return NextResponse.json({ ...cached, cached: true });
 
-    let entry = null;
+    let entry: EntryWithExamples | null = null;
     let spellcheck = { is_correct: true, did_you_mean: null as string | null };
 
     // ==========================================
@@ -124,22 +128,23 @@ export async function POST(req: Request) {
     }
 
     // ==========================================
-    // 🔗 LẤY TỪ LIÊN QUAN (ĐÃ FIX)
+    // 🔗 LẤY TỪ LIÊN QUAN (ĐÃ TỐI ƯU SONG SONG)
     // ==========================================
-    
-    // 1. Lấy quan hệ Xuôi (Từ này trỏ đến từ khác) - Bỏ lọc type cứng
-    const outgoing = await prisma.dictionaryRelation.findMany({
-      where: { fromId: entry.id },
-      take: 10,
-      include: { to: true }, // Lấy thông tin từ đích
-    });
 
-    // 2. Lấy quan hệ Ngược (Từ khác trỏ đến từ này) - Bỏ lọc type cứng
-    const incoming = await prisma.dictionaryRelation.findMany({
-      where: { toId: entry.id },
-      take: 10,
-      include: { from: true }, // Lấy thông tin từ nguồn
-    });
+    const [outgoing, incoming] = await Promise.all([
+      // 1. Lấy quan hệ Xuôi (Từ này trỏ đến từ khác)
+      prisma.dictionaryRelation.findMany({
+        where: { fromId: entry.id },
+        take: 10,
+        include: { to: true },
+      }),
+      // 2. Lấy quan hệ Ngược (Từ khác trỏ đến từ này)
+      prisma.dictionaryRelation.findMany({
+        where: { toId: entry.id },
+        take: 10,
+        include: { from: true },
+      })
+    ]);
 
     // 3. Gộp và Map dữ liệu
     // Chúng ta cần lấy đối tượng "DictionaryEntry" từ cả 2 chiều
@@ -149,7 +154,7 @@ export async function POST(req: Request) {
     ];
 
     // 4. Lọc trùng lặp (Deduplicate) theo ID và lọc chính nó
-    const uniqueRelated = rawRelated.filter((item, index, self) => 
+    const uniqueRelated = rawRelated.filter((item, index, self) =>
       index === self.findIndex((t) => t.id === item.id) && item.id !== entry?.id
     );
 

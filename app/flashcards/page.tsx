@@ -1,8 +1,7 @@
 //app/flashcards/page.tsx
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import Navbar from '@/components/Navbar';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Plus,
   Book,
@@ -19,8 +18,10 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { useRouter } from 'next/navigation';
 import { getTokenFromCookie, createAuthHeaders, is401Error, handle401Error } from '@/lib/tokenUtils';
+import ConfirmModal from '@/components/ConfirmModal';
 
 // --- TYPE MỚI (Khớp với Prisma) ---
 type Card = {
@@ -39,54 +40,65 @@ type Deck = {
 
 export default function FlashcardsPage() {
   const { user, loading } = useAuth();
+  const { showToast } = useToast();
   const router = useRouter();
   const [decks, setDecks] = useState<Deck[]>([]);
 
   // UI state
   const [isCreating, setIsCreating] = useState(false);
   const [newDeckName, setNewDeckName] = useState('');
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isDataLoading, setIsDataLoading] = useState(false);
   const [editingDeckId, setEditingDeckId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [deletingDeckId, setDeletingDeckId] = useState<string | null>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+
+  const lastFetchedId = useRef<string | null>(null);
 
   // 1. LOAD DATA TỪ API MỚI
   useEffect(() => {
     const loadDecks = async () => {
-      if (!user) return;
-      setIsDataLoading(true);
+      // Nếu đã đang fetch hoặc đã fetch ID này rồi thì thôi
+      if (user?.id === lastFetchedId.current && decks.length > 0) {
+        setIsInitialLoading(false);
+        return;
+      }
+
+      if (!user) {
+        setIsInitialLoading(false);
+        return;
+      }
+
+      // Chỉ hiện loading to lần đầu của User này
+      if (decks.length === 0 || user.id !== lastFetchedId.current) {
+        setIsInitialLoading(true);
+      }
+
       try {
+        lastFetchedId.current = user.id || null;
         const token = getTokenFromCookie();
-        console.log('👤 [Flashcards] User:', user?.email);
-
         const headers = createAuthHeaders(token);
-
         const res = await fetch('/api/flashcards/decks', { headers });
-
-        console.log('📥 [Flashcards] Response status:', res.status);
 
         if (res.ok) {
           const data = await res.json();
-          console.log('✅ [Flashcards] Lấy thành công:', data.decks?.length || 0, 'decks');
           setDecks(data.decks || []);
         } else if (is401Error(res.status)) {
-          console.error('❌ [Flashcards] 401 Unauthorized');
           handle401Error(router);
-        } else {
-          const errorText = await res.text();
-          console.error('❌ [Flashcards] Lỗi load decks:', res.status, errorText);
-          alert('❌ Lỗi tải dữ liệu. Vui lòng thử lại.');
         }
       } catch (e) {
         console.error('❌ [Flashcards] Exception:', e);
-        alert('❌ Lỗi kết nối. Vui lòng thử lại.');
       } finally {
+        setIsInitialLoading(false);
         setIsDataLoading(false);
       }
     };
 
-    if (!loading && user) loadDecks();
-  }, [user, loading, router]);
+    if (!loading) {
+      loadDecks();
+    }
+  }, [user?.id, loading, router]);
 
   // 2. TẠO BỘ THẺ MỚI
   const handleCreateDeck = async () => {
@@ -119,29 +131,35 @@ export default function FlashcardsPage() {
         setDecks(prev => [{ ...newDeck, cards: [] }, ...prev]);
         setNewDeckName('');
         setIsCreating(false);
+        showToast('Tạo bộ thẻ mới thành công!');
       } else if (is401Error(res.status)) {
         handle401Error(router);
       } else {
         console.error('❌ Lỗi tạo deck:', res.status);
-        alert('❌ Lỗi tạo deck. Vui lòng thử lại.');
+        showToast('Lỗi khi tạo bộ thẻ. Vui lòng thử lại.', 'error');
       }
     } catch (e) {
       console.error(e);
-      alert('❌ Lỗi: ' + (e as any).message);
+      showToast('Lỗi: ' + (e as any).message, 'error');
     } finally {
       setIsDataLoading(false);
     }
   };
 
-  // 3. XÓA DECK
-  const handleDeleteDeck = async (deckId: string) => {
-    if (!confirm('Bạn chắc chắn muốn xóa bộ thẻ này?')) return;
-
+  // 3. XÓA DECK (Trigger Modal)
+  const handleDeleteDeckClick = (deckId: string) => {
     setDeletingDeckId(deckId);
+    setIsConfirmOpen(true);
+  };
+
+  const confirmDeleteDeck = async () => {
+    const deckId = deletingDeckId;
+    if (!deckId) return;
+
     try {
       const token = getTokenFromCookie();
       if (!token) {
-        alert('❌ Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+        showToast('Phiên đăng nhập hết hạn.', 'error');
         router.push('/login');
         return;
       }
@@ -155,15 +173,15 @@ export default function FlashcardsPage() {
 
       if (res.ok) {
         setDecks(decks.filter(d => d.id !== deckId));
-        alert('✅ Xóa thành công');
+        showToast('Đã xóa bộ thẻ thành công');
       } else if (is401Error(res.status)) {
         handle401Error(router);
       } else {
-        alert('❌ Lỗi xóa deck');
+        showToast('Lỗi khi xóa bộ thẻ', 'error');
       }
     } catch (e) {
       console.error(e);
-      alert('❌ Lỗi: ' + (e as any).message);
+      showToast('Lỗi hệ thống: ' + (e as any).message, 'error');
     } finally {
       setDeletingDeckId(null);
     }
@@ -172,7 +190,7 @@ export default function FlashcardsPage() {
   // 4. ĐỔI TÊN DECK
   const handleRenameDeck = async (deckId: string) => {
     if (!editingName.trim()) {
-      alert('Tên deck không được để trống');
+      showToast('Tên không được để trống', 'warning');
       return;
     }
 
@@ -197,32 +215,39 @@ export default function FlashcardsPage() {
         setDecks(decks.map(d => d.id === deckId ? { ...d, title: updated.title } : d));
         setEditingDeckId(null);
         setEditingName('');
-        alert('✅ Cập nhật thành công');
+        showToast('Cập nhật tên thành công!');
       } else if (is401Error(res.status)) {
         handle401Error(router);
       } else {
-        alert('❌ Lỗi cập nhật');
+        showToast('Lỗi khi cập nhật tên', 'error');
       }
     } catch (e) {
       console.error(e);
-      alert('❌ Lỗi: ' + (e as any).message);
+      showToast('Lỗi: ' + (e as any).message, 'error');
     }
   };
 
-  if (loading) return <div className="p-10 text-center">Đang tải...</div>;
+  if (loading || (isInitialLoading && decks.length === 0)) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 gap-4">
+        <Loader2 size={48} className="text-blue-600 animate-spin" strokeWidth={1.5} />
+        <div className="flex flex-col items-center animate-pulse">
+          <p className="text-slate-800 font-black text-xl tracking-tight">JapaLyze Flashcards</p>
+          <p className="text-slate-500 font-medium">Đang chuẩn bị thư viện của bạn...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="sticky top-0 z-50 bg-white shadow-sm">
-        <Navbar />
-      </div>
 
       <main className="container mx-auto px-4 py-8 max-w-6xl relative z-10">
         {isDataLoading && (
-          <div className="fixed inset-0 bg-black/10 backdrop-blur-sm flex items-center justify-center z-[100]">
-            <div className="bg-white rounded-2xl p-8 shadow-xl flex flex-col items-center gap-4">
-              <Loader2 size={40} className="text-blue-600 animate-spin" />
-              <p className="text-slate-700 font-semibold">Đang tải thư viện...</p>
+          <div className="fixed inset-0 bg-white/40 backdrop-blur-[2px] flex items-center justify-center z-[100] animate-in fade-in duration-300">
+            <div className="bg-white rounded-2xl p-6 shadow-2xl border border-slate-100 flex flex-col items-center gap-3 active:scale-95 transition-transform">
+              <Loader2 size={32} className="text-blue-600 animate-spin" strokeWidth={3} />
+              <p className="text-slate-700 font-bold text-sm">Đang xử lý...</p>
             </div>
           </div>
         )}
@@ -286,7 +311,7 @@ export default function FlashcardsPage() {
               Thư viện của bạn đang trống
             </h2>
             <p className="text-slate-500 max-w-md mx-auto mb-8 italic">
-              "Hành trình vạn dặm bắt đầu từ một bước chân." <br />
+              &quot;Hành trình vạn dặm bắt đầu từ một bước chân.&quot; <br />
               Hãy tạo bộ thẻ đầu tiên để ghi nhớ từ vựng lâu hơn gấp 3 lần nhé!
             </p>
 
@@ -390,11 +415,10 @@ export default function FlashcardsPage() {
                             <Pencil size={16} />
                           </button>
                           <button
-                            onClick={() =>
-                              handleDeleteDeck(deck.id)
-                            }
-                            disabled={deletingDeckId === deck.id}
-                            className="text-slate-400 hover:text-red-600 p-1 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            onClick={() => handleDeleteDeckClick(deck.id)}
+                            disabled={deletingDeckId !== null}
+                            className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Xóa bộ thẻ"
                           >
                             {deletingDeckId === deck.id ? (
                               <div className="animate-spin">
@@ -475,6 +499,18 @@ export default function FlashcardsPage() {
             </div>
           </>
         )}
+        <ConfirmModal
+          isOpen={isConfirmOpen}
+          onClose={() => {
+            setIsConfirmOpen(false);
+            setDeletingDeckId(null);
+          }}
+          onConfirm={confirmDeleteDeck}
+          title="Xác nhận xóa"
+          message="Bạn có chắc chắn muốn xóa bộ thẻ này không? Hành động này không thể hoàn tác và toàn bộ thẻ bên trong sẽ bị mất."
+          confirmText="Xóa ngay"
+          cancelText="Để tôi xem lại"
+        />
       </main>
     </div>
   );

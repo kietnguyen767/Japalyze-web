@@ -1,10 +1,8 @@
-//app/page.tsx
 'use client';
 
-import { useAuth } from '@/context/AuthContext';
-import Navbar from '@/components/Navbar';
-import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useAuth, User } from '@/context/AuthContext';
+import Link from "next/link";
+import { useState, useEffect, useRef } from 'react';
 import {
     Play, Zap, Languages, BookOpen, BookOpenText, FileText,
     Gamepad2, Loader2, ArrowRight, Sparkles, Target, Trophy, Plus, Star, Search, Flame, HelpCircle, Lock, Construction, Flag
@@ -21,24 +19,13 @@ export default function Home() {
     useEffect(() => {
         // Chỉ hiện khảo sát khi: Đã đăng nhập + Đã load xong + Chưa làm khảo sát
         if (!authLoading && user && user.onboardingCompleted === false) {
-            setShowSurvey(true);
+            setTimeout(() => setShowSurvey(true), 0);
         }
     }, [authLoading, user]);
 
     const handleSkipSurvey = () => setShowSurvey(false);
     const handleOpenSurvey = () => setShowSurvey(true);
 
-    // Màn hình loading khi đang check login
-    if (authLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50">
-                <div className="flex flex-col items-center gap-4">
-                    <Loader2 className="animate-spin text-blue-600" size={48} />
-                    <p className="text-slate-500 text-sm font-medium animate-pulse">Đang tải dữ liệu...</p>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <>
@@ -53,39 +40,64 @@ export default function Home() {
 // 2. DASHBOARD COMPONENT 
 // ==================================================================================
 
-function Dashboard({ user, onOpenSurvey }: { user: any, onOpenSurvey: () => void }) {
-    const [data, setData] = useState<any>(null);
+interface DashboardData {
+    history: {
+        translation: Array<{ source: string; target: string; time: string }>;
+        decks: Array<{ id: string; title: string; count: number }>;
+        test: { lastScore: number; total: number; name: string; date: string } | null;
+    };
+    progress: {
+        currentLevel: string | null;
+        totalN5Percentage: number;
+        currentPhase: number;
+        phasePercentage: number;
+        streakDays: number;
+    };
+}
+
+function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: () => void }) {
+    const [data, setData] = useState<DashboardData | null>(null);
     const [loadingData, setLoadingData] = useState(false);
 
+    const lastFetchedId = useRef<string | null>(null);
+
     useEffect(() => {
+        const controller = new AbortController();
         if (user) {
-            setLoadingData(true);
-            fetch('/api/user/dashboard')
+            // Tránh fetch lại nếu ID không đổi
+            if (user.id === lastFetchedId.current && data) return;
+
+            lastFetchedId.current = user.id || null;
+            setTimeout(() => setLoadingData(true), 0);
+            fetch('/api/user/dashboard', { signal: controller.signal })
                 .then((res) => {
                     if (!res.ok) throw new Error('API Error');
                     return res.json();
                 })
-                .then((json) => setData(json))
+                .then((json: DashboardData) => setData(json))
                 .catch((err) => {
+                    if (err.name === 'AbortError') return;
                     console.error("Lỗi tải dashboard:", err);
                     setData(null);
                 })
                 .finally(() => setLoadingData(false));
         } else {
-            setData(null);
+            lastFetchedId.current = null;
+            setTimeout(() => setData(null), 0);
         }
-    }, [user]);
+        return () => controller.abort();
+    }, [user?.id, data !== null]);
 
     const history = data?.history || { translation: [], decks: [], test: null };
     const progress = data?.progress || {
         currentLevel: null,
         totalN5Percentage: 0,
         currentPhase: 1,
-        phasePercentage: 0
+        phasePercentage: 0,
+        streakDays: 0
     };
-
     const hasLevel = user?.currentLevel;
-    const streakDays = user ? 1 : 0;
+    const streakDays = progress.streakDays || (user ? 1 : 0);
     const isN5 = hasLevel === 'N5';
     const isLevelActive = hasLevel && isN5;
     const currentWeek = progress.currentPhase; // API now returns week number
@@ -93,10 +105,6 @@ function Dashboard({ user, onOpenSurvey }: { user: any, onOpenSurvey: () => void
     return (
         <div className="min-h-screen bg-slate-50/50 text-slate-700 selection:bg-indigo-100 selection:text-indigo-700 flex flex-col">
 
-            {/* 🔥 FIX 1: Tăng z-index lên 999 và dùng nền đặc (bg-white) thay vì trong suốt để menu không bị xuyên thấu */}
-            <div className="sticky top-0 z-[999] bg-white border-b border-slate-200">
-                <Navbar />
-            </div>
 
             {/* 🔥 FIX 2: relative z-0 để ép nội dung này luôn nằm dưới Navbar */}
             <div className="relative z-0 pt-10 pb-16 px-4 bg-white border-b border-slate-100">
@@ -105,7 +113,7 @@ function Dashboard({ user, onOpenSurvey }: { user: any, onOpenSurvey: () => void
                     {/* HEADER INFO */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
                         <div>
-                            {user && (
+                            {user?.isPremium && (
                                 <div className="flex items-center gap-2 mb-2">
                                     <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-[11px] font-bold uppercase tracking-wider flex items-center gap-1">
                                         <Star size={12} fill="currentColor" /> Premium Member
@@ -128,6 +136,7 @@ function Dashboard({ user, onOpenSurvey }: { user: any, onOpenSurvey: () => void
                                 <Flame size={32} fill="currentColor" className="animate-pulse" />
                             </div>
                             <div className="pr-2">
+                                {/* TODO: Implement actual streak tracking logic in the backend */}
                                 <div className="text-3xl font-black text-slate-800 leading-none">{streakDays}</div>
                                 <div className="text-xs font-bold text-orange-600 uppercase tracking-wider mt-1">Ngày Streak</div>
                             </div>
@@ -295,7 +304,7 @@ function Dashboard({ user, onOpenSurvey }: { user: any, onOpenSurvey: () => void
                     <SectionBox title="Lịch sử Dịch thuật" icon={<Languages className="text-blue-500" />} link="/translate" linkText="Mở công cụ">
                         {loadingData ? <SkeletonList /> : (user && history.translation.length > 0) ? (
                             <div className="space-y-3">
-                                {history.translation.map((item: any, idx: number) => (
+                                {history.translation.map((item: { source: string; target: string; time: string }, idx: number) => (
                                     <div key={idx} className="flex justify-between items-center p-4 bg-slate-50/50 border border-slate-100 rounded-2xl hover:bg-white hover:shadow-md transition-all cursor-default group">
                                         <div className="flex-1 min-w-0 mr-4">
                                             <p className="font-bold text-slate-700 truncate group-hover:text-blue-600 transition-colors">{item.source}</p>
@@ -353,7 +362,7 @@ function Dashboard({ user, onOpenSurvey }: { user: any, onOpenSurvey: () => void
                     <SectionBox title="Bộ Deck của tôi" icon={<BookOpen size={20} className="text-indigo-500" />} link="/flashcards" linkText="Xem tất cả">
                         {loadingData ? <SkeletonList /> : (user && history.decks.length > 0) ? (
                             <div className="space-y-3">
-                                {history.decks.map((deck: any, idx: number) => (
+                                {history.decks.map((deck: { id: string; title: string; count: number }, idx: number) => (
                                     <div key={idx} className="flex justify-between items-center p-3.5 bg-white border border-slate-100 rounded-xl hover:border-indigo-300 hover:shadow-sm transition-all group">
                                         <span className="font-medium text-slate-700 truncate flex-1 group-hover:text-indigo-700 transition-colors">{deck.title}</span>
                                         <span className="text-[11px] font-bold bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-lg ml-2">{deck.count} thẻ</span>
@@ -389,7 +398,15 @@ function Dashboard({ user, onOpenSurvey }: { user: any, onOpenSurvey: () => void
 // 3. HELPER COMPONENTS
 // ==================================================================================
 
-function SectionBox({ title, icon, link, linkText, children }: any) {
+interface SectionBoxProps {
+    title: string;
+    icon: React.ReactNode;
+    link?: string;
+    linkText?: string;
+    children: React.ReactNode;
+}
+
+function SectionBox({ title, icon, link, linkText, children }: SectionBoxProps) {
     return (
         <div className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm hover:border-blue-200 transition-colors">
             <div className="flex justify-between items-center mb-6">
@@ -444,7 +461,7 @@ function OnboardingModal({ onFinish, onSkip }: { onFinish: () => void, onSkip: (
 
             onSkip(); // Đóng modal ngay
             onFinish(); // Refresh data ngầm
-        } catch (error) {
+        } catch {
             setLoading(false);
         }
     };
@@ -466,7 +483,7 @@ function OnboardingModal({ onFinish, onSkip }: { onFinish: () => void, onSkip: (
 
             onSkip(); // Đóng modal ngay
             onFinish(); // Refresh data ngầm
-        } catch (error) {
+        } catch {
             setLoading(false);
         }
     };

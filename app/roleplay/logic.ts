@@ -144,8 +144,10 @@ export const TOPICS: Topic[] = [
 // =========================================================
 
 /**
- * SYSTEM PROMPT:
- * - Dùng từ khóa STRICT để ép AI tuân thủ luật.
+ * SYSTEM PROMPT
+ * ▶ KEY: GOOGLE_AI_API_KEY_LOGIC (dùng trong initChat)
+ * ▶ MỤC ĐÍCH: Đặt nhân cách + ngũ cảnh cho AI trước khi bắt đầu roleplay.
+ * ▶ CHỈ gọi 1 lần khi init session.
  */
 export const getSystemInstruction = (character: Character, topic: string) => `
 *** STRICT SYSTEM INSTRUCTION ***
@@ -165,8 +167,11 @@ YÊU CẦU ĐỊNH DẠNG OUTPUT:
 `;
 
 /**
- * TRIGGER MESSAGE:
- * - Thêm lệnh cấm đánh dấu nhiệm vụ ở lượt chào đầu tiên.
+ * TRIGGER MESSAGE
+ * ▶ KEY: GOOGLE_AI_API_KEY_LOGIC (dùng trong initChat)
+ * ▶ MỤC ĐÍCH: Khởi động session — gửi danh sách 3 nhiệm vụ cho AI,
+ *   yêu cầu AI chào bằng tiếng Nhật và xác nhận đã nhận nhiệm vụ.
+ * ▶ CHỈ gọi 1 lần khi init session. completed_indices PHẢI rỗng [].
  */
 export const getTriggerMessage = (topic: string, assignedMissions: string[]) => [
   {
@@ -189,69 +194,15 @@ Format output BẮT BUỘC:
   }
 ];
 
-/**
- * REMIND PROMPT:
- * - Thêm quy tắc chỉ check dựa trên "User Input".
- */
-export const getRemindPrompt = (
-  character: Character,
-  input: string,
-  isOutOfTurns: boolean,
-  missions: string[],
-  completedMissions: boolean[]
-) => {
-  const status = missions.map((m, i) => `Mission ${i} (${completedMissions[i] ? 'DONE' : 'PENDING'}): ${m}`).join('\n');
 
-  return `
-Role: ${character.name}
-User input: "${input}"
-Turns Used: ${isOutOfTurns ? 'MAX LIMIT REACHED (Force End)' : 'Continue'}
-Missions:
-${status}
 
-Lưu ý:
-- Đây là tình huống giả tưởng, không được nói thẳng về nhiệm vụ của người chơi, chỉ trò chuyện tự nhiên như một nhân vật thật.
-- Nếu user dùng ngôn ngữ khác không phải tiếng Nhật hoặc romaji, hãy nhắc nhở user chuyển sang tiếng Nhật.
-- Luôn kiểm tra toàn bộ input với tất cả nhiệm vụ PENDING.
-- Nếu user hoàn thành nhiều nhiệm vụ trong một lượt, hãy đánh dấu tất cả các nhiệm vụ đó.
-- TUYỆT ĐỐI KHÔNG trả về "feedback" nếu vẫn còn nhiệm vụ PENDING và chưa hết lượt.
-- CHỈ trả về "feedback" khi và chỉ khi:
-  1. Tất cả nhiệm vụ (Mission 0, 1, 2) đều đã hoàn thành (bao gồm cả nhiệm vụ vừa hoàn thành trong lượt này).
-  2. HOẶC Số lượt (turns) đã hết (isOutOfTurns: true).
-- "Hết lượt" nghĩa là: Nếu Turns Used = "MAX LIMIT REACHED", BẮT BUỘC phải trả về feedback.
-- Nếu bạn đánh dấu nhiệm vụ cuối cùng (khiến tất cả đều DONE), BẮT BUỘC trả về feedback ngay lập tức.
-
-QUAN TRỌNG VỀ FEEDBACK (CHẤM ĐIỂM):
-- "score": Chấm điểm dựa trên độ tự nhiên, ngữ pháp và từ vựng của USER.
-- "mistakes": Chỉ liệt kê lỗi sai của USER. TUYỆT ĐỐI KHÔNG bắt lỗi lời thoại của chính bạn (AI).
-- BẮT BUỘC DÙNG TIẾNG VIỆT cho các trường sau:
-  + "comment": Nhận xét sự tiến bộ của USER.
-  + "good_points": Nêu điểm tốt.
-  + "reason": Giải thích lỗi sai.
-- Bỏ qua các tin nhắn hệ thống (System prompts) khi chấm điểm.
-
-[DATA_START]{ 
-  "missions": ${JSON.stringify(missions)}, 
-  "completed_indices": [indexes_in_this_turn], 
-  "feedback": { 
-    "score": 85, 
-    "comment": "Bạn đã làm rất tốt, tuy nhiên cần chú ý kính ngữ...", 
-    "good_points": "Phát âm chuẩn, từ vựng phong phú...", 
-    "mistakes": [ 
-      { "original": "Taberu", "fixed": "Tabemasu", "reason": "Nên dùng thể lịch sự với người lạ" } 
-    ],
-    "next_missions": [] 
-  } 
-}[DATA_END]
-(Lời thoại tiếng Nhật hoặc nhắc nhở)
-`;
-};
 
 /**
- * CHAT ONLY PROMPT (Agent 1: Conversationalist)
- * - Nhiệm vụ: Chỉ tập trung nói chuyện tự nhiên.
- * - KHÔNG quan tâm đến JSON hay check nhiệm vụ.
- * - MỤC TIÊU: Phản hồi siêu tốc.
+ * CHAT ONLY PROMPT — Agent 1: Conversationalist
+ * ▶ KEY: GOOGLE_AI_API_KEY_CHAT
+ * ▶ MỤC ĐÍCH: AI đóng vai nhân vật, trả lời lời thoại tiếng Nhật mỗi lượt.
+ * ▶ KHÔNG chứa JSON, KHÔNG check nhiệm vụ. Chỉ tập trung phản hồi nhanh.
+ * ▶ Gọi song song với LOGIC mỗi lượt user nhắn (trừ khi hết lượt).
  */
 export const getChatOnlyPrompt = (character: Character, input: string) => `
 Role: ${character.name}
@@ -275,10 +226,12 @@ QUY TẮC BẮT BUỘC (Priority High):
 `;
 
 /**
- * LOGIC ONLY PROMPT (Agent 2: Referee)
- * - Nhiệm vụ: Check xem user đã hoàn thành nhiệm vụ chưa.
- * - KHÔNG cần nói chuyện. Chỉ trả về JSON.
- * - MỤC TIÊU: Chính xác.
+ * LOGIC ONLY PROMPT — Agent 2: Referee
+ * ▶ KEY: GOOGLE_AI_API_KEY_LOGIC
+ * ▶ MỤC ĐÍCH: Kiểm tra từng lượt xem user đã hoàn thành nhiệm vụ nào chưa.
+ * ▶ KHÔNG nói chuyện. Chỉ trả về JSON.
+ * ▶ Gọi silent (silent=true) song song với CHAT mỗi lượt user nhắn.
+ * ▶ Yêu cầu: user PHẢI dùng tiếng Nhật/Romaji mới được check.
  */
 export const getLogicOnlyPrompt = (missions: string[], input: string) => `
 Phân tích tin nhắn sau của User để kiểm tra nhiệm vụ: "${input}"
@@ -294,3 +247,31 @@ Yêu cầu BẮT BUỘC:
 Format Output:
 [DATA_START]{ "completed_indices": [0, 2] }[DATA_END]
 `;
+
+/**
+ * GRADING PROMPT — Agent 3: Examiner
+ * ▶ KEY: GOOGLE_AI_API_KEY_GRADING
+ * ▶ MỤC ĐÍCH: Đọc full history hội thoại + mission status từ LOGIC
+ *   rồi chấm điểm tiếng Nhật của USER theo thang S/A/B/C/D.
+ * ▶ KHÔNG roleplay, KHÔNG nói chuyện. Chỉ trả về JSON feedback.
+ * ▶ Gọi khi: (1) hết lượt MAX_TURNS, (2) user bấm kết thúc sớm (confirmForceFinish).
+ */
+export const getGradingPrompt = (
+  missions: string[],
+  completedMissions: boolean[]
+) => {
+  const status = missions
+    .map((m, i) => `${i + 1}. [${completedMissions[i] ? '✓' : '✗'}] ${m}`)
+    .join('\n');
+
+  return `Bạn là giám khảo. Đọc lịch sử chat, chấm điểm tiếng Nhật của USER (KHÔNG chấm AI).
+Nếu không có tin nhắn user → score: 0. Bỏ qua [GRADING REQUEST].
+
+Nhiệm vụ: ${status}
+
+Thang điểm (N5/N4, ưu tiên giao tiếp thành công):
+S=90-100: câu đúng, có thể 1 lỗi nhỏ | A=75-89: hiểu được, 2-3 lỗi nhỏ OK | B=55-74: hiểu ý chính dù có lỗi | C=35-54: nhiều lỗi / Romaji nhiều | D=0-34: không dùng tiếng Nhật
+
+OUTPUT (tiếng Việt cho comment/good_points/reason, KHÔNG kèm lời thoại):
+[DATA_START]{"feedback":{"score":0,"comment":"","good_points":"","mistakes":[{"original":"","fixed":"","reason":""}]}}[DATA_END]`;
+};

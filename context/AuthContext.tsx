@@ -10,23 +10,23 @@ export interface User {
   role: string;
   isPremium?: boolean;
   avatar?: string | null;
-  currentLevel?: string;        
-  onboardingCompleted: boolean; 
+  currentLevel?: string;
+  onboardingCompleted: boolean;
 }
 
 type AuthContextType = {
   user: User | null;
   login: (userData: User) => void;
   logout: () => void;
-  refreshUser: () => Promise<void>; 
-  loading: boolean;                 
+  refreshUser: () => Promise<void>;
+  loading: boolean;
 };
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
-  login: () => {},
-  logout: () => {},
-  refreshUser: async () => {},
+  login: () => { },
+  logout: () => { },
+  refreshUser: async () => { },
   loading: true,
 });
 
@@ -67,20 +67,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (storedUser) {
         try {
           setUser(JSON.parse(storedUser));
+          // 🔥 Tối ưu: Nếu đã có user từ localStorage, hãy tắt loading ngay để hiện UI
+          setLoading(false);
         } catch {
           localStorage.removeItem('user_session');
         }
       }
 
-      // 2. Gọi Server Check
-      // Chúng ta dùng Promise.race để đảm bảo không bao giờ bị treo
-      // Nếu API chạy quá 2 giây, hoặc bị lỗi mạng, nó vẫn sẽ tắt loading
+      // 2. Gọi Server Check ngầm
       const apiCheck = fetchUser();
-      const timeout = new Promise((resolve) => setTimeout(resolve, 1500)); // 1.5s timeout
+      const timeout = new Promise((resolve) => setTimeout(resolve, 1500));
 
       await Promise.race([apiCheck, timeout]);
 
-      // 3. BẮT BUỘC TẮT LOADING
+      // 3. Đảm bảo tắt loading nếu bước 1 không có user
       setLoading(false);
     };
 
@@ -90,7 +90,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const login = (userData: User) => {
     setUser(userData);
     localStorage.setItem('user_session', JSON.stringify(userData));
-    router.push('/'); 
+    router.push('/');
   };
 
   const logout = () => {

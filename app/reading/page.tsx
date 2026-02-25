@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import Navbar from '@/components/Navbar';
 import {
     BookOpenText, Search, Signal, Play, Clock, Mic, Star,
     GraduationCap, Loader2, ArrowLeft, Eye, EyeOff,
@@ -226,7 +225,6 @@ export default function ReadingPage() {
 
         return (
             <div className="min-h-screen bg-slate-50 flex flex-col">
-                <Navbar />
 
                 <div className="flex-1 max-w-4xl mx-auto w-full p-4 md:p-8 flex flex-col">
                     {/* Header Challenge */}
@@ -285,7 +283,7 @@ export default function ReadingPage() {
                                         <div className={`text-2xl font-black ${score >= 70 ? 'text-green-600' : 'text-orange-500'}`}>{score}%</div>
                                         <div className="text-sm text-slate-600">
                                             <span className="block font-bold">{score >= 70 ? 'Chính xác!' : 'Cần cố gắng hơn'}</span>
-                                            AI nghe: "{transcript}"
+                                            AI nghe: &quot;{transcript}&quot;
                                         </div>
                                     </div>
                                 )}
@@ -338,7 +336,6 @@ export default function ReadingPage() {
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col">
-            <Navbar />
             <div className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-8">
 
                 {/* HEADER */}

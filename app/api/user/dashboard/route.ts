@@ -2,16 +2,20 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
 import redis from '@/lib/redis';
+import { N5_PHASES, N5_WEEKS } from '@/lib/data';
 
-// Thử import dữ liệu, nếu không có thì dùng mảng rỗng để không crash app
-let N5_PHASES: any[] = [];
-let N5_WEEKS: any[] = [];
-try {
-    const dataModule = require('@/lib/data');
-    N5_PHASES = dataModule.N5_PHASES;
-    N5_WEEKS = dataModule.N5_WEEKS || [];
-} catch (e) {
-    console.warn("⚠️ Chưa có file lib/data.ts, sử dụng cấu hình mặc định.");
+interface Quest {
+    id: string;
+}
+
+interface Phase {
+    id: number;
+    quests: Quest[];
+}
+
+interface Week {
+    week: number;
+    quests: Quest[];
 }
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +23,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
     try {
         const cookieStore = await cookies();
-        let token = cookieStore.get('session_token')?.value;
+        const token = cookieStore.get('session_token')?.value;
 
         if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -28,35 +32,57 @@ export async function GET() {
             return NextResponse.json({ error: 'Session expired' }, { status: 401 });
         }
 
-        // 1. Lấy dữ liệu cơ bản (Dùng Promise.allSettled để nếu 1 cái lỗi cũng không chết cả đám)
-        const [translationRes, testRes, deckRes, userRes] = await Promise.allSettled([
-            prisma.translationHistory.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: 3 }),
-            prisma.testResult.findFirst({ where: { userId }, orderBy: { completedAt: 'desc' }, include: { test: true } }),
-            prisma.deck.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: 4, include: { _count: { select: { cards: true } } } }),
-            prisma.user.findUnique({
-                where: { id: userId },
-                include: { progress: true } // Cố gắng lấy progress
-            })
-        ]);
+        // 1. Lấy dữ liệu cơ bản
+        const translationHistory = await prisma.translationHistory.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: 3 });
+        const testResult = await prisma.testResult.findFirst({ where: { userId }, orderBy: { completedAt: 'desc' }, include: { test: true } });
+        const decks = await prisma.deck.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: 4, include: { _count: { select: { cards: true } } } });
 
-        // Xử lý kết quả trả về an toàn
-        const translationHistory = translationRes.status === 'fulfilled' ? translationRes.value : [];
-        const testResult = testRes.status === 'fulfilled' ? testRes.value : null;
-        const decks = deckRes.status === 'fulfilled' ? deckRes.value : [];
-        const user = userRes.status === 'fulfilled' ? userRes.value : null;
+        // Khởi tạo user
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                currentLevel: true,
+                progress: true,
+                streakCount: true,
+                lastActiveAt: true
+            }
+        });
 
         if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
         // =========================================================
-        // 2. TÍNH TOÁN TIẾN ĐỘ (BỌC TRONG TRY-CATCH ĐỂ KHÔNG BAO GIỜ TREO)
+        // 2. TÍNH TOÁN TIẾN ĐỘ & STREAK (BỌC TRONG TRY-CATCH)
         // =========================================================
         let currentPhase = 1;
         let phasePercentage = 0;
         let totalN5Percentage = 0;
+        let streakCount = user.streakCount || 0;
 
         try {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const lastActive = user.lastActiveAt ? new Date(user.lastActiveAt) : null;
+
+            if (!lastActive) {
+                streakCount = 1;
+                await prisma.user.update({ where: { id: userId }, data: { streakCount: 1, lastActiveAt: now } });
+            } else {
+                const lastDate = new Date(lastActive.getFullYear(), lastActive.getMonth(), lastActive.getDate());
+                const diffDays = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+
+                if (diffDays === 1) {
+                    streakCount += 1;
+                    await prisma.user.update({ where: { id: userId }, data: { streakCount, lastActiveAt: now } });
+                } else if (diffDays > 1) {
+                    streakCount = 1;
+                    await prisma.user.update({ where: { id: userId }, data: { streakCount: 1, lastActiveAt: now } });
+                } else if (diffDays === 0) {
+                    await prisma.user.update({ where: { id: userId }, data: { lastActiveAt: now } });
+                }
+            }
+
             if (user.progress) {
-                const completedQuestIds = new Set(user.progress.map((p: any) => p.questId));
+                const completedQuestIds = new Set(user.progress.map(p => (p as any).questId));
 
                 // ── Tính theo N5_WEEKS ──
                 if (N5_WEEKS.length > 0) {
@@ -66,7 +92,7 @@ export async function GET() {
 
                     for (const week of N5_WEEKS) {
                         const wTotal = week.quests?.length || 0;
-                        const wCompleted = week.quests?.filter((q: any) => completedQuestIds.has(q.id)).length || 0;
+                        const wCompleted = week.quests?.filter((q) => completedQuestIds.has(q.id)).length || 0;
                         totalQuestsN5 += wTotal;
                         totalCompletedN5 += wCompleted;
 
@@ -95,7 +121,7 @@ export async function GET() {
 
                     for (const phase of N5_PHASES) {
                         const phaseTotal = phase.quests?.length || 0;
-                        const phaseCompleted = phase.quests?.filter((q: any) => completedQuestIds.has(q.id)).length || 0;
+                        const phaseCompleted = phase.quests?.filter((q: { id: string }) => completedQuestIds.has(q.id)).length || 0;
                         totalQuestsN5 += phaseTotal;
                         totalCompletedN5 += phaseCompleted;
 
@@ -125,7 +151,7 @@ export async function GET() {
         // =========================================================
         return NextResponse.json({
             history: {
-                translation: translationHistory.map(t => ({
+                translation: translationHistory.map((t: { sourceText: string; targetText: string; createdAt: Date | string }) => ({
                     source: t.sourceText,
                     target: t.targetText,
                     time: new Date(t.createdAt).toLocaleDateString('vi-VN')
@@ -136,7 +162,7 @@ export async function GET() {
                     name: testResult.test.title,
                     date: new Date(testResult.completedAt).toLocaleDateString('vi-VN')
                 } : null,
-                decks: decks.map(d => ({
+                decks: decks.map((d: { id: string; title: string; _count: { cards: number } }) => ({
                     id: d.id,
                     title: d.title,
                     count: d._count.cards
@@ -146,7 +172,8 @@ export async function GET() {
                 currentLevel: user.currentLevel || null,
                 totalN5Percentage: totalN5Percentage,
                 currentPhase: currentPhase,
-                phasePercentage: phasePercentage
+                phasePercentage: phasePercentage,
+                streakDays: streakCount
             }
         });
 

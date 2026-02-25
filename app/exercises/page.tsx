@@ -1,8 +1,7 @@
 //app/exercises/page.tsx
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import Navbar from '@/components/Navbar';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   BookA, Type, LayoutGrid, Hash, CloudSun, School, Briefcase, PawPrint, Users,
   Apple, Carrot, Music, Cpu, Armchair, Clapperboard, Palette, Globe, Smile,
@@ -80,7 +79,7 @@ export default function ExercisesPage() {
   const [lockedModal, setLockedModal] = useState<{ id: string; title: string }[] | null>(null);
 
   // Fetch tiến trình âm thầm, không có loading indicator
-  const fetchProgress = async () => {
+  const fetchProgress = useCallback(async () => {
     if (!user) return;
     try {
       const res = await fetch('/api/exercises/progress');
@@ -92,7 +91,7 @@ export default function ExercisesPage() {
     } catch (error) {
       console.error("Lỗi tải tiến trình", error);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     // Fetch lần đầu khi vào trang
@@ -110,11 +109,12 @@ export default function ExercisesPage() {
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       channel.close();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [user]);
+  }, [fetchProgress]); // Now fetchProgress is stable due to useCallback
 
   // --- LOGIC HIỂN THỊ TÊN BÀI HỌC ---
   const getLessonTitle = (id: string) => {
@@ -156,7 +156,6 @@ export default function ExercisesPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="sticky top-0 z-50 bg-white shadow-sm"><Navbar /></div>
 
       <main className="container mx-auto px-4 py-8 max-w-6xl relative z-10">
         <div className="mb-8 border-b border-slate-200 pb-4 flex items-center gap-3">

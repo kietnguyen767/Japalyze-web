@@ -24,19 +24,23 @@ export async function getTranslationHistory(userId: string) {
 // 2. Lấy từ vựng ngẫu nhiên cho Dashboard (Khi chưa dịch)
 export async function getDashboardVocabulary() {
     try {
-        // Helper function để lấy từ theo loại (PosTag)
+        // Helper function để lấy từ theo loại (PosTag) bằng Raw SQL để ngẫu nhiên nhanh hơn
         const getWords = async (tag: string) => {
-            // Lưu ý: Prisma raw query dùng random() sẽ tối ưu hơn nếu DB lớn, 
-            // nhưng ở đây dùng findMany skip/take đơn giản để demo.
-            const count = await prisma.dictionaryEntry.count({ where: { posTag: { contains: tag }, meaningVi: { not: null } } });
-            const skip = Math.floor(Math.random() * (count > 4 ? count - 4 : 0));
-
-            return await prisma.dictionaryEntry.findMany({
-                where: { posTag: { contains: tag }, meaningVi: { not: null } },
-                take: 4,
-                skip: skip,
-                select: { id: true, lemma: true, meaningVi: true, romaji: true, posTag: true }
-            });
+            try {
+                // Sử dụng TABLESAMPLE hoặc ORDER BY RANDOM() để lấy dữ liệu ngẫu nhiên nhanh
+                // PostgreSQL: ORDER BY RANDOM() nhanh vừa đủ cho bảng cỡ này
+                return await prisma.$queryRaw`
+                    SELECT id, lemma, "meaningVi", romaji, "posTag"
+                    FROM "DictionaryEntry"
+                    WHERE "posTag" LIKE ${'%' + tag + '%'} 
+                      AND "meaningVi" IS NOT NULL
+                    ORDER BY RANDOM()
+                    LIMIT 4
+                `;
+            } catch (e) {
+                console.error(`Lỗi lấy từ random (${tag}):`, e);
+                return [];
+            }
         };
 
         const [nouns, verbs, adjs, others] = await Promise.all([

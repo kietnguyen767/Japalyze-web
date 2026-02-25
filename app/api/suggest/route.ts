@@ -29,20 +29,15 @@ export async function POST(req: Request) {
     const source = body.source ?? "ja";
     const limit = Math.min(Math.max(body.limit ?? 8, 1), 12);
 
-    if (source !== "ja") {
-      return NextResponse.json({ success: true, items: [], cached: false });
-    }
-
-    if (queryRaw.length > 60) {
-      return NextResponse.json({ success: true, items: [], cached: false });
-    }
+    // ✅ Logic gợi ý linh hoạt: Cho phép tìm theo cả Nhật và Việt
+    // Bỏ check source !== "ja" để hỗ trợ tiếng Việt
 
     const q = queryRaw;
     const qLower = q.toLowerCase();
 
-    // ✅ romaji vs JP min length
+    // ✅ romaji vs JP min length (Tiếng Việt cần ít nhất 2 ký tự)
     const romajiInput = isRomajiLike(q);
-    const minLen = romajiInput ? 3 : 2;
+    const minLen = 2; // Giảm xuống 2 cho cả Việt và Nhật
 
     if (q.length < minLen) {
       return NextResponse.json({ success: true, items: [], cached: false });
@@ -53,6 +48,7 @@ export async function POST(req: Request) {
     if (cached) return NextResponse.json({ ...cached, cached: true });
 
     const jpPrefix = `${q}%`;
+    const viPrefix = `%${q}%`; // Tiếng Việt nên tìm chứa từ
     const romaPrefix = `${qLower}%`;
 
     const rows = await prisma.$queryRaw<
@@ -74,9 +70,10 @@ export async function POST(req: Request) {
         "posTag",
         "meaningVi",
         GREATEST(
-          similarity(lemma, ${q}),
+          similarity(lemma, ${q}) * 1.2, -- Ưu tiên tiếng Nhật hơn một chút
           similarity(COALESCE(reading, ''), ${q}),
-          similarity(COALESCE(romaji, ''), ${romajiInput ? qLower : q})
+          similarity(COALESCE(romaji, ''), ${romajiInput ? qLower : q}),
+          similarity(COALESCE("meaningVi", ''), ${q}) * 0.8 -- Điểm tiếng Việt thấp hơn để không lấn át kết quả Nhật
         ) AS score
       FROM "DictionaryEntry"
       WHERE lang = 'ja'
@@ -84,14 +81,16 @@ export async function POST(req: Request) {
           lemma ILIKE ${jpPrefix}
           OR COALESCE(reading, '') ILIKE ${jpPrefix}
           OR COALESCE(romaji, '') ILIKE ${romaPrefix}
+          OR "meaningVi" ILIKE ${viPrefix} -- Thêm phần tìm theo nghĩa Việt
           OR lemma % ${q}
           OR COALESCE(reading, '') % ${q}
-          OR COALESCE(romaji, '') % ${romajiInput ? qLower : q}
+          OR "meaningVi" % ${q}
         )
       ORDER BY
         (lemma ILIKE ${jpPrefix}) DESC,
         (COALESCE(reading, '') ILIKE ${jpPrefix}) DESC,
         (COALESCE(romaji, '') ILIKE ${romaPrefix}) DESC,
+        (COALESCE("meaningVi", '') ILIKE ${viPrefix}) DESC,
         score DESC
       LIMIT ${limit};
     `);

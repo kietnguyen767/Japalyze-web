@@ -1,7 +1,6 @@
 //app/roadmap/n5/page.tsx
 'use client';
 
-import Navbar from '@/components/Navbar';
 import { N5_WEEKS } from '@/lib/data';
 import Link from 'next/link';
 import {
@@ -175,10 +174,7 @@ export default function N5RoadmapPage() {
     return (
         <div className="h-screen flex flex-col bg-slate-50 overflow-hidden">
 
-            {/* Sticky Navbar */}
-            <div className="shrink-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
-                <Navbar />
-            </div>
+            {/* Sticky Navbar (HANDLED BY ROOT LAYOUT) */}
 
             {/* ════════════════════════════════════════════════════════════════
                 MOBILE LAYOUT  (< md)

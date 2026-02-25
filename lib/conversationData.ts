@@ -13,7 +13,7 @@ export type DialogueLine = {
   segments: Segment[];
   kana: string;
   romaji: string;
-  meaning: string; // ✨ CHÚNG TA SẼ DÙNG TRƯỜNG NÀY ĐỂ HIỆN GIẢI THÍCH ĐÁP ÁN
+  meaning: string;
   isQuiz?: boolean;
   quizQuestion?: Segment[];
   quizOptions?: string[];
@@ -36,7 +36,7 @@ export const CONVERSATION_DATA: ConversationLesson[] = [
     title: '1. Giới thiệu bản thân (自己紹介)',
     description: 'Hội thoại làm quen giữa Min (Aki đóng vai) và Nam (Daigo đóng vai).',
     characters: ['Aki', 'Daigo'], // Aki = Min, Daigo = Nam
-    prerequisites: ['numbers', 'countries'], 
+    prerequisites: ['numbers', 'countries'],
     lines: [
       // 1. A: Hajimemashite
       {
@@ -46,7 +46,7 @@ export const CONVERSATION_DATA: ConversationLesson[] = [
         romaji: 'Hajimemashite.',
         meaning: 'Rất vui được gặp bạn.'
       },
-      
+
       // --- QUIZ 1: CÂU CHÀO (Câu 6 trong đề bài) ---
       {
         id: 2, speaker: 'Daigo', // Người hỏi
@@ -104,7 +104,7 @@ export const CONVERSATION_DATA: ConversationLesson[] = [
         ],
         quizOptions: ['来る (Kuru)', '行く (Iku)', '見る (Miru)'],
         correctOptionIndex: 0, // A. Kuru
-        segments: [{ text: "「" }, { text: "来", furigana: "き" }, { text: "ました」は..." }], 
+        segments: [{ text: "「" }, { text: "来", furigana: "き" }, { text: "ました」は..." }],
         kana: 'きましたは...',
         romaji: 'Kimashita wa...',
         meaning: '💡 Giải thích: "Kimashita" là quá khứ lịch sự của "Kuru" (Đến). "Iku" là Đi, "Miru" là Nhìn.'
@@ -270,7 +270,7 @@ export const CONVERSATION_DATA: ConversationLesson[] = [
     title: '2. Quê quán (出身)',
     description: 'Hội thoại giữa Isora và Aki về quê quán, nơi sinh sống hiện tại và gia đình.',
     characters: ['Isora', 'Aki'], // Isora = A, Aki = B
-    prerequisites: ['family', 'countries'], 
+    prerequisites: ['family', 'countries'],
     lines: [
       // 1. A: Hỏi quê
       {
@@ -283,7 +283,7 @@ export const CONVERSATION_DATA: ConversationLesson[] = [
 
       // --- QUIZ 1: TỪ VỰNG SHUSSHIN (Câu 1) ---
       {
-        id: 2, speaker: 'Aki', 
+        id: 2, speaker: 'Aki',
         isQuiz: true,
         quizQuestion: [
           { text: "単語", furigana: "たんご" }, { text: ": 「" }, { text: "出身", furigana: "しゅっしん" }, { text: "」の" }, { text: "意味", furigana: "いみ" }, { text: "は？" }
@@ -2101,7 +2101,7 @@ export const CONVERSATION_DATA: ConversationLesson[] = [
     title: '9. Hỏi đường (道を聞く)',
     description: 'Hội thoại hỏi đường đến nhà ga, thời gian đi bộ và các chỉ dẫn rẽ trái/phải.',
     characters: ['Isora', 'Daigo'], // Isora = A, Daigo = B
-    prerequisites: ['travel', 'numbers'], 
+    prerequisites: ['travel', 'numbers'],
     lines: [
       // 1. A: Xin lỗi, ga ở đâu
       {

@@ -15,6 +15,9 @@ const beVietnamPro = Be_Vietnam_Pro({
   weight: ["300", "400", "500", "600", "700", "800"],
 });
 
+import MainLayout from "@/components/MainLayout";
+import { ToastProvider } from '@/context/ToastContext';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -22,13 +25,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi">
-      
+
       <body className={`${beVietnamPro.className} antialiased`}>
         <SakuraEffect />
-        <AuthProvider>
-          
-          {children}
-        </AuthProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <MainLayout>
+              {children}
+            </MainLayout>
+          </AuthProvider>
+        </ToastProvider>
       </body>
     </html>
   );

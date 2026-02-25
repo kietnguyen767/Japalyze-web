@@ -42,6 +42,10 @@ model User {
   
   // Quan hệ lưu danh sách các Quest đã hoàn thành
   progress            UserProgress[]       
+
+  // --- Streak Tracking ---
+  streakCount         Int                  @default(0)
+  lastActiveAt        DateTime?            // Ngày cuối cùng user truy cập dashboard
 }
 
 // 🔥 MODEL MỚI: Lưu tiến độ làm nhiệm vụ (Quest)
@@ -85,14 +89,21 @@ model Deck {
 }
 
 model Card {
-  id        String   @id @default(uuid())
-  front     String
-  back      String
-  example   String?
-  isLearned Boolean  @default(false)
-  createdAt DateTime @default(now())
-  deckId    String
-  deck      Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  id           String   @id @default(uuid())
+  front        String
+  back         String
+  example      String?
+  isLearned    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  
+  // --- SRS Fields ---
+  nextReviewAt DateTime @default(now())
+  interval     Int      @default(0)   // Khoảng cách ngày (0 = học lại ngay)
+  easeFactor   Float    @default(2.5) // Hệ số độ dễ (mặc định 2.5 theo thuật toán SM-2)
+  repetitions  Int      @default(0)   // Số lần đã nhớ đúng liên tiếp
+
+  deckId       String
+  deck         Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
 }
 
 // ==========================================

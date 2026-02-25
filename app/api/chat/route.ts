@@ -5,17 +5,16 @@ import { streamText } from 'ai';
 export const maxDuration = 60;
 
 const getAI = (type: string) => {
-  let key = process.env.GOOGLE_AI_API_KEY; // Default fallback
+  const keyMap: Record<string, string | undefined> = {
+    chat: process.env.GOOGLE_AI_API_KEY_CHAT,
+    logic: process.env.GOOGLE_AI_API_KEY_LOGIC,
+    grading: process.env.GOOGLE_AI_API_KEY_GRADING,
+  };
 
-  if (type === 'chat') key = process.env.GOOGLE_AI_API_KEY_CHAT || key;
-  if (type === 'logic') key = process.env.GOOGLE_AI_API_KEY_LOGIC || key;
-  if (type === 'grading') key = process.env.GOOGLE_AI_API_KEY_GRADING || key;
+  const key = keyMap[type];
+  if (!key) throw new Error(`Missing API Key for agent type: "${type}". Set GOOGLE_AI_API_KEY_${type.toUpperCase()} in .env`);
 
-  if (!key) throw new Error("Missing API Key for type: " + type);
-
-  return createGoogleGenerativeAI({
-    apiKey: key,
-  });
+  return createGoogleGenerativeAI({ apiKey: key });
 };
 
 export async function POST(req: Request) {
@@ -35,7 +34,7 @@ export async function POST(req: Request) {
     });
 
     const result = streamText({
-      model: google('gemini-2.5-flash-lite'),
+      model: google('gemini-2.5-flash'),
       system: systemPrompt, // Native system support
       messages: cleanMessages,
       temperature: 0.7,

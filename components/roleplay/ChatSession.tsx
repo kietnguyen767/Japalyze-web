@@ -18,7 +18,7 @@ import {
   Character,
   FeedbackData,
   Message,
-  getRemindPrompt,
+  getGradingPrompt,
   getChatOnlyPrompt,
   getLogicOnlyPrompt,
   getTriggerMessage,
@@ -57,11 +57,14 @@ export default function ChatSession({ character, topic, assignedMissions, onBack
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isMounted = useRef(false);
+  const hasInitialized = useRef(false);
 
-  // Reset chat khi component mount hoặc prop thay đổi
   useEffect(() => {
     isMounted.current = true;
-    initChat();
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
+      initChat();
+    }
     return () => { isMounted.current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -289,12 +292,16 @@ export default function ChatSession({ character, topic, assignedMissions, onBack
       .slice(-MAX_HISTORY)
       .map((m) => ({ role: m.role, content: m.content }));
 
-    const remindPrompt = getRemindPrompt(character, input, isOutOfTurns, missions, completedMissions);
 
-    // ✅ UPDATE: Parallel Agents
+    // ✅ Parallel Agents
     if (isOutOfTurns) {
-      // Nếu hết lượt -> Gọi Grading Agent
-      await callAI(history, remindPrompt, true, true, 'grading', false);
+      // Hết lượt → Grading agent chấm điểm theo thang S/A/B/C/D
+      const gradingHistory = [
+        ...history,
+        { role: 'user', content: '[GRADING REQUEST] Roleplay đã kết thúc vì hết lượt. Hãy chấm điểm toàn bộ hội thoại theo định dạng yêu cầu.' }
+      ];
+      const gradingPrompt = getGradingPrompt(missions, completedMissions);
+      await callAI(gradingHistory, gradingPrompt, true, true, 'grading', false);
     } else {
       // 1. Agent Logic (Check mission & language) - Silent
       const logicPrompt = getLogicOnlyPrompt(missions, input);
@@ -388,22 +395,22 @@ export default function ChatSession({ character, topic, assignedMissions, onBack
 
   const confirmForceFinish = async () => {
     setShowConfirmEnd(false);
-    if (isLoading || showFeedback) return;
+    if (showFeedback) return;
     setIsLoading(true);
 
-    // Tạo tin nhắn hệ thống giả lập để AI biết user muốn dừng
-    const forceInput = "(SYSTEM: The user wants to end the roleplay now. Please grade the performance immediately.)";
-
-    // Thêm tin nhắn này vào history gửi đi (nhưng không hiện lên UI)
-    const history = [
+    const baseHistory = [
       ...messages.filter((m) => m.content !== '...').slice(-MAX_HISTORY),
-      { role: 'user', content: forceInput }
     ].map((m) => ({ role: m.role, content: m.content }));
 
-    const remindPrompt = getRemindPrompt(character, forceInput, true, missions, completedMissions);
-    // Force finish -> Luôn cho phép hiện feedback (tham số thứ 4 = true)
-    // Dùng 'grading' key để chấm điểm
-    await callAI(history, remindPrompt, true, true, 'grading');
+    // Thêm trigger cuối để AI hiểu phải xuất JSON chấm điểm
+    const gradingHistory = [
+      ...baseHistory,
+      { role: 'user', content: '[GRADING REQUEST] Người dùng chủ động kết thúc. Hãy chấm điểm toàn bộ hội thoại theo định dạng yêu cầu, không trả lời bằng tiếng Nhật.' }
+    ];
+
+    // silent=true: không hiện '...' trong chat
+    const gradingPrompt = getGradingPrompt(missions, completedMissions);
+    await callAI(gradingHistory, gradingPrompt, true, true, 'grading', true);
   };
 
   /**

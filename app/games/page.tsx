@@ -3,10 +3,9 @@
 import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
-import { 
-  Gamepad2, Ghost, Keyboard, Sparkles, Play, 
+import {
+  Gamepad2, Ghost, Keyboard, Sparkles, Play,
   Zap, Star, Moon, Swords, Flower2
 } from 'lucide-react';
 
@@ -16,30 +15,30 @@ const GAMES = [
     title: 'Huyền Thoại Diệt Quái',
     subtitle: 'RPG Luyện Gõ & Phản Xạ',
     description: 'Nhập vai chiến binh Samurai đối đầu với các Yo-kai (Yêu quái). Gõ đúng phiên âm hoặc nghĩa của từ vựng thật nhanh để tung chiêu tấn công trước khi bị quái vật hạ gục.',
-    icon: Swords, 
-    secondaryIcon: Keyboard, 
+    icon: Swords,
+    secondaryIcon: Keyboard,
     color: 'from-red-500 to-orange-600',
     // 👇 THÊM DÒNG NÀY: Màu chữ cụ thể cho Icon chính
-    textColor: 'text-red-600', 
+    textColor: 'text-red-600',
     shadow: 'shadow-red-200',
     tags: ['Nhập vai (RPG)', 'Gõ máy', 'Phản xạ'],
     stats: { players: '2.4k', rating: 4.9 },
-    href: '#' 
+    href: '#'
   },
   {
     id: 'tarot',
     title: 'Tiên Tri Tarot',
     subtitle: 'Gieo quẻ phong cách Nhật',
     description: 'Hòa mình vào không gian huyền bí đậm chất Nhật Bản. Rút các lá bài Tarot được vẽ theo phong cách Ukiyo-e để nhận lời khuyên về vận mệnh, tình yêu và công việc.',
-    icon: Moon, 
-    secondaryIcon: Flower2, 
+    icon: Moon,
+    secondaryIcon: Flower2,
     color: 'from-violet-500 to-indigo-600',
     // 👇 THÊM DÒNG NÀY: Màu chữ cụ thể cho Icon chính
     textColor: 'text-violet-600',
     shadow: 'shadow-violet-200',
     tags: ['Văn hóa', 'Đọc hiểu', 'Thư giãn'],
     stats: { players: '1.8k', rating: 4.8 },
-    href: '/games/tarot' 
+    href: '/games/tarot'
   }
 ];
 
@@ -57,10 +56,9 @@ export default function GamesPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar />
 
       <div className="flex-1 max-w-6xl mx-auto w-full p-4 md:p-8">
-        
+
         {/* HEADER SECTION */}
         <div className="mb-12 text-center space-y-4">
           <div className="inline-flex items-center justify-center p-4 bg-white rounded-3xl shadow-sm mb-2 relative overflow-hidden group">
@@ -78,8 +76,8 @@ export default function GamesPage() {
         {/* GAMES GRID */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {GAMES.map((game) => (
-            <div 
-              key={game.id} 
+            <div
+              key={game.id}
               className="group relative bg-white rounded-[2rem] border border-slate-100 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 overflow-hidden flex flex-col h-full"
             >
               {/* Card Header Background */}
@@ -87,7 +85,7 @@ export default function GamesPage() {
                 {/* Hiệu ứng nền động */}
                 <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
                 <div className="absolute -right-10 -top-10 w-48 h-48 bg-white/20 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700"></div>
-                
+
                 {/* Icon phụ trang trí */}
                 <game.secondaryIcon className="absolute right-6 bottom-6 text-white/20 w-24 h-24 rotate-12" />
 
@@ -98,7 +96,7 @@ export default function GamesPage() {
                       {/* 👇 ĐÃ SỬA: Dùng textColor thay vì bg-clip-text */}
                       <game.icon size={32} className={game.textColor} />
                     </div>
-                    
+
                     <div>
                       <h3 className="font-black text-2xl md:text-3xl text-white drop-shadow-md leading-none mb-1">
                         {game.title}
@@ -139,7 +137,7 @@ export default function GamesPage() {
                     </div>
                   </div>
 
-                  <Link 
+                  <Link
                     href={game.href}
                     onClick={(e) => {
                       e.preventDefault();
@@ -162,18 +160,18 @@ export default function GamesPage() {
 
         {/* Coming Soon Section */}
         <div className="mt-20 relative p-8 rounded-3xl bg-slate-900 overflow-hidden text-center text-white">
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent"></div>
-            
-            <div className="relative z-10 flex flex-col items-center gap-4">
-                <div className="inline-flex items-center justify-center w-14 h-14 bg-white/10 backdrop-blur-md rounded-full mb-2">
-                    <Sparkles size={28} className="text-yellow-400" />
-                </div>
-                <h3 className="text-2xl font-bold">Bạn muốn thêm trò chơi nào?</h3>
-                <p className="text-slate-400 max-w-lg mx-auto">
-                    Chúng tôi luôn lắng nghe ý kiến cộng đồng. Hãy chia sẻ ý tưởng game học tập mà bạn muốn trải nghiệm nhé!
-                </p>
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent"></div>
+
+          <div className="relative z-10 flex flex-col items-center gap-4">
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-white/10 backdrop-blur-md rounded-full mb-2">
+              <Sparkles size={28} className="text-yellow-400" />
             </div>
+            <h3 className="text-2xl font-bold">Bạn muốn thêm trò chơi nào?</h3>
+            <p className="text-slate-400 max-w-lg mx-auto">
+              Chúng tôi luôn lắng nghe ý kiến cộng đồng. Hãy chia sẻ ý tưởng game học tập mà bạn muốn trải nghiệm nhé!
+            </p>
+          </div>
         </div>
 
       </div>

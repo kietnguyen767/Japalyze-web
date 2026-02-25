@@ -1,6 +1,5 @@
 // app/translate/page.tsx
 import React, { Suspense } from "react";
-import Navbar from "@/components/Navbar";
 import TranslationPanel from "@/components/TranslationPanel";
 
 export default function TranslatePage() {
@@ -13,9 +12,6 @@ export default function TranslatePage() {
       }
     >
       <div className="min-h-screen pb-20 relative z-10">
-        <div className="bg-white shadow-sm">
-          <Navbar />
-        </div>
 
         <div className="container mx-auto px-4 pt-8">
           <div className="text-center mb-10">

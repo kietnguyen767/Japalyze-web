@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import Navbar from '@/components/Navbar';
 import { useParams, useSearchParams } from 'next/navigation'; // 👈 THÊM useSearchParams
 import Link from 'next/link';
 
@@ -144,9 +143,6 @@ export default function LessonPage() {
   else {
     return (
       <div className="min-h-screen bg-slate-50">
-        <div className="sticky top-0 z-50 bg-white shadow-sm">
-          <Navbar />
-        </div>
         <div className="text-center py-20">
           <h2 className="text-2xl font-bold text-slate-400">
             Bài học đang được biên soạn 🚧
@@ -165,9 +161,6 @@ export default function LessonPage() {
   // --- RENDER ---
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
-      <div className="sticky top-0 z-50 bg-white shadow-sm">
-        <Navbar />
-      </div>
       <main className="container mx-auto px-4 py-8 relative z-10">
         {content}
       </main>
