@@ -8,6 +8,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   // Icon cũ
   BookOpen, Zap, ClipboardList, Users, Search, LogOut, LogIn, UserPlus, Gift, X, Loader, Menu, CheckCircle, CreditCard,
+  Crown, Sparkles, CheckCircle2,
   // Icon mới
   Languages,      // Cho Dịch thuật
   BookOpenText,   // Cho Luyện đọc
@@ -420,35 +421,99 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* MODAL PREMIUM */}
+      {/* MODAL PREMIUM NÂNG CẤP */}
       {showPremiumModal && (
-        <div className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden relative flex flex-col md:flex-row">
-            <button onClick={() => setShowPremiumModal(false)} className="absolute top-4 right-4 p-2 bg-slate-100 rounded-full hover:bg-slate-200 z-10 text-slate-500"><X size={20} /></button>
-            <div className="md:w-2/5 bg-gradient-to-br from-indigo-600 to-purple-700 p-8 flex flex-col justify-center text-white relative overflow-hidden">
-              <h2 className="text-3xl font-extrabold mb-4 relative z-10">Mở khóa toàn bộ tiềm năng Nhật ngữ!</h2>
-              <ul className="space-y-4 relative z-10 text-indigo-100">
-                <li className="flex gap-2 items-center"><CheckCircle size={20} /> Truy cập 100% Hội thoại</li>
-                <li className="flex gap-2 items-center"><CheckCircle size={20} /> Không giới hạn bài tập</li>
-                <li className="flex gap-2 items-center"><CheckCircle size={20} /> Huy hiệu VIP lấp lánh</li>
-                <li className="flex gap-2 items-center"><CheckCircle size={20} /> Hỗ trợ 24/7</li>
-              </ul>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
+            onClick={() => setShowPremiumModal(false)}
+          />
+          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in slide-in-from-bottom-8 duration-300">
+            <button
+              onClick={() => setShowPremiumModal(false)}
+              className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/40 rounded-full z-20 text-white transition-colors"
+            >
+              <X size={20} />
+            </button>
+
+            {/* Cột trái: Brand & Benefits */}
+            <div className="md:w-5/12 bg-gradient-to-br from-slate-800 via-slate-900 to-indigo-900 p-8 md:p-10 flex flex-col justify-center text-white relative overflow-hidden">
+
+              <div className="relative z-10">
+                <h2 className="text-2xl md:text-3xl font-bold mb-6 leading-tight tracking-tight">
+                  Nâng cấp <br /><span className="text-yellow-400/90">Premium</span>
+                </h2>
+                <ul className="space-y-4">
+                  {[
+                    { text: 'Mở khóa 100% nội dung học tập', icon: CheckCircle2 },
+                    { text: 'Luyện nói không giới hạn với AI', icon: Zap },
+                    { text: 'Huy hiệu VIP lấp lánh trên profile', icon: Sparkles },
+                    { text: 'Ưu tiên hỗ trợ & tính năng mới nhất', icon: CheckCircle2 },
+                  ].map((item, i) => (
+                    <li key={i} className="flex gap-3 items-center text-sm font-medium text-slate-300">
+                      <item.icon size={18} className="text-yellow-400/60 shrink-0" />
+                      {item.text}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
-            <div className="md:w-3/5 p-8 md:p-12 bg-slate-50">
-              <h3 className="text-2xl font-bold text-slate-800 mb-2 text-center">Chọn gói của bạn</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                <div className="border-2 border-slate-200 hover:border-blue-400 bg-white p-6 rounded-2xl cursor-pointer transition-all hover:shadow-lg flex flex-col items-center text-center group">
-                  <h4 className="font-bold text-lg text-slate-700">Dùng thử 7 ngày</h4>
-                  <p className="text-blue-600 font-extrabold text-xl my-2">0đ</p>
-                  <button onClick={() => handleActivatePremium('trial')} disabled={processing} className="w-full py-2 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-blue-600 hover:text-white transition-all">Bắt đầu ngay</button>
+
+            {/* Cột phải: Pricing */}
+            <div className="md:w-7/12 p-8 md:p-10 bg-white flex flex-col justify-center">
+              <div className="text-center mb-8">
+                <h3 className="text-xl font-bold text-slate-800 mb-2">Chọn gói của bạn</h3>
+                <p className="text-slate-500 text-sm">Bắt đầu hành trình chinh phục tiếng Nhật ngay hôm nay</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {/* GÓI DÙNG THỬ */}
+                <div
+                  onClick={() => handleActivatePremium('trial')}
+                  className="bg-slate-50 p-6 rounded-2xl border border-slate-100 hover:border-indigo-100 transition-all hover:shadow-md cursor-pointer group flex flex-col h-full"
+                >
+                  <div className="mb-4">
+                    <h4 className="font-bold text-slate-400 text-[10px] uppercase tracking-widest mb-1">Cơ bản</h4>
+                    <span className="text-lg font-bold text-slate-800">Dùng thử</span>
+                  </div>
+                  <div className="mt-auto">
+                    <div className="flex items-baseline gap-1 mb-5">
+                      <span className="text-2xl font-bold text-slate-800">0đ</span>
+                      <span className="text-slate-400 text-xs">/ 7 ngày</span>
+                    </div>
+                    <button className="w-full py-2.5 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 transition-all text-xs">
+                      BẮT ĐẦU NGAY
+                    </button>
+                  </div>
                 </div>
-                <div className="border-2 border-orange-200 hover:border-orange-400 bg-white p-6 rounded-2xl cursor-pointer transition-all hover:shadow-lg flex flex-col items-center text-center group relative overflow-hidden">
-                  <div className="absolute top-0 right-0 bg-orange-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl">POPULAR</div>
-                  <h4 className="font-bold text-lg text-slate-700">Gói 1 Tháng</h4>
-                  <p className="text-orange-600 font-extrabold text-xl my-2">59.000đ</p>
-                  <button onClick={() => handleActivatePremium('buy_1_month')} disabled={processing} className="w-full py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-xl hover:shadow-orange-200 hover:shadow-lg transition-all">Nạp ngay</button>
+
+                {/* GÓI 1 THÁNG */}
+                <div
+                  onClick={() => handleActivatePremium('buy_1_month')}
+                  className="bg-white p-6 rounded-2xl border border-orange-100 ring-4 ring-orange-50/50 hover:shadow-lg transition-all cursor-pointer group relative overflow-hidden flex flex-col h-full"
+                >
+                  <div className="absolute top-0 right-0 bg-orange-500 text-white text-[9px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider">
+                    Phổ biến
+                  </div>
+                  <div className="mb-4">
+                    <h4 className="font-bold text-orange-400 text-[10px] uppercase tracking-widest mb-1">Premium</h4>
+                    <span className="text-lg font-bold text-slate-800">Gói 1 Tháng</span>
+                  </div>
+                  <div className="mt-auto">
+                    <div className="flex items-baseline gap-1 mb-5">
+                      <span className="text-2xl font-bold text-orange-600">59k</span>
+                      <span className="text-slate-400 text-xs">/ tháng</span>
+                    </div>
+                    <button className="w-full py-2.5 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-xl shadow-md shadow-orange-100 transition-all text-xs">
+                      MUA NGAY
+                    </button>
+                  </div>
                 </div>
               </div>
+
+              <p className="mt-8 text-center text-[9px] text-slate-400 font-medium uppercase tracking-widest leading-loose">
+                Thanh toán an toàn qua cổng PayOS • Bảo mật 100%
+              </p>
             </div>
           </div>
         </div>

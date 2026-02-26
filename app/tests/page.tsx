@@ -9,6 +9,7 @@ import {
   Loader2, History, ArrowRight
 } from 'lucide-react';
 import TakingTest from '@/components/tests/TakingTest';
+import ConfirmModal from '@/components/ConfirmModal';
 
 // --- TYPES ---
 export type Question = {
@@ -56,6 +57,8 @@ export default function TestsPage() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [showExitModal, setShowExitModal] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -147,10 +150,8 @@ export default function TestsPage() {
   };
 
   const handleExit = () => {
-    if (confirm("Thoát bài thi? Kết quả sẽ không được lưu.")) {
-      if (timerRef.current) clearInterval(timerRef.current);
-      setViewState('list'); setCurrentTest(null); setAnswers({});
-    }
+    if (timerRef.current) clearInterval(timerRef.current);
+    setViewState('list'); setCurrentTest(null); setAnswers({});
   };
 
   // --- RENDERERS ---
@@ -294,6 +295,28 @@ export default function TestsPage() {
         </div>
       )}
 
+      <ConfirmModal
+        isOpen={showSubmitModal}
+        onClose={() => setShowSubmitModal(false)}
+        onConfirm={handleSubmitTest}
+        title="Nộp bài thi?"
+        message="Bạn có chắc chắn muốn nộp bài? Sau khi nộp bạn sẽ không thể thay đổi câu trả lời."
+        confirmText="Nộp bài"
+        cancelText="Tiếp tục làm"
+        variant="warning"
+      />
+
+      <ConfirmModal
+        isOpen={showExitModal}
+        onClose={() => setShowExitModal(false)}
+        onConfirm={handleExit}
+        title="Thoát bài thi?"
+        message="Kết quả sẽ không được lưu nếu bạn thoát. Bạn có chắc chắn muốn thoát?"
+        confirmText="Thoát"
+        cancelText="Ở lại"
+        variant="danger"
+      />
+
       {viewState === 'list' && renderTestList()}
 
       {viewState === 'taking' && currentTest && (
@@ -303,8 +326,8 @@ export default function TestsPage() {
           answers={answers} setAnswers={setAnswers}
           timeLeft={timeLeft} isPaused={isPaused}
           togglePause={handleTogglePause}
-          onSubmit={() => { if (confirm("Nộp bài ngay?")) handleSubmitTest(); }}
-          onExit={handleExit}
+          onSubmit={() => setShowSubmitModal(true)}
+          onExit={() => setShowExitModal(true)}
         />
       )}
     </div>

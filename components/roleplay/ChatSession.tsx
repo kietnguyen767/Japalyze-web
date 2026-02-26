@@ -216,6 +216,28 @@ export default function ChatSession({ character, topic, assignedMissions, onBack
         return;
       }
 
+      // ✅ AUTO TTS: Phát âm thanh ngay khi AI trả lời xong (Chỉ cho Agent Chat)
+      if (!silent && agentType === 'chat') {
+        // Tách lấy phần lời thoại (không bao gồm JSON nếu có)
+        let finalDisplay = '';
+        const jsonMatch = fullText.match(/\[DATA_START\]([\s\S]*?)\[DATA_END\]/);
+        if (jsonMatch) {
+          const parts = fullText.split('[DATA_END]');
+          finalDisplay = parts.length > 1 ? parts[1].trim() : '';
+        } else {
+          finalDisplay = fullText.split('[DATA_START]')[0].trim();
+        }
+
+        if (finalDisplay) {
+          // Phát âm thanh và tự động bật Mic sau khi nói xong
+          handleSpeak(finalDisplay, () => {
+            if (isMounted.current && !showFeedback) {
+              handleMicClick();
+            }
+          });
+        }
+      }
+
       // --- PARSE JSON ---
       const jsonMatch = fullText.match(/\[DATA_START\]([\s\S]*?)\[DATA_END\]/);
       if (!jsonMatch || !jsonMatch[1]) return;
@@ -359,11 +381,20 @@ export default function ChatSession({ character, topic, assignedMissions, onBack
    * SPEAK (TTS)
    * =========================
    */
-  const handleSpeak = (text: string) => {
+  const handleSpeak = (text: string, onEnd?: () => void) => {
     const cleanText = text.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!cleanText) return;
+
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.lang = 'ja-JP';
+
+    if (onEnd) {
+      utterance.onend = () => {
+        onEnd();
+      };
+    }
+
     window.speechSynthesis.speak(utterance);
   };
 
