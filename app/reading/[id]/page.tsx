@@ -2,7 +2,6 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import Navbar from '@/components/Navbar';
 import {
     Mic, Square, RotateCcw, ChevronLeft,
     Volume2, CheckCircle2, AlertCircle, Award, Loader2,
@@ -11,6 +10,8 @@ import {
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+
 
 type ArticleDetail = {
     id: string;
@@ -58,8 +59,18 @@ export default function ReadingPracticePage() {
     const { user, loading: authLoading } = useAuth();
     const params = useParams();
     const router = useRouter();
-    const [article, setArticle] = useState<ArticleDetail | null>(null);
-    const [loading, setLoading] = useState(true);
+
+    const { data: article = null, isLoading: loading } = useQuery<ArticleDetail | null>({
+        queryKey: ['reading-article', params?.id],
+        queryFn: async () => {
+            const res = await fetch(`/api/reading/${params?.id}`);
+            if (!res.ok) throw new Error('ERR');
+            return res.json();
+        },
+        enabled: !!params?.id && !!user,
+        staleTime: 10 * 60 * 1000,
+    });
+
 
     // States hiển thị
     const [showFurigana, setShowFurigana] = useState(true);
@@ -84,33 +95,8 @@ export default function ReadingPracticePage() {
 
     const recognitionRef = useRef<any>(null);
 
-    // 1. Fetch Data
-    useEffect(() => {
-        const fetchArticle = async () => {
-            try {
-                const id = params?.id;
-                if (!id) return;
-                const res = await fetch(`/api/reading/${id}`);
+    // React Query handles article fetching
 
-                // Handle 401 Unauthorized -> Redirect handled by separate effect below
-                if (res.status === 401) return;
-
-                if (!res.ok) throw new Error('Không tìm thấy bài');
-                const data = await res.json();
-                setArticle(data);
-            } catch (error) {
-                console.error(error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (user) {
-            fetchArticle();
-        } else if (!authLoading) {
-            setLoading(false);
-        }
-    }, [params, user, authLoading]);
 
     // Handle Redirect if not logged in
     useEffect(() => {
@@ -289,7 +275,6 @@ export default function ReadingPracticePage() {
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col">
-            <Navbar />
 
             <div className="flex-1 max-w-4xl mx-auto w-full p-4 md:p-8 flex flex-col">
 

@@ -11,7 +11,9 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { CONVERSATION_DATA } from '@/lib/conversationData';
+
 
 // --- DATA CỐ ĐỊNH ---
 const CATEGORIES = [
@@ -74,47 +76,36 @@ const CATEGORIES = [
 
 export default function ExercisesPage() {
   const { user } = useAuth();
-  const [completedLessons, setCompletedLessons] = useState<string[]>([]);
-  const [isPremiumUser, setIsPremiumUser] = useState(false);
+  const queryClient = useQueryClient();
+
+  const { data: progressData } = useQuery({
+    queryKey: ['exercise-progress'],
+    queryFn: async () => {
+      const res = await fetch('/api/exercises/progress');
+      if (res.ok) return res.json();
+      return { completed: [], isPremium: false };
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const completedLessons = progressData?.completed || [];
+  const isPremiumUser = progressData?.isPremium || false;
   const [lockedModal, setLockedModal] = useState<{ id: string; title: string }[] | null>(null);
 
-  // Fetch tiến trình âm thầm, không có loading indicator
-  const fetchProgress = useCallback(async () => {
-    if (!user) return;
-    try {
-      const res = await fetch('/api/exercises/progress');
-      if (res.ok) {
-        const data = await res.json();
-        setCompletedLessons(data.completed || []);
-        setIsPremiumUser(data.isPremium || false);
-      }
-    } catch (error) {
-      console.error("Lỗi tải tiến trình", error);
-    }
-  }, [user]);
 
   useEffect(() => {
-    // Fetch lần đầu khi vào trang
-    fetchProgress();
-
     // Refetch ngay lập tức khi có bài hoàn thành (BroadcastChannel)
     const channel = new BroadcastChannel('exercise-progress');
-    channel.onmessage = () => fetchProgress();
-
-    // Refetch khi user quay lại tab
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        fetchProgress();
-      }
+    channel.onmessage = () => {
+      queryClient.invalidateQueries({ queryKey: ['exercise-progress'] });
     };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       channel.close();
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [fetchProgress]); // Now fetchProgress is stable due to useCallback
+  }, [queryClient]);
+
 
   // --- LOGIC HIỂN THỊ TÊN BÀI HỌC ---
   const getLessonTitle = (id: string) => {

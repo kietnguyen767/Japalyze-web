@@ -1,15 +1,18 @@
+//app/tests/page.tsx
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Clock, FileText, Lock, Crown, LayoutGrid,
   Loader2, History, ArrowRight
 } from 'lucide-react';
 import TakingTest from '@/components/tests/TakingTest';
 import ConfirmModal from '@/components/ConfirmModal';
+
 
 // --- TYPES ---
 export type Question = {
@@ -43,14 +46,41 @@ const LEVELS = [
 ];
 
 export default function TestsPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState('N5');
   const [viewState, setViewState] = useState<'list' | 'taking'>('list');
-  const [loading, setLoading] = useState(true);
-  const [testList, setTestList] = useState<MockTest[]>([]);
-  const [currentTest, setCurrentTest] = useState<MockTest | null>(null);
+
+  const { data: testList = [], isLoading: isListLoading } = useQuery<MockTest[]>({
+    queryKey: ['tests'],
+    queryFn: async () => {
+      const res = await fetch('/api/tests');
+      if (!res.ok) throw new Error('Failed to fetch tests');
+      return res.json();
+    },
+    enabled: !authLoading,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const [loading, setLoading] = useState(false); // Used for starting a test loading state
+  const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
+
+  const { data: fullTestData, isLoading: isDetailLoading } = useQuery<MockTest>({
+    queryKey: ['test-detail', selectedTestId],
+    queryFn: async () => {
+      const res = await fetch(`/api/tests/${selectedTestId}`);
+      if (!res.ok) throw new Error('Failed to fetch test detail');
+      return res.json();
+    },
+    enabled: !!selectedTestId,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const currentTest = fullTestData || null;
+
+
 
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [answers, setAnswers] = useState<{ [key: string]: number }>({});
@@ -62,55 +92,42 @@ export default function TestsPage() {
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    const fetchTests = async () => {
-      try {
-        const res = await fetch('/api/tests');
-        if (res.ok) setTestList(await res.json());
-      } catch (error) {
-        console.error("Lỗi tải đề:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTests();
-  }, []);
+  // useQuery handles initial loading
+
 
   // --- LOGIC FUNCTIONS ---
-  const handleStartTest = async (testId: string, isPremium: boolean) => {
+  const handleStartTest = (testId: string, isPremium: boolean) => {
     if (isPremium && !user?.isPremium) {
       alert("🔒 Bài thi này dành riêng cho thành viên Premium. Vui lòng nâng cấp!");
       return;
     }
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/tests/${testId}`);
-      if (!res.ok) throw new Error("Err");
-      const fullTest = await res.json();
 
-      if (!fullTest || !fullTest.questions || fullTest.questions.length === 0) {
-        alert("Đề thi này đang được cập nhật câu hỏi. Vui lòng quay lại sau!");
-        setLoading(false);
-        return;
-      }
+    setSelectedTestId(testId);
+    setViewState('taking');
+    setCurrentQIndex(0);
+    setAnswers({});
+    setIsPaused(false);
+  };
 
-      setCurrentTest(fullTest);
-      setCurrentQIndex(0);
-      setAnswers({});
-      setTimeLeft(fullTest.duration * 60);
-      setIsPaused(false);
-      setViewState('taking');
-
+  useEffect(() => {
+    if (viewState === 'taking' && currentTest) {
+      setTimeLeft(currentTest.duration * 60);
       if (timerRef.current) clearInterval(timerRef.current);
       timerRef.current = setInterval(() => {
         setTimeLeft((prev) => {
-          if (prev <= 1) { submitToApi(fullTest.id, {}); return 0; }
+          if (prev <= 1) {
+            submitToApi(currentTest.id, {});
+            return 0;
+          }
           return prev - 1;
         });
       }, 1000);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [viewState, currentTest?.id]);
 
-    } catch { alert("Lỗi tải đề."); } finally { setLoading(false); }
-  };
 
   const handleTogglePause = () => {
     if (isPaused) {
@@ -151,8 +168,11 @@ export default function TestsPage() {
 
   const handleExit = () => {
     if (timerRef.current) clearInterval(timerRef.current);
-    setViewState('list'); setCurrentTest(null); setAnswers({});
+    setViewState('list');
+    setSelectedTestId(null);
+    setAnswers({});
   };
+
 
   // --- RENDERERS ---
   const renderTestList = () => {
@@ -202,7 +222,8 @@ export default function TestsPage() {
         </div>
 
         {/* Test Grid */}
-        {loading ? (
+        {isListLoading ? (
+
           <div className="flex justify-center py-20">
             <Loader2 className="animate-spin text-blue-600" size={40} />
           </div>
@@ -319,17 +340,32 @@ export default function TestsPage() {
 
       {viewState === 'list' && renderTestList()}
 
-      {viewState === 'taking' && currentTest && (
-        <TakingTest
-          test={currentTest}
-          currentQIndex={currentQIndex} setCurrentQIndex={setCurrentQIndex}
-          answers={answers} setAnswers={setAnswers}
-          timeLeft={timeLeft} isPaused={isPaused}
-          togglePause={handleTogglePause}
-          onSubmit={() => setShowSubmitModal(true)}
-          onExit={() => setShowExitModal(true)}
-        />
+      {viewState === 'taking' && (
+        <div className="flex-1 flex flex-col h-full bg-white">
+          {isDetailLoading ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-20 gap-4">
+              <Loader2 className="animate-spin text-blue-600" size={48} />
+              <p className="text-slate-500 font-bold">Đang tải nội dung đề thi...</p>
+            </div>
+          ) : currentTest ? (
+            <TakingTest
+              test={currentTest}
+              currentQIndex={currentQIndex} setCurrentQIndex={setCurrentQIndex}
+              answers={answers} setAnswers={setAnswers}
+              timeLeft={timeLeft} isPaused={isPaused}
+              togglePause={handleTogglePause}
+              onSubmit={() => setShowSubmitModal(true)}
+              onExit={() => setShowExitModal(true)}
+            />
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center p-20 text-center">
+              <p className="text-red-500 font-bold mb-4">Lỗi: Không tìm thấy nội dung đề thi.</p>
+              <button onClick={handleExit} className="bg-slate-800 text-white px-6 py-2 rounded-xl">Quay lại</button>
+            </div>
+          )}
+        </div>
       )}
+
     </div>
   );
 }

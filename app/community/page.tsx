@@ -2,8 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { MessageSquare, Send, Heart, MessageCircle, User, Loader2, Star } from 'lucide-react'; // Bỏ Star, Filter
+import { MessageSquare, Send, Heart, MessageCircle, User, Loader2, Star } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+
 
 // --- TYPE MỚI (Khớp với Prisma) ---
 type APIUser = {
@@ -30,44 +32,29 @@ type Post = {
 };
 
 export default function CommunityPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+
+  const { data: posts = [], isLoading: loading } = useQuery<Post[]>({
+    queryKey: ['community-posts'],
+    queryFn: async () => {
+      const res = await fetch('/api/community/posts');
+      if (!res.ok) throw new Error('Failed to fetch posts');
+      return res.json();
+    },
+    enabled: !authLoading,
+    staleTime: 5 * 60 * 1000,
+  });
+
 
   // Form input
   const [newContent, setNewContent] = useState('');
   const [newRating, setNewRating] = useState(5);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 1. LOAD DATA
-  useEffect(() => {
-    fetchPosts();
-  }, [user]);
+  // useQuery handles fetching
 
-  const fetchPosts = async () => {
-    try {
-      const res = await fetch('/api/community/posts'); // 👈 API MỚI
-
-      if (!res.ok) {
-        console.error("❌ Lỗi API community:", res.status, res.statusText);
-        const errData = await res.json().catch(() => ({ error: 'Unknown error' }));
-        alert(`⚠️ Lỗi tải bài viết: ${errData.error}`);
-        setPosts([]);
-        return;
-      }
-
-      const data = await res.json();
-      setPosts(Array.isArray(data) ? data : []);
-      console.log("✅ Đã tải", data?.length || 0, "bài viết");
-    } catch (error) {
-      console.error('❌ Lỗi tải bài viết:', error);
-      alert("⚠️ Lỗi kết nối server");
-      setPosts([]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // 2. SUBMIT BÀI VIẾT
   const handleSubmit = async (e: React.FormEvent) => {
@@ -90,14 +77,14 @@ export default function CommunityPage() {
       }
 
       const newPost = await res.json();
-      // Format lại dữ liệu giả lập để hiện ngay lên UI mà ko cần reload
       const formattedPost: Post = {
         ...newPost,
         user: { name: user.name, avatar: user.avatar, email: user.email },
         _count: { likes: 0, comments: 0 },
         likes: []
       };
-      setPosts([formattedPost, ...posts]);
+      queryClient.setQueryData(['community-posts'], (old: Post[] = []) => [formattedPost, ...old]);
+
       setNewContent('');
       setNewRating(5);
       console.log("✅ Posted new content");
@@ -204,8 +191,9 @@ export default function CommunityPage() {
 }
 
 // --- COMPONENT POST CARD (Logic mới + Giao diện cũ) ---
-function PostCard({ post, user }: { post: Post; user: APIUser | null }) {
+function PostCard({ post, user }: { post: Post; user: any | null }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   // State quản lý Like/Comment cục bộ
   const [isLiked, setIsLiked] = useState(Array.isArray(post.likes) && post.likes.length > 0);
@@ -214,10 +202,19 @@ function PostCard({ post, user }: { post: Post; user: APIUser | null }) {
 
   // Comment logic
   const [showComments, setShowComments] = useState(false);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [isSending, setIsSending] = useState(false);
+
+  const { data: comments = [], isLoading: isLoadingComments } = useQuery<Comment[]>({
+    queryKey: ['post-comments', post.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/community/posts/${post.id}/comments`);
+      if (!res.ok) throw new Error('Failed to fetch comments');
+      return res.json();
+    },
+    enabled: showComments,
+  });
+
 
   // Xử lý Like
   const handleLike = async () => {
@@ -258,35 +255,10 @@ function PostCard({ post, user }: { post: Post; user: APIUser | null }) {
   };
 
   // Xử lý Load Comment (Chỉ load khi bấm vào nút)
-  const toggleComments = async () => {
-    if (!showComments && comments.length === 0 && commentsCount > 0) {
-      setIsLoadingComments(true);
-      try {
-        const res = await fetch(`/api/community/posts/${post.id}/comments`, {
-          headers: { 'Content-Type': 'application/json' }
-        });
-
-        if (!res.ok) {
-          console.error("❌ Lỗi tải comments:", res.status);
-          const errData = await res.json().catch(() => ({ error: 'Unknown' }));
-          alert(`⚠️ Lỗi tải comments: ${errData.error}`);
-          setComments([]);
-          return;
-        }
-
-        const data = await res.json();
-        setComments(Array.isArray(data) ? data : []);
-        console.log("✅ Loaded", data?.length || 0, "comments");
-      } catch (e) {
-        console.error("❌ Error loading comments:", e);
-        alert("⚠️ Lỗi kết nối server");
-        setComments([]);
-      } finally {
-        setIsLoadingComments(false);
-      }
-    }
+  const toggleComments = () => {
     setShowComments(!showComments);
   };
+
 
   // Xử lý Gửi Comment
   const handleSendComment = async () => {
@@ -309,9 +281,10 @@ function PostCard({ post, user }: { post: Post; user: APIUser | null }) {
       }
 
       const newCmt = await res.json();
-      setComments([newCmt, ...comments]); // Thêm lên đầu
+      queryClient.setQueryData(['post-comments', post.id], (old: Comment[] = []) => [newCmt, ...old]);
       setCommentsCount(prev => prev + 1);
       setCommentText('');
+
       console.log("✅ Comment sent");
     } catch (e) {
       console.error("❌ Error sending comment:", e);

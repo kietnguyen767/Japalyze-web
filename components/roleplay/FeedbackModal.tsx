@@ -9,7 +9,8 @@ type Props = {
   data: FeedbackData;
   turnCount: number;
   maxTurns: number;
-  onNext: () => void;
+  onRestart: () => void;
+  onContinue: () => void;
 };
 
 const GRADES = [
@@ -20,7 +21,7 @@ const GRADES = [
   { min: 0, label: 'D', desc: 'Cần cố gắng', bg: 'bg-red-500', text: 'text-white', bar: 'bg-red-500' },
 ];
 
-export default function FeedbackModal({ data, turnCount, maxTurns, onNext }: Props) {
+export default function FeedbackModal({ data, turnCount, maxTurns, onRestart, onContinue }: Props) {
   const mistakes = data.mistakes ?? [];
   const score = Math.max(0, Math.min(100, Number.isFinite(Number(data.score)) ? Number(data.score) : 0));
   const goodPoints = typeof data.good_points === 'string' ? data.good_points : '';
@@ -114,12 +115,18 @@ export default function FeedbackModal({ data, turnCount, maxTurns, onNext }: Pro
         </div>
 
         {/* ── Footer ── */}
-        <div className="px-6 py-4 border-t border-slate-100 flex justify-end">
+        <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
           <button
-            onClick={onNext}
+            onClick={onRestart}
+            className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition-all"
+          >
+            Bắt đầu lại
+          </button>
+          <button
+            onClick={onContinue}
             className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-200 transition-all"
           >
-            Luyện tập tiếp <ArrowRight size={16} />
+            Tiếp tục hội thoại <ArrowRight size={16} />
           </button>
         </div>
       </div>

@@ -1,40 +1,61 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import React, { useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   CheckCircle2, XCircle, ArrowLeft, RotateCcw,
   Loader2, Trophy, Home, Sparkles, HelpCircle, AlertCircle, PlayCircle
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+// Assuming useAuth is a custom hook, add its import if necessary
+// import { useAuth } from '@/hooks/useAuth'; // Uncomment if useAuth is used
 
-export default function TestResultPage() {
+// Define TestResult type based on your API response structure
+// For example:
+interface TestResult {
+  score: number;
+  totalQuestions: number;
+  answers: Record<string, number | undefined>; // Map question ID to user's answer index
+  test: {
+    id: string;
+    title: string;
+    questions: Array<{
+      id: string;
+      content: string;
+      options: string[];
+      correctAnswer: number;
+      explanation?: string;
+      imageUrl?: string;
+      audioUrl?: string;
+    }>;
+  };
+}
+
+
+export default function TestResultPage() { // Changed back to TestResultPage to match original file name
   const params = useParams();
   const id = params?.id as string;
+  const router = useRouter(); // Added useRouter
+  // const { user } = useAuth(); // Uncomment if useAuth is used
 
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (!id) return;
-    const fetchResult = async () => {
-      try {
-        const res = await fetch(`/api/tests/result/${id}`);
-        if (!res.ok) throw new Error("Không tìm thấy kết quả");
-        const json = await res.json();
-        setData(json);
-      } catch (err) {
-        console.error(err);
-        setError("Không thể tải kết quả bài thi.");
-      } finally {
-        setLoading(false);
+  const { data, isLoading, isError, error } = useQuery<TestResult | null>({
+    queryKey: ['test-result', id],
+    queryFn: async () => {
+      if (!id) return null; // Ensure id exists before fetching
+      const res = await fetch(`/api/tests/result/${id}`);
+      if (!res.ok) {
+        // Attempt to parse error message from response body if available
+        const errorData = await res.json().catch(() => ({ message: 'Không tìm thấy kết quả hoặc lỗi máy chủ.' }));
+        throw new Error(errorData.message || 'Không tìm thấy kết quả hoặc lỗi máy chủ.');
       }
-    };
-    fetchResult();
-  }, [id]);
+      return res.json();
+    },
+    enabled: !!id, // Only run query if id is available
+    staleTime: Infinity, // Test results don't change, so cache forever
+  });
 
-  if (loading) return (
+  if (isLoading) return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
       <div className="flex flex-col items-center gap-3">
         <Loader2 className="animate-spin text-blue-600" size={32} />
@@ -43,14 +64,14 @@ export default function TestResultPage() {
     </div>
   );
 
-  if (error || !data) return (
+  if (isError || !data) return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
       <div className="text-center max-w-md p-8 bg-white rounded-2xl shadow-lg border border-slate-100">
         <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
           <AlertCircle size={32} className="text-red-500" />
         </div>
         <h2 className="text-lg font-bold text-slate-800 mb-2">Đã xảy ra lỗi</h2>
-        <p className="text-slate-500 text-sm mb-6 leading-relaxed">{error}</p>
+        <p className="text-slate-500 text-sm mb-6 leading-relaxed">{(error as any)?.message || 'Lỗi không xác định'}</p>
         <Link href="/tests" className="block w-full px-5 py-3 bg-slate-900 text-white rounded-xl text-sm font-bold shadow-md hover:bg-slate-800 transition-all">
           Quay lại danh sách
         </Link>

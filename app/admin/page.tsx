@@ -1,3 +1,4 @@
+// app/admin/page.tsx
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -155,8 +156,8 @@ export default function AdminDashboard() {
               key={tab}
               onClick={() => setActiveTab(tab as any)}
               className={`px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap capitalize transition-all ${activeTab === tab
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
                 }`}
             >
               {tab === 'tests' ? 'Đề thi' : tab === 'reading' ? 'Luyện đọc' : tab}

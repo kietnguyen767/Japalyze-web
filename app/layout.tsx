@@ -17,6 +17,7 @@ const beVietnamPro = Be_Vietnam_Pro({
 
 import MainLayout from "@/components/MainLayout";
 import { ToastProvider } from '@/context/ToastContext';
+import QueryProvider from '@/context/QueryProvider';
 
 export default function RootLayout({
   children,
@@ -28,14 +29,17 @@ export default function RootLayout({
 
       <body className={`${beVietnamPro.className} antialiased`}>
         <SakuraEffect />
-        <ToastProvider>
-          <AuthProvider>
-            <MainLayout>
-              {children}
-            </MainLayout>
-          </AuthProvider>
-        </ToastProvider>
+        <QueryProvider>
+          <ToastProvider>
+            <AuthProvider>
+              <MainLayout>
+                {children}
+              </MainLayout>
+            </AuthProvider>
+          </ToastProvider>
+        </QueryProvider>
       </body>
     </html>
   );
 }
+

@@ -1,12 +1,15 @@
+//app/page.tsx
 'use client';
 
 import { useAuth, User } from '@/context/AuthContext';
 import Link from "next/link";
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
     Play, Zap, Languages, BookOpen, BookOpenText, FileText,
     Gamepad2, Loader2, ArrowRight, Sparkles, Target, Trophy, Plus, Star, Search, Flame, HelpCircle, Lock, Construction, Flag
 } from 'lucide-react';
+
 
 // ==================================================================================
 // 1. MAIN COMPONENT (ENTRY POINT)
@@ -56,37 +59,17 @@ interface DashboardData {
 }
 
 function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: () => void }) {
-    const [data, setData] = useState<DashboardData | null>(null);
-    const [loadingData, setLoadingData] = useState(false);
+    const { data, isLoading: loadingData } = useQuery<DashboardData | null>({
+        queryKey: ['dashboard-data', user?.id],
+        queryFn: async () => {
+            const res = await fetch('/api/user/dashboard');
+            if (!res.ok) throw new Error('API Error');
+            return res.json();
+        },
+        enabled: !!user,
+        staleTime: 5 * 60 * 1000,
+    });
 
-    const lastFetchedId = useRef<string | null>(null);
-
-    useEffect(() => {
-        const controller = new AbortController();
-        if (user) {
-            // Tránh fetch lại nếu ID không đổi
-            if (user.id === lastFetchedId.current && data) return;
-
-            lastFetchedId.current = user.id || null;
-            setTimeout(() => setLoadingData(true), 0);
-            fetch('/api/user/dashboard', { signal: controller.signal })
-                .then((res) => {
-                    if (!res.ok) throw new Error('API Error');
-                    return res.json();
-                })
-                .then((json: DashboardData) => setData(json))
-                .catch((err) => {
-                    if (err.name === 'AbortError') return;
-                    console.error("Lỗi tải dashboard:", err);
-                    setData(null);
-                })
-                .finally(() => setLoadingData(false));
-        } else {
-            lastFetchedId.current = null;
-            setTimeout(() => setData(null), 0);
-        }
-        return () => controller.abort();
-    }, [user?.id, data !== null]);
 
     const history = data?.history || { translation: [], decks: [], test: null };
     const progress = data?.progress || {
@@ -106,7 +89,7 @@ function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: ()
         <div className="min-h-screen bg-slate-50/50 text-slate-700 selection:bg-indigo-100 selection:text-indigo-700 flex flex-col">
 
 
-            {/* 🔥 FIX 2: relative z-0 để ép nội dung này luôn nằm dưới Navbar */}
+
             <div className="relative z-0 pt-10 pb-16 px-4 bg-white border-b border-slate-100">
                 <div className="max-w-6xl mx-auto">
 

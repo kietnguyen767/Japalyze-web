@@ -4,11 +4,13 @@
 import React, { useEffect, useState } from 'react';
 
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Plus, Trash2, Check, RotateCw, Volume2, Gamepad2, BookOpen } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Check, RotateCw, Volume2, Gamepad2, BookOpen, Trophy, Layers } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import DeckQuiz from '@/components/flashcards/DeckQuiz';
 import ConfirmModal from '@/components/ConfirmModal';
+
 
 type Card = {
   id: string;
@@ -34,8 +36,43 @@ export default function DeckDetailPage() {
   const router = useRouter();
   const deckId = params?.id as string;
 
-  const [deck, setDeck] = useState<Deck | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+
+  const { data: deck, isLoading: loading } = useQuery<Deck | null>({
+    queryKey: ['deck', deckId],
+    queryFn: async () => {
+      if (!user || !deckId) return null;
+      try {
+        const token = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('session_token='))
+          ?.split('=')[1];
+
+        const headers: HeadersInit = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch('/api/flashcards/decks', { headers });
+
+        if (res.status === 401) {
+          showToast('Phiên đăng nhập hết hạn.', 'error');
+          router.push('/login');
+          return null;
+        }
+
+        if (!res.ok) return null;
+
+        const data = await res.json();
+        return (data.decks || []).find((d: any) => d.id === deckId) || null;
+      } catch (e) {
+        console.error('❌ Error fetching deck:', e);
+        return null;
+      }
+    },
+    enabled: !!user && !!deckId,
+    // Giữ dữ liệu trong cache để load tức thì khi quay lại
+    staleTime: 5 * 60 * 1000,
+  });
+
   const [mode, setMode] = useState<'flip' | 'quiz'>('flip');
   const [index, setIndex] = useState(0);
   const [flip, setFlip] = useState(false);
@@ -43,6 +80,8 @@ export default function DeckDetailPage() {
   const [newFront, setNewFront] = useState('');
   const [newBack, setNewBack] = useState('');
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [quizStats, setQuizStats] = useState({ score: 0, answeredCount: 0, total: 0 });
+
 
   // CSS cho hiệu ứng lật 3D
   const flipCardStyle = `
@@ -73,50 +112,8 @@ export default function DeckDetailPage() {
     }
   `;
 
-  const loadDeck = async () => {
-    if (!user || !deckId) return;
-    try {
-      const token = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('session_token='))
-        ?.split('=')[1];
+  // useQuery handles loading automatically
 
-      console.log('🔑 [DeckDetail] Token:', token ? token.substring(0, 20) + '...' : 'NULL');
-
-      const headers: HeadersInit = { 'Content-Type': 'application/json' };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      } else {
-        console.warn('⚠️ [DeckDetail] Không có token');
-      }
-
-      const res = await fetch('/api/flashcards/decks', { headers });
-
-      if (res.status === 401) {
-        console.error('❌ 401 Unauthorized');
-        showToast('Phiên đăng nhập hết hạn.', 'error');
-        router.push('/login');
-        return;
-      }
-
-      if (!res.ok) {
-        console.error('❌ Lỗi fetch deck:', res.status);
-        return;
-      }
-
-      const data = await res.json();
-      const found = (data.decks || []).find((d: any) => d.id === deckId);
-      if (found) setDeck(found);
-    } catch (e) {
-      console.error('❌ Exception:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadDeck();
-  }, [user, deckId]);
 
   // Xử lý phím tắt bàn phím
   useEffect(() => {
@@ -193,10 +190,14 @@ export default function DeckDetailPage() {
 
       if (res.ok) {
         const newCard = await res.json();
-        setDeck({
-          ...deck,
-          cards: [...deck.cards, newCard]
+        queryClient.setQueryData(['deck', deckId], (old: Deck | null) => {
+          if (!old) return old;
+          return {
+            ...old,
+            cards: [...old.cards, newCard]
+          };
         });
+
         setNewFront(''); setNewBack(''); setShowAddForm(false);
         showToast('Đã thêm thẻ mới thành công!');
       } else if (res.status === 401) {
@@ -240,10 +241,14 @@ export default function DeckDetailPage() {
 
       if (res.ok) {
         const newCards = deck.cards.filter(c => c.id !== card.id);
-        setDeck({
-          ...deck,
-          cards: newCards
+        queryClient.setQueryData(['deck', deckId], (old: Deck | null) => {
+          if (!old) return old;
+          return {
+            ...old,
+            cards: newCards
+          };
         });
+
         if (index >= newCards.length) setIndex(Math.max(0, newCards.length - 1));
         showToast('Đã xóa thẻ');
       } else if (res.status === 401) {
@@ -287,7 +292,11 @@ export default function DeckDetailPage() {
       }
       return c;
     });
-    setDeck({ ...deck, cards: updatedCards });
+    queryClient.setQueryData(['deck', deckId], (old: Deck | null) => {
+      if (!old) return old;
+      return { ...old, cards: updatedCards };
+    });
+
 
     try {
       const token = document.cookie
@@ -322,7 +331,11 @@ export default function DeckDetailPage() {
     const updatedCards = deck.cards.map(c =>
       c.id === card.id ? { ...c, isLearned: newStatus } : c
     );
-    setDeck({ ...deck, cards: updatedCards });
+    queryClient.setQueryData(['deck', deckId], (old: Deck | null) => {
+      if (!old) return old;
+      return { ...old, cards: updatedCards };
+    });
+
 
     try {
       await fetch(`/api/flashcards/cards/${card.id}`, {
@@ -339,7 +352,11 @@ export default function DeckDetailPage() {
     if (!user || !deck) return;
 
     const newCards = deck.cards.map(c => c.id === cardId ? { ...c, isLearned: true } : c);
-    setDeck({ ...deck, cards: newCards });
+    queryClient.setQueryData(['deck', deckId], (old: Deck | null) => {
+      if (!old) return old;
+      return { ...old, cards: newCards };
+    });
+
 
     await fetch(`/api/flashcards/cards/${cardId}`, {
       method: 'PUT',
@@ -388,12 +405,26 @@ export default function DeckDetailPage() {
               <Gamepad2 size={20} /> Tự tạo bài tập
             </button>
           ) : (
-            <button
-              onClick={() => setMode('flip')}
-              className="flex items-center gap-2 bg-white text-blue-600 border-2 border-blue-200 px-5 py-2.5 rounded-xl font-bold hover:bg-blue-50 hover:border-blue-300 transition-all shadow-sm"
-            >
-              <BookOpen size={20} /> Quay lại học từ
-            </button>
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:flex items-center gap-4 mr-2 py-1.5 px-3 bg-white/50 backdrop-blur-sm rounded-xl border border-white shadow-sm">
+                <div className="flex flex-col items-center">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Tiến độ</span>
+                  <span className="text-xs font-black text-slate-700">{quizStats.answeredCount}/{quizStats.total}</span>
+                </div>
+                <div className="w-[1px] h-6 bg-slate-200" />
+                <div className="flex items-center gap-1.5 text-yellow-600 font-bold">
+                  <Trophy size={14} className="text-yellow-500" />
+                  <span className="text-sm">{quizStats.score}</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setMode('flip')}
+                className="flex items-center gap-2 bg-white text-blue-600 border-2 border-blue-200 px-5 py-2.5 rounded-xl font-bold hover:bg-blue-50 hover:border-blue-300 transition-all shadow-sm"
+              >
+                <BookOpen size={20} /> Quay lại học từ
+              </button>
+            </div>
           )}
         </div>
 
@@ -452,6 +483,7 @@ export default function DeckDetailPage() {
             deckId={deck.id}
             onBack={() => setMode('flip')}
             onUpdateProgress={handleQuizProgress}
+            onStatsChange={(stats) => setQuizStats(stats)}
           />
         ) : (
           <>

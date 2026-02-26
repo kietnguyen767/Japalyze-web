@@ -1,3 +1,4 @@
+//app/reading/page.tsx
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -9,6 +10,8 @@ import {
     Volume2, VolumeX, Square, RotateCcw, CheckCircle2,
     AlertCircle, Award, Gauge, Languages, ChevronLeft, ArrowRight
 } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+
 
 // --- HELPERS & COMPONENTS ---
 
@@ -42,6 +45,7 @@ const FuriganaText = ({ text, showFurigana }: { text: string, showFurigana: bool
 
 export default function ReadingPage() {
     const router = useRouter();
+    const queryClient = useQueryClient();
 
     // Read URL search params on client-side to avoid prerender/SSR issues
     const [modeParam, setModeParam] = useState<string | null>(null);
@@ -55,16 +59,42 @@ export default function ReadingPage() {
         setQuestId(sp.get('questId'));
     }, []);
 
-    // --- STATE CHO LIST VIEW (Code cũ) ---
-    const [articles, setArticles] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    // --- DATA FETCHING WITH REACT QUERY ---
+
+    // 1. Bình thường: Lấy danh sách bài đọc
+    const { data: articles = [], isLoading: isListLoading } = useQuery<any[]>({
+        queryKey: ['reading-articles'],
+        queryFn: async () => {
+            const res = await fetch('/api/reading');
+            if (!res.ok) throw new Error('ERR');
+            return res.json();
+        },
+        enabled: !isChallengeMode,
+        staleTime: 5 * 60 * 1000,
+    });
+
+    // 2. Thử thách: Lấy bài random
+    const { data: challengeArticles = [], isLoading: isChallengeLoading, refetch: refetchRandom } = useQuery<any[]>({
+        queryKey: ['reading-random'],
+        queryFn: async () => {
+            const res = await fetch('/api/reading/random');
+            if (!res.ok) throw new Error('ERR');
+            return res.json();
+        },
+        enabled: isChallengeMode,
+        staleTime: 0, // Bài random nên fetch mỗi khi cần restart/invalidate
+    });
+
+    const loading = isChallengeMode ? isChallengeLoading : isListLoading;
+
+    // --- STATE CHO LIST VIEW ---
     const [selectedLevel, setSelectedLevel] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
 
-    // --- STATE CHO CHALLENGE MODE (Code UI mới) ---
-    const [challengeArticles, setChallengeArticles] = useState<any[]>([]);
+    // --- STATE CHO CHALLENGE MODE ---
     const [currentIndex, setCurrentIndex] = useState(0);
     const [streak, setStreak] = useState(0);
+
     const [showFurigana, setShowFurigana] = useState(true);
     const [showTranslation, setShowTranslation] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
@@ -79,26 +109,8 @@ export default function ReadingPage() {
     const recognitionRef = useRef<any>(null);
     const LEVELS = [{ id: 'all', label: 'Tất cả' }, { id: 'beginner', label: 'Beginner' }, { id: 'n5', label: 'N5' }, { id: 'n4', label: 'N4' }, { id: 'n3', label: 'N3' }, { id: 'n2', label: 'N2' }, { id: 'n1', label: 'N1' }];
 
-    // 1. FETCH DATA
-    useEffect(() => {
-        if (isChallengeMode) {
-            // Mode Thử thách: Lấy bài Random
-            fetch('/api/reading/random')
-                .then(res => res.json())
-                .then(data => {
-                    if (Array.isArray(data)) setChallengeArticles(data);
-                    setLoading(false);
-                });
-        } else {
-            // Mode Thường: Lấy danh sách
-            fetch('/api/reading')
-                .then(res => res.json())
-                .then(data => {
-                    if (Array.isArray(data)) setArticles(data);
-                    setLoading(false);
-                });
-        }
-    }, [isChallengeMode]);
+    // React Query handles data fetching
+
 
     // 2. SETUP SPEECH RECOGNITION (CHALLENGE MODE)
     useEffect(() => {

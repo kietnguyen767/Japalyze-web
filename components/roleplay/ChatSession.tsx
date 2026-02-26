@@ -14,6 +14,7 @@ import {
   Volume2,
   Flag // Added Flag import
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Character,
   FeedbackData,
@@ -32,12 +33,13 @@ type Props = {
   topic: string;
   assignedMissions: string[];
   onBack: () => void;
+  isUnlimitedTurns?: boolean;
 };
 
 const MAX_TURNS = 20;
 const MAX_HISTORY = 8;
 
-export default function ChatSession({ character, topic, assignedMissions, onBack }: Props) {
+export default function ChatSession({ character, topic, assignedMissions, onBack, isUnlimitedTurns }: Props) {
   /* =========================
    * STATE
    * ========================= */
@@ -53,6 +55,7 @@ export default function ChatSession({ character, topic, assignedMissions, onBack
   const [completedMissions, setCompletedMissions] = useState<boolean[]>([false, false, false]);
 
   const [showFeedback, setShowFeedback] = useState<FeedbackData | null>(null);
+  const [isGrading, setIsGrading] = useState(false);
   const [turnCount, setTurnCount] = useState(0);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -131,6 +134,7 @@ export default function ChatSession({ character, topic, assignedMissions, onBack
     setInput('');
     setTurnCount(0);
     setShowFeedback(null);
+    setIsGrading(false);
     setCompletedMissions([false, false, false]);
 
     // Đảm bảo state missions đồng bộ với prop mới nhất
@@ -141,7 +145,6 @@ export default function ChatSession({ character, topic, assignedMissions, onBack
     // GỬI NHIỆM VỤ CHO AI: Để AI biết đường theo dõi
     const triggerMessage = getTriggerMessage(topic, assignedMissions);
 
-    // ⛔ QUAN TRỌNG: Truyền false để CHẶN AI đánh dấu nhiệm vụ lúc chào
     // Dùng 'logic' key vì đây là bước setup
     await callAI(triggerMessage as any, systemInstruction, false, false, 'logic');
   };
@@ -151,8 +154,6 @@ export default function ChatSession({ character, topic, assignedMissions, onBack
    * CALL AI (STREAM + PARSE JSON)
    * =========================
    */
-  // ✅ UPDATE: Thêm tham số isForceEnd để phân biệt tự hết lượt hay user bấm
-  // ✅ UPDATE 2: Thêm tham số agentType để chọn Key phù hợp
   const callAI = async (
     history: any[],
     systemPrompt: string,
@@ -275,7 +276,10 @@ export default function ChatSession({ character, topic, assignedMissions, onBack
         // 2. Hoặc đã xong hết nhiệm vụ (isAllDone = true)
         if (isForceEnd || isAllDone) {
           const fb = normalizeFeedback(data.feedback);
-          if (fb) setShowFeedback(fb);
+          if (fb) {
+            setShowFeedback(fb);
+            setIsGrading(false);
+          }
         } else {
           console.warn("AI sent feedback prematurely. Ignoring because missions are pending.");
         }
@@ -308,7 +312,7 @@ export default function ChatSession({ character, topic, assignedMissions, onBack
 
     const currentTurn = turnCount + 1;
     setTurnCount(currentTurn);
-    const isOutOfTurns = currentTurn >= MAX_TURNS;
+    const isOutOfTurns = !isUnlimitedTurns && currentTurn >= MAX_TURNS;
 
     const history = [...messages.filter((m) => m.content !== '...'), userMsg]
       .slice(-MAX_HISTORY)
@@ -323,6 +327,7 @@ export default function ChatSession({ character, topic, assignedMissions, onBack
         { role: 'user', content: '[GRADING REQUEST] Roleplay đã kết thúc vì hết lượt. Hãy chấm điểm toàn bộ hội thoại theo định dạng yêu cầu.' }
       ];
       const gradingPrompt = getGradingPrompt(missions, completedMissions);
+      setIsGrading(true);
       await callAI(gradingHistory, gradingPrompt, true, true, 'grading', false);
     } else {
       // 1. Agent Logic (Check mission & language) - Silent
@@ -363,6 +368,7 @@ export default function ChatSession({ character, topic, assignedMissions, onBack
     setCompletedMissions([false, false, false]);
     setTurnCount(0); // Reset turns
     setShowFeedback(null);
+    setIsGrading(false);
     setShowConfirmEnd(false);
 
     // 4. Inject System Message to History (Hidden from UI but visible to AI)
@@ -428,6 +434,7 @@ export default function ChatSession({ character, topic, assignedMissions, onBack
     setShowConfirmEnd(false);
     if (showFeedback) return;
     setIsLoading(true);
+    setIsGrading(true);
 
     const baseHistory = [
       ...messages.filter((m) => m.content !== '...').slice(-MAX_HISTORY),
@@ -517,23 +524,29 @@ export default function ChatSession({ character, topic, assignedMissions, onBack
   return (
     <>
       {confirmEndDialog}
-      <div className="flex flex-col h-[calc(100vh-80px)] md:h-[600px] bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative z-10">
-        {/* HEADER */}
-        <div className="bg-white border-b border-slate-100 p-4 flex items-center justify-between sticky top-0 z-10">
+      <div className="flex flex-col h-[calc(100vh-160px)] md:h-[540px] bg-slate-50/30 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/40 overflow-hidden relative z-10 transition-all duration-500">
+        {/* HEADER - Glassmorphism */}
+        <div className="bg-white/80 backdrop-blur-md border-b border-white/20 p-2 flex items-center justify-between sticky top-0 z-20 shadow-sm">
           <div className="flex items-center gap-3">
-            <button onClick={onBack} className="p-2 hover:bg-slate-100 rounded-full text-slate-500">
+            <button onClick={onBack} className="p-2 hover:bg-slate-100/50 rounded-full text-slate-500 transition-colors">
               <ArrowLeft size={20} />
             </button>
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl ${character.color}`}>
+            <motion.div
+              whileHover={{ rotate: 5, scale: 1.1 }}
+              className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-inner ${character.color}`}
+            >
               {character.avatar}
-            </div>
+            </motion.div>
             <div>
-              <h3 className="font-bold text-slate-800">{character.name}</h3>
-              <p className="text-xs text-slate-500">
-                Lượt: <span className={`${turnCount >= 15 ? 'text-red-500 font-bold' : 'text-blue-600'}`}>
-                  {turnCount}/{MAX_TURNS}
-                </span>
-              </p>
+              <h3 className="font-extrabold text-slate-800 tracking-tight">{character.name}</h3>
+              <div className="flex items-center gap-2">
+                <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  Lượt: <span className={`${turnCount >= 15 && !isUnlimitedTurns ? 'text-red-500' : 'text-blue-500'}`}>
+                    {isUnlimitedTurns ? `${turnCount} (Vô hạn)` : `${turnCount}/${MAX_TURNS}`}
+                  </span>
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -559,92 +572,124 @@ export default function ChatSession({ character, topic, assignedMissions, onBack
         </div>
 
         {/* MESSAGES */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
-          {messages.filter(m => m.role !== 'system').map((m) => (
-            <div key={m.id} className={`flex w-full ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`flex max-w-[85%] gap-2 ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                <div
-                  className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs shadow-sm ${m.role === 'user' ? 'bg-blue-600' : 'bg-slate-400'
-                    }`}
-                >
-                  {m.role === 'user' ? <User size={14} /> : <Bot size={14} />}
-                </div>
-                <div className="flex flex-col gap-1">
+        <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-transparent">
+          <AnimatePresence initial={false}>
+            {messages.filter(m => m.role !== 'system').map((m) => (
+              <motion.div
+                key={m.id}
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                className={`flex w-full ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div className={`flex max-w-[85%] gap-3 ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                   <div
-                    className={`p-3 rounded-2xl shadow-sm text-sm leading-relaxed whitespace-pre-wrap ${m.role === 'user'
-                      ? 'bg-blue-600 text-white rounded-tr-none'
-                      : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
+                    className={`w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center text-white text-xs shadow-md ${m.role === 'user' ? 'bg-indigo-600' : 'bg-slate-400'
                       }`}
                   >
-                    {m.content}
+                    {m.role === 'user' ? <User size={16} /> : <Bot size={16} />}
                   </div>
-                  {m.role !== 'user' && m.content && (
-                    <button
-                      onClick={() => handleSpeak(String(m.content))}
-                      className="self-start text-slate-400 hover:text-blue-600 ml-1"
+                  <div className={`flex flex-col gap-1.5 ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
+                    <div
+                      className={`px-4 py-3 rounded-2xl shadow-sm text-sm leading-relaxed whitespace-pre-wrap transition-all ${m.role === 'user'
+                        ? 'bg-gradient-to-br from-indigo-600 to-blue-500 text-white rounded-tr-none'
+                        : 'bg-white/80 backdrop-blur-sm text-slate-700 border border-white/50 rounded-tl-none shadow-indigo-100/20'
+                        }`}
                     >
-                      <Volume2 size={14} />
-                    </button>
-                  )}
+                      {m.content}
+                    </div>
+                    {m.role !== 'user' && m.content && m.content !== '...' && (
+                      <button
+                        onClick={() => handleSpeak(String(m.content))}
+                        className="p-1.5 rounded-full hover:bg-white/50 text-slate-400 hover:text-indigo-600 transition-all"
+                      >
+                        <Volume2 size={14} />
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              </motion.div>
+            ))}
+          </AnimatePresence>
           {isLoading && (
-            <div className="flex items-center gap-2 text-slate-400 text-sm ml-10">
-              <Loader2 size={14} className="animate-spin" /> {character.name} đang nhập...
-            </div>
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-2 text-slate-400 text-sm ml-10 bg-white border border-slate-100 px-3 py-2 rounded-2xl rounded-tl-none shadow-sm w-fit"
+            >
+              <span className="flex gap-1">
+                <motion.span animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.5, delay: 0 }} className="w-1.5 h-1.5 bg-slate-400 rounded-full" />
+                <motion.span animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.5, delay: 0.2 }} className="w-1.5 h-1.5 bg-slate-400 rounded-full" />
+                <motion.span animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.5, delay: 0.4 }} className="w-1.5 h-1.5 bg-slate-400 rounded-full" />
+              </span>
+              <span className="text-xs font-medium">
+                {isGrading ? 'Đang chấm điểm bài làm...' : `${character.name} đang gửi tin nhắn...`}
+              </span>
+            </motion.div>
           )}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* FEEDBACK MODAL */}
-        {showFeedback && (
-          <FeedbackModal data={showFeedback} turnCount={turnCount} maxTurns={MAX_TURNS} onNext={handleNextLevel} />
-        )}
-
-        {/* INPUT + NÚT KẾT THÚC */}
-        <div className="bg-white p-3 border-t border-slate-100 flex gap-2">
+        {/* INPUT + NÚT KẾT THÚC - Glassmorphism */}
+        <div className="bg-white/70 backdrop-blur-lg p-4 border-t border-white/30 flex gap-3 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.05)]">
           {/* MIC BUTTON */}
-          <button
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={handleMicClick}
-            className={`p-3 rounded-full transition-colors ${isListening
-              ? 'bg-red-500 text-white animate-pulse shadow-lg ring-2 ring-red-300'
+            className={`p-4 rounded-2xl transition-all ${isListening
+              ? 'bg-red-500 text-white shadow-lg shadow-red-200 ring-4 ring-red-100 animate-pulse'
               : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
               }`}
             title="Nói tiếng Nhật (Voice Input)"
           >
-            {isListening ? <MicOff size={20} /> : <Mic size={20} />}
-          </button>
+            {isListening ? <MicOff size={22} /> : <Mic size={22} />}
+          </motion.button>
 
-          <form onSubmit={handleSubmit} className="relative flex items-end gap-2 flex-1">
+          <form onSubmit={handleSubmit} className="relative flex items-center gap-2 flex-1 group">
             <input
-              className="flex-1 bg-slate-100 border-0 rounded-xl py-3 pl-4 pr-4 focus:ring-2 focus:ring-blue-500 outline-none"
+              className="flex-1 bg-white/80 border-2 border-slate-100 rounded-2xl py-4 px-5 pr-14 focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all shadow-inner text-sm font-medium"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Nhập tin nhắn tiếng Nhật..."
+              placeholder="Lời hồi thoại tiếng Nhật của bạn..."
               disabled={isLoading || !!showFeedback}
               autoFocus
             />
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05, x: -2 }}
+              whileTap={{ scale: 0.9 }}
               type="submit"
               disabled={isLoading || !input.trim() || !!showFeedback}
-              className="p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-all"
+              className="absolute right-2 p-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:shadow-lg hover:shadow-blue-200 disabled:opacity-30 transition-all"
             >
               <Send size={20} />
-            </button>
+            </motion.button>
           </form>
-          <button
+
+          <motion.button
+            whileHover={{ scale: 1.05, rotate: 10 }}
+            whileTap={{ scale: 0.9 }}
             type="button"
             onClick={handleForceFinish}
             disabled={isLoading || !!showFeedback}
-            className="ml-1 p-2 rounded-full bg-slate-100 hover:bg-red-100 text-red-500 transition-all"
+            className="p-4 rounded-2xl bg-white border-2 border-slate-100 text-slate-400 hover:text-red-500 hover:border-red-100 hover:bg-red-50 transition-all shadow-sm"
             title="Kết thúc & chấm điểm"
           >
-            <Flag size={18} />
-          </button>
+            <Flag size={20} />
+          </motion.button>
         </div>
       </div>
+
+      {/* FEEDBACK MODAL (Out of the blurred container to allow fixed full-screen) */}
+      {showFeedback && (
+        <FeedbackModal
+          data={showFeedback}
+          turnCount={turnCount}
+          maxTurns={MAX_TURNS}
+          onRestart={initChat}
+          onContinue={handleNextLevel}
+        />
+      )}
     </>
   );
 }

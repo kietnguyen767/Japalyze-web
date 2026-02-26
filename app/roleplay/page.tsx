@@ -26,6 +26,7 @@ export default function RoleplayPage() {
 
   // State lưu 3 nhiệm vụ đã được hệ thống random
   const [systemMissions, setSystemMissions] = useState<string[]>([]);
+
   const [hoveredChar, setHoveredChar] = useState<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -40,8 +41,8 @@ export default function RoleplayPage() {
 
   // 2. Chọn Chủ đề & Random Nhiệm vụ (CORE LOGIC)
   const handleTopicSelect = (topic: Topic) => {
-    // Kiểm tra Premium
-    if (user && !user.isPremium) {
+    // Kiểm tra Premium (Ngoại trừ chủ đề travel)
+    if (user && !user.isPremium && topic.id !== 'travel') {
       setShowUpgradeModal(true);
       return;
     }
@@ -96,7 +97,7 @@ export default function RoleplayPage() {
       <div className="container mx-auto px-4 pt-6 md:pt-10 max-w-5xl relative z-0">
 
         {/* Progress Bar (Giữ nguyên UI cũ) */}
-        <div className="flex items-center justify-center mb-6 md:mb-10 gap-2 md:gap-3">
+        <div className="flex items-center justify-center mb-6 gap-2 md:gap-3">
           {[1, 2, 3].map((s) => (
             <React.Fragment key={s}>
               <div className={`flex items-center gap-2 transition-all ${step >= s ? 'opacity-100' : 'opacity-40'}`}>
@@ -164,7 +165,7 @@ export default function RoleplayPage() {
             {/* DANH SÁCH CHỦ ĐỀ CÓ SẴN */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {TOPICS.map((topic) => {
-                const isLocked = user && !user.isPremium;
+                const isLocked = user && !user.isPremium && topic.id !== 'travel';
                 return (
                   <div
                     key={topic.id}
@@ -203,6 +204,7 @@ export default function RoleplayPage() {
               // Quan trọng: Truyền 3 nhiệm vụ đã random vào đây
               assignedMissions={systemMissions}
               onBack={() => { setStep(2); setSelectedTopic(null); setSystemMissions([]); }}
+              isUnlimitedTurns={selectedTopic.id === 'travel'}
             />
           </div>
         )}

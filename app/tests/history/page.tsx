@@ -6,6 +6,8 @@ import {
   History, Calendar, ArrowRight, Loader2,
   CheckCircle2, XCircle, Clock, Trophy, Home
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+
 
 type TestHistoryItem = {
   id: string;
@@ -20,24 +22,19 @@ type TestHistoryItem = {
 };
 
 export default function HistoryPage() {
-  const [history, setHistory] = useState<TestHistoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: history = [], isLoading: loading } = useQuery<TestHistoryItem[]>({
+    queryKey: ['test-history'],
+    queryFn: async () => {
+      const res = await fetch('/api/tests/history');
+      if (!res.ok) throw new Error('ERR');
+      return res.json();
+    },
+    staleTime: 2 * 60 * 1000,
+  });
 
-  useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        const res = await fetch('/api/tests/history');
-        if (res.ok) {
-          setHistory(await res.json());
-        }
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchHistory();
-  }, []);
+
+  // React Query handles history fetching
+
 
   const getStatus = (score: number, total: number) => {
     const percent = Math.round((score / total) * 100);

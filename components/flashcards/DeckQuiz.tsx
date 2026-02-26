@@ -19,6 +19,7 @@ type DeckQuizProps = {
   deckId: string;
   onBack: () => void;
   onUpdateProgress: (cardId: string) => void;
+  onStatsChange?: (stats: { score: number; answeredCount: number; total: number }) => void;
 };
 
 type QuizQuestion = {
@@ -46,30 +47,35 @@ function shuffleArray<T>(array: T[]): T[] {
 export default function DeckQuiz({
   cards,
   onBack,
-  onUpdateProgress
+  onUpdateProgress,
+  onStatsChange
 }: DeckQuizProps) {
   const [quizData, setQuizData] = useState<QuizQuestion[]>([]);
   const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
   const [score, setScore] = useState(0);
 
   /* =======================
-     INIT QUIZ (RUN ONCE)
+     INIT QUIZ (RUN ONCE WHEN READY)
   ======================= */
   useEffect(() => {
-    if (cards.length < 4) return;
+    // Only initialize if we have enough cards and haven't initialized yet
+    if (cards.length < 4 || quizData.length > 0) return;
 
     const shuffledCards = shuffleArray(cards);
 
     const questions: QuizQuestion[] = shuffledCards.map(card => {
-      const otherCards = shuffleArray(
-        cards.filter(c => c.id !== card.id)
-      );
+      // Get all possible wrong translations (unique)
+      const allWrongBacks = Array.from(new Set(
+        cards
+          .filter(c => c.back !== card.back) // Must have different meaning
+          .map(c => c.back)
+      ));
 
-      const wrongOptions = otherCards
-        .slice(0, 3)
-        .map(c => c.back);
+      // Shuffle and pick up to 3 wrong options
+      const shuffledWrong = shuffleArray(allWrongBacks).slice(0, 3);
 
-      const options = shuffleArray([...wrongOptions, card.back]);
+      // Final options: Correct answer + up to 3 wrong ones
+      const options = shuffleArray([...shuffledWrong, card.back]);
 
       return {
         id: card.id,
@@ -80,7 +86,20 @@ export default function DeckQuiz({
     });
 
     setQuizData(questions);
-  }, []); // 🚨 CHỈ CHẠY 1 LẦN – KHÔNG NHẢY THỨ TỰ
+    onStatsChange?.({ score: 0, answeredCount: 0, total: questions.length });
+  }, [cards, quizData.length]);
+
+  /* =======================
+     NOTIFY PARENT OF STATS
+  ======================= */
+  useEffect(() => {
+    if (quizData.length === 0) return;
+    onStatsChange?.({
+      score,
+      answeredCount: Object.keys(userAnswers).length,
+      total: quizData.length
+    });
+  }, [score, userAnswers, quizData.length]);
 
   /* =======================
      HANDLERS
@@ -115,12 +134,6 @@ export default function DeckQuiz({
         <p className="text-slate-500 mb-6">
           Cần ít nhất 4 thẻ trong bộ này để tạo bài trắc nghiệm.
         </p>
-        <button
-          onClick={onBack}
-          className="bg-white border-2 border-red-300 px-6 py-2 rounded-lg font-bold text-red-600 hover:bg-red-100 transition-all"
-        >
-          ← Quay lại
-        </button>
       </div>
     );
   }
@@ -141,25 +154,6 @@ export default function DeckQuiz({
   ======================= */
   return (
     <div className="animate-fade-in-up pb-20">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6 sticky top-20 bg-white/90 p-4 rounded-xl shadow-sm z-40 backdrop-blur border border-slate-100">
-        <button
-          onClick={onBack}
-          className="text-slate-500 hover:text-blue-600 flex items-center gap-1 font-medium"
-        >
-          <ArrowLeft size={20} /> Dừng bài
-        </button>
-
-        <div className="flex items-center gap-4">
-          <span className="text-sm font-bold text-slate-400">
-            {answeredCount}/{quizData.length}
-          </span>
-          <div className="flex items-center gap-2 text-yellow-600 font-bold bg-yellow-50 px-3 py-1 rounded-full border border-yellow-100">
-            <Trophy size={16} /> {score} điểm
-          </div>
-        </div>
-      </div>
-
       {/* Questions */}
       <div className="space-y-8">
         {quizData.map((q, index) => {
@@ -261,19 +255,12 @@ export default function DeckQuiz({
             câu hỏi.
           </p>
 
-          <div className="flex flex-col md:flex-row justify-center gap-4">
-            <button
-              onClick={onBack}
-              className="bg-white/20 hover:bg-white/30 border-2 border-white px-6 py-3 rounded-xl font-bold"
-            >
-              ← Quay lại
-            </button>
-
+          <div className="flex justify-center gap-4">
             <button
               onClick={() => window.location.reload()}
-              className="bg-white text-blue-600 px-6 py-3 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2"
+              className="bg-white text-blue-600 px-8 py-3 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 hover:bg-blue-50 transition-all active:scale-95"
             >
-              <RefreshCw size={20} /> Làm lại
+              <RefreshCw size={20} /> Làm lại bài này
             </button>
           </div>
         </div>
