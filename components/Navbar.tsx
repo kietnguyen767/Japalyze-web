@@ -141,14 +141,65 @@ export default function Navbar() {
     router.push(`/translate?text=${encodeURIComponent(lemma)}`);
   };
 
-  // Logic Premium Demo
+  // Logic Premium - Kết nối API thật
   const handleActivatePremium = async (action: 'trial' | 'buy_1_month') => {
     if (!user) return alert("Vui lòng đăng nhập trước!");
     setProcessing(true);
-    setTimeout(() => {
+
+    try {
+      if (action === 'buy_1_month') {
+        // Lấy session token từ cookie để gửi lên create-link
+        const token = getCookie('session_token');
+        if (!token) {
+          alert("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
+          setProcessing(false);
+          return;
+        }
+
+        const res = await fetch('/api/payment/create-link', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(data.error || "Không thể tạo link thanh toán. Vui lòng thử lại.");
+          setProcessing(false);
+          return;
+        }
+
+        // Redirect sang trang thanh toán PayOS
+        if (data.checkoutUrl) {
+          window.location.href = data.checkoutUrl;
+        }
+
+      } else if (action === 'trial') {
+        const res = await fetch('/api/user/premium', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: user.email, action: 'trial' }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(data.error || "Không thể kích hoạt dùng thử.");
+          setProcessing(false);
+          return;
+        }
+
+        alert(data.message || "Kích hoạt 7 ngày dùng thử thành công!");
+        await refreshUser();
+        setShowPremiumModal(false);
+      }
+    } catch (err) {
+      alert("Lỗi kết nối. Vui lòng thử lại.");
+    } finally {
       setProcessing(false);
-      alert("Demo click: " + action);
-    }, 1000);
+    }
   };
 
   const isPremiumUser = user?.isPremium === true;

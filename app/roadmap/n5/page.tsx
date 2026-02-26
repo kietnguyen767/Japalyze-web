@@ -173,14 +173,6 @@ export default function N5RoadmapPage() {
     // ─────────────────────────────────────────────────────────────────────────
     return (
         <div className="h-screen flex flex-col bg-slate-50 overflow-hidden">
-
-            {/* Sticky Navbar (HANDLED BY ROOT LAYOUT) */}
-
-            {/* ════════════════════════════════════════════════════════════════
-                MOBILE LAYOUT  (< md)
-                - Header strip + horizontal scrollable week tabs on top
-                - Quest content scrollable below
-            ════════════════════════════════════════════════════════════════ */}
             <div className="flex flex-col flex-1 min-h-0 md:hidden">
 
                 {/* Mobile top bar */}

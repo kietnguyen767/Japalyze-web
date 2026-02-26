@@ -1,7 +1,6 @@
 //app/roadmap/n5/phase1/practice/page.tsx
 'use client';
 
-import Navbar from '@/components/Navbar';
 import { ArrowLeft, Sword, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -81,9 +80,6 @@ export default function Phase1PracticeMenu() {
 
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-700">
-      <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
-        <Navbar />
-      </div>
 
       <div className="max-w-4xl mx-auto px-4 py-8">
 

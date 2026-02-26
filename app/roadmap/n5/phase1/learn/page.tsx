@@ -6,7 +6,6 @@ import { HIRAGANA_DATA, KATAKANA_DATA, HIRAGANA_DAKUTEN, KATAKANA_DAKUTEN, KanaC
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Loader2, Volume2, BookOpen } from 'lucide-react';
 import Link from 'next/link';
-import Navbar from '@/components/Navbar';
 
 export default function LearnKanaPage() {
   const [activeTab, setActiveTab] = useState<'hira' | 'kata'>('hira');
@@ -64,11 +63,6 @@ export default function LearnKanaPage() {
 
   return (
     <div className="h-screen flex flex-col bg-slate-50 overflow-hidden">
-
-      {/* Sticky Navbar */}
-      <div className="shrink-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
-        <Navbar />
-      </div>
 
       {/* ── Top bar: back + title + tab switcher ── */}
       <div className="shrink-0  border-b border-slate-200 px-4 md:px-8 py-3">
