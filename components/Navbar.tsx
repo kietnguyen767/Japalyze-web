@@ -8,7 +8,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   // Icon cũ
   BookOpen, Zap, ClipboardList, Users, Search, LogOut, LogIn, UserPlus, Gift, X, Loader, Menu, CheckCircle, CreditCard,
-  Crown, Sparkles, CheckCircle2,
+  Crown, Sparkles, CheckCircle2, Lock, Loader2,
   // Icon mới
   Languages,      // Cho Dịch thuật
   BookOpenText,   // Cho Luyện đọc
@@ -59,7 +59,16 @@ export default function Navbar() {
   const searchRef = useRef<HTMLFormElement>(null);
 
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+
+  // Form Đổi mật khẩu
+  const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
 
   // 📱 Mobile States
@@ -74,6 +83,9 @@ export default function Navbar() {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setShowSuggest(false);
+      }
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -120,6 +132,45 @@ export default function Navbar() {
   const handleNavClick = (href: string) => {
     setIsMobileMenuOpen(false);
     router.push(href);
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError('Mật khẩu mới nhập lại không khớp');
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      const res = await fetch('/api/user/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          oldPassword: passwordForm.oldPassword,
+          newPassword: passwordForm.newPassword
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setPasswordSuccess('Đổi mật khẩu thành công!');
+        setTimeout(() => {
+          setShowChangePasswordModal(false);
+          setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
+          setPasswordSuccess('');
+        }, 2000);
+      } else {
+        setPasswordError(data.message || 'Có lỗi xảy ra');
+      }
+    } catch (err) {
+      setPasswordError('Lỗi kết nối server');
+    } finally {
+      setPasswordLoading(false);
+    }
   };
 
   const handleLogout = () => {
@@ -316,8 +367,11 @@ export default function Navbar() {
             )}
 
             {user ? (
-              <div className="flex items-center gap-4">
-                <div className={`relative group transition-all duration-500 ${isPremiumUser ? 'p-[2px] rounded-lg bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 animate-pulse' : ''}`}>
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setShowDropdown(!showDropdown)}
+                  className={`flex items-center gap-3 px-3 py-1.5 rounded-md transition-all duration-500 ${isPremiumUser ? 'p-[2px] rounded-lg bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 animate-pulse' : ''}`}
+                >
                   <div className={`flex items-center gap-3 px-3 py-1.5 rounded-md ${isPremiumUser ? 'bg-white' : ''}`}>
                     <div className="hidden md:block text-right">
                       <p className="text-xs text-slate-500">Xin chào,</p>
@@ -329,11 +383,38 @@ export default function Navbar() {
                       {user.name?.charAt(0).toUpperCase() || 'U'}
                     </div>
                   </div>
-                </div>
-
-                <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Đăng xuất">
-                  <LogOut size={20} />
                 </button>
+
+                {showDropdown && (
+                  <div className="absolute top-full right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-2 z-50">
+                    <div className="p-4 border-b border-slate-100">
+                      <p className="font-bold text-slate-800 truncate">{user.name}</p>
+                      <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                    </div>
+                    <div className="py-1">
+                      <button
+                        onClick={() => {
+                          setShowDropdown(false);
+                          setShowChangePasswordModal(true);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                      >
+                        <Lock size={16} className="text-slate-400" />
+                        Đổi mật khẩu
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowDropdown(false);
+                          logout();
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors border-t border-slate-50"
+                      >
+                        <LogOut size={16} />
+                        Đăng xuất
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-3">
@@ -405,6 +486,11 @@ export default function Navbar() {
               ))}
 
               <div className="border-t border-slate-100 my-4 pt-4">
+                {user && (
+                  <button onClick={() => { setIsMobileMenuOpen(false); setShowChangePasswordModal(true); }} className="w-full py-3 border border-slate-100 text-slate-600 bg-slate-50 rounded-xl font-bold flex items-center justify-center gap-2 mb-3">
+                    <Lock size={18} /> Đổi mật khẩu
+                  </button>
+                )}
                 {!isPremiumUser && (
                   <button onClick={() => { setShowPremiumModal(true); setIsMobileMenuOpen(false) }} className="w-full py-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-xl font-bold shadow-md mb-3 flex items-center justify-center gap-2">
                     <Gift size={18} /> Nâng cấp Premium
@@ -416,6 +502,82 @@ export default function Navbar() {
                   </button>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Đổi mật khẩu */}
+      {showChangePasswordModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 md:p-8">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-slate-800">Đổi mật khẩu</h3>
+                <button
+                  onClick={() => setShowChangePasswordModal(false)}
+                  className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {passwordSuccess ? (
+                <div className="py-8 text-center">
+                  <div className="w-16 h-16 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle2 size={32} />
+                  </div>
+                  <p className="text-green-600 font-medium">{passwordSuccess}</p>
+                </div>
+              ) : (
+                <form onSubmit={handleChangePassword} className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-slate-700">Mật khẩu cũ</label>
+                    <input
+                      type="password"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                      placeholder="••••••••"
+                      required
+                      value={passwordForm.oldPassword}
+                      onChange={e => setPasswordForm({ ...passwordForm, oldPassword: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-slate-700">Mật khẩu mới</label>
+                    <input
+                      type="password"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                      placeholder="Tối thiểu 8 ký tự"
+                      required
+                      value={passwordForm.newPassword}
+                      onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-slate-700">Xác nhận mật khẩu mới</label>
+                    <input
+                      type="password"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                      placeholder="Nhập lại mật khẩu mới"
+                      required
+                      value={passwordForm.confirmPassword}
+                      onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                    />
+                  </div>
+
+                  {passwordError && (
+                    <p className="text-sm text-red-500 bg-red-50 p-3 rounded-lg">{passwordError}</p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={passwordLoading}
+                    className="w-full py-3.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {passwordLoading ? <Loader2 className="animate-spin" /> : 'Cập nhật mật khẩu'}
+                  </button>
+                </form>
+              )}
             </div>
           </div>
         </div>
