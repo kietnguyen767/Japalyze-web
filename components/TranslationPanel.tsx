@@ -13,6 +13,8 @@ import { FlashcardService, Deck } from '@/lib/flashcardService';
 import { useAuth } from '@/context/AuthContext';
 import SaveFlashcardModal from '@/components/SaveFlashcardModal';
 import { getDashboardVocabulary, getTranslationHistory } from '@/app/actions/translation-data';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+
 
 // --- Types ---
 type SuggestItem = {
@@ -90,8 +92,53 @@ export default function TranslationPanel() {
   const [translateCached, setTranslateCached] = useState(false);
   const [translateDegraded, setTranslateDegraded] = useState(false);
 
-  const [wordDetail, setWordDetail] = useState<WordDetailResponse | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
+
+  const queryClient = useQueryClient();
+
+  // [REACT QUERY] Vocabulary Discovery
+  const { data: vocabData = null, isLoading: loadingVocab } = useQuery<DashboardVocabData | null>({
+    queryKey: ['vocab-dashboard'],
+    queryFn: async () => {
+      const res = await getDashboardVocabulary();
+      return res.success ? (res.data as unknown as DashboardVocabData) : null;
+    },
+    staleTime: 30 * 60 * 1000, // 30 minutes
+  });
+
+  // [REACT QUERY] Translation History
+  const { data: historyList = [], isLoading: loadingHistory } = useQuery<HistoryItem[]>({
+    queryKey: ['translation-history', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const res = await getTranslationHistory(user.id);
+      return res.success ? (res.data as HistoryItem[]) : [];
+    },
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const [detailTrigger, setDetailTrigger] = useState<{ text?: string; id?: string; source?: 'ja' | 'vi' } | null>(null);
+
+  // [REACT QUERY] Word Detail
+  const { data: wordDetail = null, isLoading: detailLoading } = useQuery<WordDetailResponse | null>({
+    queryKey: ['word-detail', detailTrigger],
+    queryFn: async () => {
+      if (!detailTrigger) return null;
+      const res = await fetch('/api/word-detail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: detailTrigger.text,
+          entryId: detailTrigger.id,
+          source: detailTrigger.source || sourceLanguage
+        }),
+      });
+      const data = await res.json();
+      return data?.success ? data : null;
+    },
+    enabled: !!detailTrigger,
+    staleTime: 10 * 60 * 1000,
+  });
 
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -105,63 +152,19 @@ export default function TranslationPanel() {
   const [fetchingDecks, setFetchingDecks] = useState(false);
 
   const [showHistory, setShowHistory] = useState(false);
-  const [historyList, setHistoryList] = useState<HistoryItem[]>([]);
-  const [vocabData, setVocabData] = useState<DashboardVocabData | null>(null);
-  const [isLoadingDashboard, setIsLoadingDashboard] = useState(true);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // [LOGIC MỚI] Hàm riêng để tải từ vựng mới
+  // Legacy helper, now invalidates query
   const refreshDashboardVocab = async () => {
-    setIsLoadingDashboard(true);
-    try {
-      const vocabRes = await getDashboardVocabulary();
-      if (vocabRes.success && vocabRes.data) {
-        setVocabData(vocabRes.data as unknown as DashboardVocabData);
-      }
-    } catch (e) {
-      console.error("Lỗi tải từ vựng:", e);
-    } finally {
-      setIsLoadingDashboard(false);
-    }
+    queryClient.invalidateQueries({ queryKey: ['vocab-dashboard'] });
   };
 
-  const isInitialLoaded = useRef(false);
-  const lastUserId = useRef<string | null>(null);
+  const isInitialLoaded = useRef(false); // Legacy, can be removed if confident
+  const lastUserId = useRef<string | null>(null); // Legacy
 
   // ===== EFFECTS =====
-  useEffect(() => {
-    const initData = async () => {
-      // Tránh fetch lại nếu đã load và userId chưa đổi
-      if (isInitialLoaded.current && lastUserId.current === user?.id) return;
-
-      setIsLoadingDashboard(true);
-      try {
-        const tasks: Promise<any>[] = [getDashboardVocabulary()];
-        if (user?.id) {
-          tasks.push(getTranslationHistory(user.id));
-        }
-
-        const [vocabRes, historyRes] = await Promise.all(tasks);
-
-        if (vocabRes.success && vocabRes.data) {
-          setVocabData(vocabRes.data as unknown as DashboardVocabData);
-        }
-
-        if (historyRes && historyRes.success) {
-          setHistoryList(historyRes.data as HistoryItem[]);
-        }
-
-        isInitialLoaded.current = true;
-        lastUserId.current = user?.id || null;
-      } catch (e) {
-        console.error("Lỗi khởi tạo dữ liệu:", e);
-      } finally {
-        setIsLoadingDashboard(false);
-      }
-    };
-    initData();
-  }, [user?.id]); // Chỉ trigger khi userId thay đổi thực sự
+  // React Query handles initData now
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -232,7 +235,7 @@ export default function TranslationPanel() {
     setTargetLanguage(sourceLanguage);
     setInputText(translatedText);
     setTranslatedText(inputText);
-    setWordDetail(null);
+    setDetailTrigger(null);
     setAnalysis(null);
     resetTranslateMeta();
   };
@@ -240,8 +243,7 @@ export default function TranslationPanel() {
   const clearAll = () => {
     setInputText('');
     setTranslatedText('');
-    setWordDetail(null);
-    setDetailLoading(false);
+    setDetailTrigger(null);
     setAnalysis(null);
     resetTranslateMeta();
     window.speechSynthesis.cancel();
@@ -319,7 +321,7 @@ export default function TranslationPanel() {
       setTranslateDegraded(!!data.degraded);
 
       if (user?.id) {
-        getTranslationHistory(user.id).then(res => res.success && setHistoryList(res.data as HistoryItem[]));
+        queryClient.invalidateQueries({ queryKey: ['translation-history'] });
       }
 
     } catch (error) {
@@ -385,34 +387,19 @@ export default function TranslationPanel() {
   };
 
   const loadWordDetailById = async (entryId: string, lang?: 'ja' | 'vi') => {
-    setDetailLoading(true);
-    try {
-      const sLang = lang ?? sourceLanguage;
-      const res = await fetch('/api/word-detail', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entryId, source: sLang }),
-      });
-      const data: WordDetailResponse = await res.json();
-      setWordDetail(data?.success ? data : null);
-    } catch (err) {
-      setWordDetail(null);
-    } finally {
-      setDetailLoading(false);
-    }
+    setDetailTrigger({ id: entryId, source: lang });
   };
 
   const loadWordDetailByText = async (text: string, lang?: 'ja' | 'vi') => {
     const t = (text || '').trim();
     if (t.length < 1 || t.length > 40) {
-      setWordDetail(null);
+      setDetailTrigger(null);
       return;
     }
 
     // Tự động nhận diện nếu không có lang truyền vào
     let sLang = lang ?? sourceLanguage;
     const isVietnamese = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(t);
-    // Nhận diện tiếng Nhật: Kanji hoặc Kana
     const isJapanese = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f]/u.test(t);
 
     if (isVietnamese && sLang !== 'vi') {
@@ -420,7 +407,6 @@ export default function TranslationPanel() {
       setTargetLanguage('ja');
       sLang = 'vi';
     } else if ((isJapanese || (wanakana.isRomaji(t) && t.length >= 3)) && sLang !== 'ja') {
-      // Nếu là tiếng Nhật hoặc Romaji (>=3 ký tự) thì đổi về Nhật
       setSourceLanguage('ja');
       setTargetLanguage('vi');
       sLang = 'ja';
@@ -429,24 +415,11 @@ export default function TranslationPanel() {
     if (sLang === 'ja') {
       const isSingleToken = !/\s/.test(t);
       if (!isSingleToken) {
-        setWordDetail(null);
+        setDetailTrigger(null);
         return;
       }
     }
-    setDetailLoading(true);
-    try {
-      const res = await fetch('/api/word-detail', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: t, source: sLang }),
-      });
-      const data: WordDetailResponse = await res.json();
-      setWordDetail(data?.success ? data : null);
-    } catch (err) {
-      setWordDetail(null);
-    } finally {
-      setDetailLoading(false);
-    }
+    setDetailTrigger({ text: t, source: sLang });
   };
 
   // [LOGIC MỚI] Xử lý khi click vào từ gợi ý
@@ -513,7 +486,7 @@ export default function TranslationPanel() {
         setTranslatedText('');
         setSelectedDeckId('');
         setSaveStatus('idle');
-        setWordDetail(null);
+        setDetailTrigger(null);
         setAnalysis(null);
         resetTranslateMeta();
       }, 1000);
@@ -912,7 +885,7 @@ export default function TranslationPanel() {
           <p className="text-slate-400 text-sm mt-1">Gợi ý từ mới dành cho bạn</p>
         </div>
 
-        {isLoadingDashboard ? (
+        {loadingVocab ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map(i => <div key={i} className="h-28 bg-slate-100 rounded-xl animate-pulse"></div>)}
           </div>
