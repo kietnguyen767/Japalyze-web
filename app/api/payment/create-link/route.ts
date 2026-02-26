@@ -14,14 +14,14 @@ export async function POST(request: Request) {
     // const token = request.cookies.get('session_token')?.value; 
 
     if (!token) {
-        return NextResponse.json({ error: 'Bạn chưa đăng nhập (Thiếu Token)' }, { status: 401 });
+      return NextResponse.json({ error: 'Bạn chưa đăng nhập (Thiếu Token)' }, { status: 401 });
     }
 
     // 2. Lấy UserID từ Redis Session (Cực nhanh)
     const userId = await redis.get(`session:${token}`);
 
     if (!userId) {
-        return NextResponse.json({ error: 'Phiên đăng nhập hết hạn' }, { status: 401 });
+      return NextResponse.json({ error: 'Phiên đăng nhập hết hạn' }, { status: 401 });
     }
 
     // 3. Tạo mã đơn hàng ngẫu nhiên (hoặc dùng Time)
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     // 4. Tạo Payment Link với PayOS
     const paymentData = {
       orderCode: orderCode,
-      amount: 99000, 
+      amount: 59000,
       description: `Premium 1 thang`,
       // Nhớ dùng biến môi trường cho đúng domain thật / localhost
       cancelUrl: `${process.env.NEXT_PUBLIC_DOMAIN}/?status=cancelled`,
@@ -43,9 +43,9 @@ export async function POST(request: Request) {
     // Key: order_pending:123456 -> Value: user-uuid-tu-supabase
     await redis.setex(`order_pending:${orderCode}`, 1800, userId);
 
-    return NextResponse.json({ 
-        success: true, 
-        checkoutUrl: paymentLink.checkoutUrl 
+    return NextResponse.json({
+      success: true,
+      checkoutUrl: paymentLink.checkoutUrl
     });
 
   } catch (error: any) {

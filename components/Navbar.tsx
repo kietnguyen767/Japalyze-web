@@ -445,7 +445,7 @@ export default function Navbar() {
                 <div className="border-2 border-orange-200 hover:border-orange-400 bg-white p-6 rounded-2xl cursor-pointer transition-all hover:shadow-lg flex flex-col items-center text-center group relative overflow-hidden">
                   <div className="absolute top-0 right-0 bg-orange-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl">POPULAR</div>
                   <h4 className="font-bold text-lg text-slate-700">Gói 1 Tháng</h4>
-                  <p className="text-orange-600 font-extrabold text-xl my-2">99.000đ</p>
+                  <p className="text-orange-600 font-extrabold text-xl my-2">59.000đ</p>
                   <button onClick={() => handleActivatePremium('buy_1_month')} disabled={processing} className="w-full py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-xl hover:shadow-orange-200 hover:shadow-lg transition-all">Nạp ngay</button>
                 </div>
               </div>
