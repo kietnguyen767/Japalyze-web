@@ -370,9 +370,12 @@ export default function Navbar() {
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setShowDropdown(!showDropdown)}
-                  className={`flex items-center gap-3 px-3 py-1.5 rounded-md transition-all duration-500 ${isPremiumUser ? 'p-[2px] rounded-lg bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 animate-pulse' : ''}`}
+                  className={`flex items-center gap-3 px-3 py-1.5 rounded-xl transition-all duration-200 ${isPremiumUser
+                    ? 'border border-orange-200/50'
+                    : 'hover:bg-slate-50'
+                    }`}
                 >
-                  <div className={`flex items-center gap-3 px-3 py-1.5 rounded-md ${isPremiumUser ? 'bg-white' : ''}`}>
+                  <div className="flex items-center gap-3">
                     <div className="hidden md:block text-right">
                       <p className="text-xs text-slate-500">Xin chào,</p>
                       <p className={`text-sm font-bold max-w-[100px] truncate ${isPremiumUser ? 'text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-600' : 'text-slate-700'}`}>

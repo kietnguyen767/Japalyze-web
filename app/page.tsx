@@ -80,7 +80,7 @@ function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: ()
         streakDays: 0
     };
     const hasLevel = user?.currentLevel;
-    const streakDays = progress.streakDays || (user ? 1 : 0);
+    const streakDays = progress.streakDays;
     const isN5 = hasLevel === 'N5';
     const isLevelActive = hasLevel && isN5;
     const currentWeek = progress.currentPhase; // API now returns week number

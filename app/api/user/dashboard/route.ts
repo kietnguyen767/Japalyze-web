@@ -64,20 +64,37 @@ export async function GET() {
             const lastActive = user.lastActiveAt ? new Date(user.lastActiveAt) : null;
 
             if (!lastActive) {
+                // Lần đầu tiên tham gia: Chắc chắn là 1
                 streakCount = 1;
-                await prisma.user.update({ where: { id: userId }, data: { streakCount: 1, lastActiveAt: now } });
+                await prisma.user.update({
+                    where: { id: userId },
+                    data: { streakCount: 1, lastActiveAt: now }
+                });
             } else {
                 const lastDate = new Date(lastActive.getFullYear(), lastActive.getMonth(), lastActive.getDate());
                 const diffDays = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
 
                 if (diffDays === 1) {
+                    // Sang ngày mới: Tăng streak
                     streakCount += 1;
-                    await prisma.user.update({ where: { id: userId }, data: { streakCount, lastActiveAt: now } });
+                    await prisma.user.update({
+                        where: { id: userId },
+                        data: { streakCount, lastActiveAt: now }
+                    });
                 } else if (diffDays > 1) {
+                    // Quá 1 ngày không học: Reset về 1
                     streakCount = 1;
-                    await prisma.user.update({ where: { id: userId }, data: { streakCount: 1, lastActiveAt: now } });
-                } else if (diffDays === 0) {
-                    await prisma.user.update({ where: { id: userId }, data: { lastActiveAt: now } });
+                    await prisma.user.update({
+                        where: { id: userId },
+                        data: { streakCount: 1, lastActiveAt: now }
+                    });
+                } else {
+                    // Trong cùng một ngày hoặc có lỗi thời gian: Chỉ cập nhật giờ active cuối
+                    // Giữ nguyên streakCount hiện tại
+                    await prisma.user.update({
+                        where: { id: userId },
+                        data: { lastActiveAt: now }
+                    });
                 }
             }
 

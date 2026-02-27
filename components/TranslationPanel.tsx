@@ -738,8 +738,8 @@ export default function TranslationPanel() {
 
       {/* 3. KẾT QUẢ PHÂN TÍCH */}
       {analysis && (
-        <div className="bg-white rounded-2xl border border-indigo-100 shadow-xl overflow-hidden animate-in slide-in-from-bottom-5">
-          <div className="bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-4 text-white font-bold flex items-center gap-2 text-lg">
+        <div className="bg-white rounded-2xl border border-indigo-100 shadow-xl overflow-visible animate-in slide-in-from-bottom-5">
+          <div className="bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-4 text-white font-bold flex items-center gap-2 text-lg rounded-t-2xl">
             <Sparkles size={24} className="text-yellow-300" /> JapaLyze Analysis
           </div>
           <div className="p-6 space-y-8">
@@ -756,10 +756,10 @@ export default function TranslationPanel() {
                   <div key={idx} className="group relative bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl hover:border-indigo-300 hover:bg-indigo-50 transition-all cursor-help text-center min-w-[80px]">
                     <div className="text-lg font-bold text-slate-800">{item.text}</div>
                     <div className="text-xs text-slate-400 uppercase font-semibold mt-1">{item.role}</div>
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-56 bg-slate-800 text-white text-xs p-3 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-xl">
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-72 bg-slate-800 text-white text-xs p-3 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-2xl border border-white/10">
                       <div className="font-bold text-yellow-300 mb-1 text-sm">{item.meaning} ({item.romaji})</div>
-                      <div className="leading-relaxed opacity-90">{item.explanation}</div>
-                      <div className="absolute bottom-[-6px] left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-800 rotate-45"></div>
+                      <div className="leading-relaxed opacity-95">{item.explanation}</div>
+                      <div className="absolute bottom-[-6px] left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-800 rotate-45 border-r border-b border-white/10"></div>
                     </div>
                   </div>
                 ))}

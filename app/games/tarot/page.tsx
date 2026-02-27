@@ -123,7 +123,7 @@ export default function TarotGamePage() {
             <div className="fixed inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30 pointer-events-none"></div>
             <div className="fixed top-0 left-0 w-full h-full bg-gradient-to-b from-indigo-900/20 via-slate-900/50 to-slate-900 pointer-events-none"></div>
 
-            {/* Navbar */}
+            
             <div className="relative z-10 p-4 flex items-center justify-between border-b border-white/5 bg-slate-900/60 backdrop-blur-md">
                 <Link href="/games" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
                     <ChevronLeft size={20} /> Thoát
