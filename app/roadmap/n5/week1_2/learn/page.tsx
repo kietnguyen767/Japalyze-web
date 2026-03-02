@@ -1,25 +1,35 @@
-//app/roadmap/n5/phase1/learn/page.tsx
+//app/roadmap/n5/week1_2/learn/page.tsx
 'use client';
 
 import { useState } from 'react';
 import { HIRAGANA_DATA, KATAKANA_DATA, HIRAGANA_DAKUTEN, KATAKANA_DAKUTEN, KanaChar } from '@/lib/kanaData';
-import { useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Loader2, Volume2, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LearnKanaPage() {
-  const [activeTab, setActiveTab] = useState<'hira' | 'kata'>('hira');
-  const [submitting, setSubmitting] = useState(false);
+  const searchParams = useSearchParams();
   const router = useRouter();
+
+  const initialTab = (searchParams?.get('tab') as 'hira' | 'kata') || 'hira';
+  const questId = searchParams?.get('questId') || 'w1_1';
+
+  const [activeTab, setActiveTab] = useState<'hira' | 'kata'>(initialTab);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleNext = async () => {
     setSubmitting(true);
     try {
       await fetch('/api/user/complete-quest', {
         method: 'POST',
-        body: JSON.stringify({ questId: 'w1_1' }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questId }),
       });
-      router.push('/roadmap/n5/phase1/practice');
+
+      // If we are in w1_1 or w2_1, maybe go to the second learning part (Dakuten)?
+      // For now, redirecting back to roadmap is safer, or to practice as before.
+      // Move back to roadmap
+      router.back();
     } catch {
       setSubmitting(false);
     }
@@ -68,14 +78,15 @@ export default function LearnKanaPage() {
       <div className="shrink-0  border-b border-slate-200 px-4 md:px-8 py-3">
         <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
           {/* Back link */}
-          <Link
-            href="/roadmap/n5"
-            className="group flex items-center text-slate-500 hover:text-blue-600 font-bold transition-colors text-sm">
+          <button
+            onClick={() => router.back()}
+            className="group flex items-center text-slate-500 hover:text-blue-600 font-bold transition-colors text-sm"
+          >
             <div className="p-2 bg-white border border-slate-200 rounded-full mr-3 group-hover:border-blue-200 transition-colors">
               <ArrowLeft size={16} />
             </div>
             Quay lại Lộ trình
-          </Link>
+          </button>
 
           {/* Title */}
           <div className="flex items-center gap-2 font-black text-slate-800 text-base md:text-lg">

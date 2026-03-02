@@ -8,7 +8,9 @@ import {
     ChevronRight, CheckCircle2, Circle, Loader2
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Quest = (typeof N5_WEEKS)[0]['quests'][0];
@@ -18,31 +20,46 @@ type Week = (typeof N5_WEEKS)[0];
 const WEEK_ACCENT: Record<number, string> = {
     1: 'bg-green-500', 2: 'bg-teal-500', 3: 'bg-blue-500',
     4: 'bg-indigo-500', 5: 'bg-orange-500', 6: 'bg-red-500',
-    7: 'bg-purple-500', 8: 'bg-amber-500',
+    7: 'bg-purple-500', 8: 'bg-amber-500', 9: 'bg-emerald-500',
+    10: 'bg-cyan-500', 11: 'bg-rose-500',
 };
 
 export default function N5RoadmapPage() {
     useAuth();
-
-    const [selectedWeek, setSelectedWeek] = useState<Week>(N5_WEEKS[0]);
-    const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
-    const [loadingProgress, setLoadingProgress] = useState(true);
+    const searchParams = useSearchParams();
+    const router = useRouter();
     const tabScrollRef = useRef<HTMLDivElement>(null);
 
-    // ── Fetch completed quest IDs from DB ────────────────────────────────────
+    // ── Progress Fetching with React Query ──────────────────────────────────
+    const { data: progressData, isLoading: loadingProgress } = useQuery({
+        queryKey: ['roadmap-progress'],
+        queryFn: async () => {
+            const res = await fetch('/api/user/roadmap-progress');
+            if (!res.ok) throw new Error('Failed to fetch');
+            return res.json() as Promise<{ completedQuestIds: string[] }>;
+        },
+        staleTime: 5 * 60 * 1000, // Cache for 5 mins
+    });
+
+    const completedIds = useMemo(() =>
+        new Set(progressData?.completedQuestIds || []),
+        [progressData]);
+
+    // ── Selected Week state driven by URL ────────────────────────────────────
+    const weekParam = parseInt(searchParams?.get('week') || '1');
+    const selectedWeek = N5_WEEKS.find(w => w.week === weekParam) || N5_WEEKS[0];
+
+    const setSelectedWeek = (week: Week) => {
+        router.push(`/roadmap/n5?week=${week.week}`, { scroll: false });
+    };
+
+    // Scroll mobile tab into view when selected week change
     useEffect(() => {
-        const fetchProgress = async () => {
-            try {
-                const res = await fetch('/api/user/roadmap-progress');
-                if (res.ok) {
-                    const data = await res.json();
-                    setCompletedIds(new Set(data.completedQuestIds as string[]));
-                }
-            } catch { /* silent */ }
-            finally { setLoadingProgress(false); }
-        };
-        fetchProgress();
-    }, []);
+        const el = document.getElementById(`tab-week-${selectedWeek.week}`);
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+    }, [selectedWeek.week]);
 
     // ── Helpers ───────────────────────────────────────────────────────────────
     const currentWeek = (() => {
@@ -63,11 +80,6 @@ export default function N5RoadmapPage() {
 
     const handleSelectWeek = (week: Week) => {
         setSelectedWeek(week);
-        // Scroll mobile tab into view
-        setTimeout(() => {
-            const el = document.getElementById(`tab-week-${week.week}`);
-            el?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-        }, 50);
     };
 
     // ── Shared quest panel content ────────────────────────────────────────────
@@ -257,7 +269,7 @@ export default function N5RoadmapPage() {
                             <ArrowLeft size={13} className="mr-1" /> Dashboard
                         </Link>
                         <h1 className="text-lg font-black text-slate-800 leading-tight">Lộ Trình N5 🗻</h1>
-                        <p className="text-xs text-slate-400 mt-0.5">8 tuần · Từ Zero đến Hero</p>
+                        <p className="text-xs text-slate-400 mt-0.5">11 tuần · Từ Zero đến Hero</p>
 
                         <div className="mt-3">
                             <div className="flex justify-between text-[10px] font-semibold text-slate-400 mb-1">

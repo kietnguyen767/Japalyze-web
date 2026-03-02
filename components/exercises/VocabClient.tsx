@@ -14,6 +14,7 @@ import {
   XCircle
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 
 /* ================= TYPES ================= */
 
@@ -28,6 +29,8 @@ type VocabClientProps = {
   sections: any[];
   title: string;
   lessonId: string;
+  isRoadmapMode?: boolean;
+  questId?: string;
 };
 
 /* ================= HELPERS ================= */
@@ -46,9 +49,20 @@ function shuffleArray(array: any[]) {
 export default function VocabClient({
   sections,
   title,
-  lessonId
+  lessonId,
+  isRoadmapMode,
+  questId
 }: VocabClientProps) {
+  const router = useRouter();
   const [mode, setMode] = useState<'learning' | 'quiz'>('learning');
+
+  const handleGoBack = () => {
+    if (isRoadmapMode) {
+      router.back();
+    } else {
+      router.push('/exercises');
+    }
+  };
 
   const playAudio = (text: string) => {
     if (typeof window === 'undefined') return;
@@ -65,12 +79,12 @@ export default function VocabClient({
       <div className="max-w-4xl mx-auto animate-fade-in-up pb-24">
         {/* Header Sticky */}
         <div className="sticky top-16 md:top-20 z-40 backdrop-blur py-4 mb-6 flex justify-between items-center border-b border-slate-200/50">
-          <Link
-            href="/exercises"
+          <button
+            onClick={handleGoBack}
             className="text-slate-500 hover:text-blue-600 flex items-center gap-2 font-medium transition-colors"
           >
-            <ArrowLeft size={20} /> <span className="hidden sm:inline">Thư viện</span>
-          </Link>
+            <ArrowLeft size={20} /> <span className="hidden sm:inline">{isRoadmapMode ? 'Lộ trình' : 'Thư viện'}</span>
+          </button>
           <h1 className="text-lg md:text-xl font-bold text-slate-800 bg-white px-5 py-2 rounded-full border shadow-sm truncate max-w-[200px] md:max-w-none">
             {title}
           </h1>
@@ -165,6 +179,8 @@ export default function VocabClient({
       lessonId={lessonId}
       onBack={() => setMode('learning')}
       playAudio={playAudio}
+      isRoadmapMode={isRoadmapMode}
+      questId={questId}
     />
   );
 }
@@ -176,13 +192,17 @@ function VocabQuizView({
   title,
   onBack,
   playAudio,
-  lessonId
+  lessonId,
+  isRoadmapMode,
+  questId
 }: {
   sections: any[];
   title: string;
   lessonId: string;
   onBack: () => void;
   playAudio: (t: string) => void;
+  isRoadmapMode?: boolean;
+  questId?: string;
 }) {
   const { user } = useAuth();
   const [quizData, setQuizData] = useState<QuizItem[]>([]);
@@ -255,17 +275,25 @@ function VocabQuizView({
 
   useEffect(() => {
     if (isAllDone && isPerfectScore && user) {
-      // 👇 GỌI API MỚI
+      // 1. Lưu tiến độ bài tập thường
       fetch('/api/exercises/progress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lessonId })
       }).then(() => {
-        console.log('Saved vocab progress (100% Score)');
         new BroadcastChannel('exercise-progress').postMessage({ lessonId });
       });
+
+      // 2. Lưu tiến độ Roadmap (Nếu có)
+      if (isRoadmapMode && questId) {
+        fetch('/api/user/complete-quest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ questId })
+        }).then(() => console.log('Saved roadmap quest progress'));
+      }
     }
-  }, [isAllDone, isPerfectScore, user, lessonId]);
+  }, [isAllDone, isPerfectScore, user, lessonId, isRoadmapMode, questId]);
 
   if (quizData.length === 0) return <div className="p-10 text-center">Đang tạo bài kiểm tra...</div>;
 
@@ -372,10 +400,9 @@ function VocabQuizView({
             className="flex items-center gap-2 px-8 py-3 bg-white text-blue-600 font-bold rounded-full shadow-sm hover:bg-blue-50 hover:shadow-md transition-all active:scale-95 border border-slate-100"
           >
             <RefreshCw size={20} className={quizData.length > 0 ? "" : "animate-spin"} />
-            Làm bộ câu hỏi mới
+            Làm lại bộ câu hỏi
           </button>
         </div>
-        <p className="text-slate-400 text-sm mt-3 italic">Hệ thống sẽ trộn ngẫu nhiên 25 từ vựng khác.</p>
       </div>
     </div>
   );

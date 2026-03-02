@@ -1,7 +1,8 @@
-//app/roadmap/n5/phase1/practice/page.tsx
+//app/roadmap/n5/week1_2/practice/page.tsx
 'use client';
 
 import { ArrowLeft, Sword, CheckCircle2 } from 'lucide-react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -63,8 +64,14 @@ const PRACTICE_CARDS = [
 ];
 
 export default function Phase1PracticeMenu() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const tab = searchParams?.get('tab'); // 'hira' or 'kata'
+  const questId = searchParams?.get('questId');
+
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetch('/api/user/roadmap-progress')
@@ -76,7 +83,9 @@ export default function Phase1PracticeMenu() {
       .finally(() => setLoading(false));
   }, []);
 
-  const doneCount = PRACTICE_CARDS.filter(c => completedIds.has(c.subQuestId)).length;
+  const filteredCards = PRACTICE_CARDS.filter(c => !tab || c.subQuestId.includes(tab));
+  const totalCount = filteredCards.length;
+  const doneCount = filteredCards.filter(c => completedIds.has(c.subQuestId)).length;
 
   return (
     <div className="min-h-screen bg-slate-50/50 text-slate-700">
@@ -85,12 +94,15 @@ export default function Phase1PracticeMenu() {
 
         {/* Breadcrumb */}
         <div className="flex justify-between items-center mb-8">
-          <Link href="/roadmap/n5" className="group flex items-center text-slate-500 hover:text-blue-600 font-bold transition-colors text-sm">
+          <button
+            onClick={() => router.back()}
+            className="group flex items-center text-slate-500 hover:text-blue-600 font-bold transition-colors text-sm"
+          >
             <div className="p-2 bg-white border border-slate-200 rounded-full mr-3 group-hover:border-blue-200 transition-colors">
               <ArrowLeft size={16} />
             </div>
             Quay lại Lộ trình
-          </Link>
+          </button>
           <div className="flex items-center gap-2 px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-xs font-bold uppercase">
             <Sword size={14} /> Thực chiến
           </div>
@@ -98,17 +110,17 @@ export default function Phase1PracticeMenu() {
 
         <div className="text-center mb-10">
           <h1 className="text-3xl font-black text-slate-800 mb-2">Ghi Nhớ Mặt Chữ</h1>
-          <p className="text-slate-500 mb-3">Hoàn thành cả 4 bài tập để đánh dấu nhiệm vụ.</p>
+          <p className="text-slate-500 mb-3">Hoàn thành cả {totalCount} bài tập để đánh dấu nhiệm vụ.</p>
           {/* Progress bar */}
           <div className="max-w-xs mx-auto">
             <div className="flex justify-between text-xs text-slate-400 mb-1">
               <span>Tiến độ</span>
-              <span className={doneCount === 4 ? 'text-green-600 font-bold' : ''}>{doneCount}/4 bài</span>
+              <span className={doneCount === totalCount ? 'text-green-600 font-bold' : ''}>{doneCount}/{totalCount} bài</span>
             </div>
             <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-blue-500 to-green-500 rounded-full transition-all duration-500"
-                style={{ width: `${(doneCount / 4) * 100}%` }}
+                style={{ width: `${(doneCount / totalCount) * 100}%` }}
               />
             </div>
           </div>
@@ -116,7 +128,7 @@ export default function Phase1PracticeMenu() {
 
         {/* 2x2 Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-          {PRACTICE_CARDS.map(card => {
+          {filteredCards.map(card => {
             const isDone = completedIds.has(card.subQuestId);
             return (
               <Link
@@ -145,10 +157,28 @@ export default function Phase1PracticeMenu() {
           })}
         </div>
 
-        {doneCount === 4 && (
-          <div className="mt-8 text-center p-4 bg-green-50 border border-green-200 rounded-2xl max-w-md mx-auto">
-            <CheckCircle2 className="text-green-600 mx-auto mb-2" size={28} />
-            <p className="font-bold text-green-700">Xuất sắc! Bạn đã hoàn thành tất cả bài tập ghi nhớ.</p>
+        {doneCount >= totalCount && questId && !completedIds.has(questId) && (
+          <div className="mt-8 text-center p-6 bg-green-50 border-2 border-green-200 rounded-3xl max-w-md mx-auto shadow-sm">
+            <CheckCircle2 className="text-green-600 mx-auto mb-3" size={32} />
+            <p className="font-bold text-green-800 text-lg mb-1">Tuyệt vời!</p>
+            <p className="text-green-600 text-sm mb-4">Bạn đã hoàn thành các bài tập mục tiêu.</p>
+            <button
+              onClick={async () => {
+                setSubmitting(true);
+                try {
+                  await fetch('/api/user/complete-quest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ questId }),
+                  });
+                  router.back();
+                } catch { setSubmitting(false); }
+              }}
+              disabled={submitting}
+              className="bg-green-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-green-700 transition-all shadow-lg shadow-green-200"
+            >
+              {submitting ? 'Đang lưu...' : 'Xác nhận hoàn thành'}
+            </button>
           </div>
         )}
 

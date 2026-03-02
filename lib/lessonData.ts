@@ -1677,3 +1677,91 @@ export const FESTIVAL_LESSON_DATA = [
     ]
   }
 ];
+// --- DỮ LIỆU BÀI 1 TUẦN 3: ĐỊNH DANH & CHÀO HỎI ---
+
+export const W3_1_PRONOUNS = [
+  { kanji: "私", kana: "わたし", romaji: "Watashi", meaning: "tôi" },
+  { kanji: "私達", kana: "わたしたち", romaji: "Watashitachi", meaning: "chúng tôi" },
+  { kanji: "貴方", kana: "あなた", romaji: "Anata", meaning: "bạn" },
+  { kanji: "あの人", kana: "あのひと", romaji: "Ano hito", meaning: "người kia" },
+  { kanji: "あの方", kana: "あのかた", romaji: "Ano kata", meaning: "vị kia (lịch sự)" },
+  { kanji: "皆さん", kana: "みなさん", romaji: "Minasan", meaning: "mọi người" },
+];
+
+export const W3_1_SUFFIXES = [
+  { kanji: "～さん", kana: "～さん", romaji: "~san", meaning: "lịch sự chung (anh/chị/ông/bà)" },
+  { kanji: "～ちゃん", kana: "～ちゃん", romaji: "~chan", meaning: "trẻ em, thân mật (bé/em)" },
+  { kanji: "～君", kana: "～くん", romaji: "~kun", meaning: "bé trai / nam cấp dưới" },
+  { kanji: "～人", kana: "～じん", romaji: "~jin", meaning: "người nước…" },
+];
+
+export const W3_1_JOBS_NEW = [
+  { kanji: "先生", kana: "せんせい", romaji: "Sensei", meaning: "thầy cô" },
+  { kanji: "教師", kana: "きょうし", romaji: "Kyoushi", meaning: "giáo viên (khi nói nghề của mình)" },
+  { kanji: "学生", kana: "가게세이", romaji: "Gakusei", meaning: "học sinh / sinh viên" },
+  { kanji: "会社員", kana: "かいしゃいん", romaji: "Kaishain", meaning: "nhân viên công ty" },
+  { kanji: "社員", kana: "しゃいん", romaji: "Shain", meaning: "nhân viên (kèm tên công ty)" },
+  { kanji: "銀行員", kana: "ぎnこういn", romaji: "Ginkouin", meaning: "nhân viên ngân hàng" },
+  { kanji: "医者", kana: "いしゃ", romaji: "Isha", meaning: "bác sĩ" },
+  { kanji: "研究者", kana: "けんきゅうしゃ", romaji: "Kenkyuusha", meaning: "nhà nghiên cứu" },
+  { kanji: "エンジニア", kana: "えnじにあ", romaji: "Enjinia", meaning: "kỹ sư" },
+];
+
+export const W3_1_PLACES_QUES = [
+  { kanji: "大学", kana: "だいがく", romaji: "Daigaku", meaning: "đại học" },
+  { kanji: "病院", kana: "びょういん", romaji: "Byouin", meaning: "bệnh viện" },
+  { kanji: "電気", kana: "でんき", romaji: "Denki", meaning: "điện" },
+  { kanji: "誰", kana: "だれ", romaji: "Dare", meaning: "ai" },
+  { kanji: "どなた", kana: "どなた", romaji: "Donata", meaning: "ai (lịch sự)" },
+];
+
+export const W3_1_AGE = [
+  { kanji: "～歳", kana: "～さい", romaji: "~sai", meaning: "… tuổi" },
+  { kanji: "何歳", kana: "なんさい", romaji: "Nansai", meaning: "mấy tuổi" },
+  { kanji: "お幾つ", kana: "おいくつ", romaji: "Oikutsu", meaning: "mấy tuổi (lịch sự)" },
+];
+
+export const W3_1_PHRASES = [
+  { kanji: "はい", kana: "はい", romaji: "Hai", meaning: "vâng" },
+  { kanji: "いいえ", kana: "いいえ", romaji: "Iie", meaning: "không" },
+  { kanji: "失礼ですが", kana: "しつれいですが", romaji: "Shitsurei desu ga", meaning: "xin lỗi cho hỏi…" },
+  { kanji: "お名前は？", kana: "おなまえは？", romaji: "O-namae wa?", meaning: "tên bạn là?" },
+  { kanji: "初めまして", kana: "はじめまして", romaji: "Hajimemashite", meaning: "rất hân hạnh" },
+  { kanji: "どうぞよろしくお願いします", kana: "どうぞよろしくお願いします", romaji: "Douzo yoroshiku onegaishimasu", meaning: "mong giúp đỡ" },
+  { kanji: "こちらは～さんです", kana: "こちらは～さんです", romaji: "Kochira wa ~san desu", meaning: "đây là… (giới thiệu)" },
+  { kanji: "～から来ました", kana: "～からきました", romaji: "~kara kimashita", meaning: "đến từ…" },
+];
+
+export const W3_1_KANJI_NUMBERS = [
+  { kanji: "一", kana: "いち", romaji: "Ichi", meaning: "Số 1" },
+  { kanji: "二", kana: "に", romaji: "Ni", meaning: "Số 2" },
+  { kanji: "三", kana: "さん", romaji: "San", meaning: "Số 3" },
+  { kanji: "四", kana: "よん / し", romaji: "Yon / Shi", meaning: "Số 4" },
+  { kanji: "五", kana: "ご", romaji: "Go", meaning: "Số 5" },
+  { kanji: "六", kana: "ろく", romaji: "Roku", meaning: "Số 6" },
+  { kanji: "七", kana: "なな / しち", romaji: "Nana / Shichi", meaning: "Số 7" },
+  { kanji: "八", kana: "はち", romaji: "Hachi", meaning: "Số 8" },
+  { kanji: "九", kana: "きゅう", romaji: "Kyuu", meaning: "Số 9" },
+  { kanji: "十", kana: "じゅう", romaji: "Juu", meaning: "Số 10" },
+  { kanji: "百", kana: "ひゃく", romaji: "Hyaku", meaning: "Một trăm" },
+  { kanji: "千", kana: "せん", romaji: "Sen", meaning: "Một nghìn" },
+  { kanji: "万", kana: "まん", romaji: "Man", meaning: "Mười nghìn" },
+  { kanji: "円", kana: "えん", romaji: "En", meaning: "Yên (tiền Nhật)" },
+];
+
+export const W3_1_KANJI_BASIC = [
+  { kanji: "人", kana: "ひと / ジン", romaji: "Hito / Jin", meaning: "Người" },
+  { kanji: "日", kana: "ひ / ニチ", romaji: "Hi / Nichi", meaning: "Ngày / Nhật" },
+  { kanji: "月", kana: "つき / ゲツ", romaji: "Tsuki / Getsu", meaning: "Tháng / Nguyệt" },
+];
+
+export const WEEK3_LESSON1_DATA = [
+  { title: "1. Đại từ nhân xưng", items: W3_1_PRONOUNS },
+  { title: "2. Hậu tố tên", items: W3_1_SUFFIXES },
+  { title: "3. Nghề nghiệp", items: W3_1_JOBS_NEW },
+  { title: "4. Địa điểm & Từ hỏi", items: W3_1_PLACES_QUES },
+  { title: "5. Tuổi tác", items: W3_1_AGE },
+  { title: "6. Giao tiếp cơ bản", items: W3_1_PHRASES },
+  { title: "7. Chữ Hán số đếm", items: W3_1_KANJI_NUMBERS },
+  { title: "8. Chữ Hán cơ bản", items: W3_1_KANJI_BASIC },
+];

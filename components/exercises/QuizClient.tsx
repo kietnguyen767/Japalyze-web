@@ -108,15 +108,12 @@ export default function QuizClient({ data, title, lessonId, isRoadmapMode, quest
       {/* Header Sticky */}
       <div className="flex justify-between items-center mb-6 sticky top-20 z-40 backdrop-blur py-2">
         {/* Nút Back thông minh */}
-        {isRoadmapMode ? (
-          <Link href="/roadmap/n5/phase1/practice" className="text-slate-500 hover:text-blue-600 flex items-center gap-1 font-medium">
-            <ArrowLeft size={20} /> Chọn bộ khác
-          </Link>
-        ) : (
-          <Link href="/exercises" className="text-slate-500 hover:text-blue-600 flex items-center gap-1 font-medium">
-            <ArrowLeft size={20} /> Thư viện
-          </Link>
-        )}
+        <button
+          onClick={() => isRoadmapMode ? router.back() : router.push('/exercises')}
+          className="text-slate-500 hover:text-blue-600 flex items-center gap-1 font-medium"
+        >
+          <ArrowLeft size={20} /> {isRoadmapMode ? 'Lộ trình' : 'Thư viện'}
+        </button>
 
         <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-full shadow-sm border border-slate-200">
           <span className="font-bold text-slate-700 hidden sm:inline">{title}</span>

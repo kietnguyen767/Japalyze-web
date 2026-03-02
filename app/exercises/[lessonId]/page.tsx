@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useParams, useSearchParams } from 'next/navigation'; // 👈 THÊM useSearchParams
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 
@@ -14,7 +14,9 @@ import {
   ANIMAL_LESSON_DATA, FAMILY_LESSON_DATA, FRUIT_LESSON_DATA,
   VEGETABLE_LESSON_DATA, ELECTRONIC_LESSON_DATA, HOUSEHOLD_LESSON_DATA,
   MEDIA_LESSON_DATA, HOBBY_LESSON_DATA, COUNTRY_LESSON_DATA, EMOTION_LESSON_DATA, TRAVEL_LESSON_DATA,
-  ROUTINE_LESSON_DATA, HOUSEWORK_LESSON_DATA, CASUAL_TALK_LESSON_DATA, LOVE_LESSON_DATA, FESTIVAL_LESSON_DATA
+  ROUTINE_LESSON_DATA, HOUSEWORK_LESSON_DATA, CASUAL_TALK_LESSON_DATA, LOVE_LESSON_DATA, FESTIVAL_LESSON_DATA,
+  WEEK3_LESSON1_DATA,
+  W3_1_PRONOUNS, W3_1_SUFFIXES, W3_1_JOBS_NEW, W3_1_PLACES_QUES, W3_1_AGE, W3_1_PHRASES, W3_1_KANJI_NUMBERS, W3_1_KANJI_BASIC
 } from '@/lib/lessonData';
 
 import { CONVERSATION_DATA } from '@/lib/conversationData';
@@ -30,7 +32,7 @@ export default function LessonPage() {
 
   const lessonId = params?.lessonId as string;
 
-  // 👇 Đọc trực tiếp từ URL (searchParams đã được khởi tạo ở trên)
+  // Đọc trực tiếp từ URL (searchParams đã được khởi tạo ở trên)
   const context = searchParams?.get('context');
   const questId = searchParams?.get('questId');
 
@@ -60,7 +62,6 @@ export default function LessonPage() {
   }
   // 2. Kiểm tra Bảng chữ cái (QuizClient)
   else if (lessonId === 'hiragana') {
-    // 👇 Truyền roadmapProps vào đây
     content = <QuizClient data={HIRAGANA_QUIZ} title="Bảng Hiragana" lessonId="hiragana" {...roadmapProps} />;
   }
   else if (lessonId === 'katakana') {
@@ -138,6 +139,33 @@ export default function LessonPage() {
   }
   else if (lessonId === 'festivals') {
     content = <VocabClient sections={FESTIVAL_LESSON_DATA} title="Lễ hội & Sự kiện" lessonId="festivals" {...roadmapProps} />;
+  }
+  else if (lessonId === 'w3-lesson1') {
+    content = <VocabClient sections={WEEK3_LESSON1_DATA} title="Tuần 3 - Bài 1: Từ vựng & Chữ Hán" lessonId="w3-lesson1" {...roadmapProps} />;
+  }
+  else if (lessonId === 'w3-1-pronouns') {
+    content = <VocabClient sections={[{ title: "Đại từ nhân xưng", items: W3_1_PRONOUNS }]} title="Đại từ nhân xưng" lessonId="w3-1-pronouns" {...roadmapProps} />;
+  }
+  else if (lessonId === 'w3-1-suffixes') {
+    content = <VocabClient sections={[{ title: "Hậu tố tên", items: W3_1_SUFFIXES }]} title="Hậu tố tên" lessonId="w3-1-suffixes" {...roadmapProps} />;
+  }
+  else if (lessonId === 'w3-1-jobs') {
+    content = <VocabClient sections={[{ title: "Nghề nghiệp", items: W3_1_JOBS_NEW }]} title="Nghề nghiệp" lessonId="w3-1-jobs" {...roadmapProps} />;
+  }
+  else if (lessonId === 'w3-1-places') {
+    content = <VocabClient sections={[{ title: "Địa điểm & Từ hỏi", items: W3_1_PLACES_QUES }]} title="Địa điểm & Từ hỏi" lessonId="w3-1-places" {...roadmapProps} />;
+  }
+  else if (lessonId === 'w3-1-age') {
+    content = <VocabClient sections={[{ title: "Tuổi tác", items: W3_1_AGE }]} title="Tuổi tác" lessonId="w3-1-age" {...roadmapProps} />;
+  }
+  else if (lessonId === 'w3-1-phrases') {
+    content = <VocabClient sections={[{ title: "Giao tiếp cơ bản", items: W3_1_PHRASES }]} title="Giao tiếp cơ bản" lessonId="w3-1-phrases" {...roadmapProps} />;
+  }
+  else if (lessonId === 'w3-1-kanji-num') {
+    content = <VocabClient sections={[{ title: "Chữ Hán số đếm", items: W3_1_KANJI_NUMBERS }]} title="Chữ Hán số đếm" lessonId="w3-1-kanji-num" {...roadmapProps} />;
+  }
+  else if (lessonId === 'w3-1-kanji-basic') {
+    content = <VocabClient sections={[{ title: "Chữ Hán cơ bản", items: W3_1_KANJI_BASIC }]} title="Chữ Hán cơ bản" lessonId="w3-1-kanji-basic" {...roadmapProps} />;
   }
   // 4. Trường hợp không tìm thấy bài nào hợp lệ
   else {

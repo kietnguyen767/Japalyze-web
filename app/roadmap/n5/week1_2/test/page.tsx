@@ -1,49 +1,33 @@
+//app/roadmap/n5/week1_2/test/page.tsx
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
-    CheckCircle2, XCircle, Timer, AlertCircle,
-    Keyboard, MousePointer2, Award, ArrowRight, ArrowLeft, Clock,
-    Trophy, RefreshCw, Loader2
+    Check, X, CheckCircle2, XCircle, Timer, AlertCircle,
+    ChevronLeft, BookOpen, PenTool,
+    MousePointer2, Keyboard,
+    Trophy, RefreshCw, Loader2,
+    Award, ArrowRight, ArrowLeft, Clock
 } from 'lucide-react';
 
-// --- DỮ LIỆU TỪ VỰNG ---
-const VOCAB_DATA = [
-    { kana: 'わたし', romaji: 'watashi', meaning: 'Tôi' },
-    { kana: 'せんせい', romaji: 'sensei', meaning: 'Giáo viên' },
-    { kana: 'がくせい', romaji: 'gakusei', meaning: 'Học sinh' },
-    { kana: 'おはよう', romaji: 'ohayou', meaning: 'Chào buổi sáng' },
-    { kana: 'ありがとう', romaji: 'arigatou', meaning: 'Cảm ơn' },
-    { kana: 'さようなら', romaji: 'sayounara', meaning: 'Tạm biệt' },
-    { kana: 'すみません', romaji: 'sumimasen', meaning: 'Xin lỗi' },
-    { kana: 'ねこ', romaji: 'neko', meaning: 'Con mèo' },
-    { kana: 'いぬ', romaji: 'inu', meaning: 'Con chó' },
-    { kana: 'さくら', romaji: 'sakura', meaning: 'Hoa anh đào' },
-    { kana: 'やま', romaji: 'yama', meaning: 'Núi' },
-    { kana: 'かわ', romaji: 'kawa', meaning: 'Sông' },
-    { kana: 'カメラ', romaji: 'kamera', meaning: 'Máy ảnh' },
-    { kana: 'テレビ', romaji: 'terebi', meaning: 'Tivi' },
-    { kana: 'ホテル', romaji: 'hoteru', meaning: 'Khách sạn' },
-    { kana: 'レストラン', romaji: 'resutoran', meaning: 'Nhà hàng' },
-    { kana: 'バス', romaji: 'basu', meaning: 'Xe buýt' },
-    { kana: 'トイレ', romaji: 'toire', meaning: 'Nhà vệ sinh' },
-    { kana: 'コーヒー', romaji: 'koohii', meaning: 'Cà phê' },
-    { kana: 'スーパー', romaji: 'suupaa', meaning: 'Siêu thị' }
-];
+import { UNIQUE_WEEK1_TEST_DATA, UNIQUE_WEEK2_TEST_DATA, TestItem } from '@/lib/n5TestData';
 
-type QuestionType = 'choice' | 'input';
+type QuestionType = 'choice' | 'input' | 'boolean';
 
 interface Question {
     id: number;
     type: QuestionType;
-    target: { kana: string; romaji: string; meaning: string };
-    options?: string[];
+    target: TestItem;
+    options?: string[]; // For choice
+    booleanData?: { displayRomaji: string; isCorrect: boolean }; // For boolean
 }
 
 export default function FinalTestPhase1() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const questIdFromUrl = searchParams?.get('questId') || 'w1_4';
 
     // States Logic
     const [status, setStatus] = useState<'intro' | 'playing' | 'finished'>('intro');
@@ -55,18 +39,18 @@ export default function FinalTestPhase1() {
     const [submitting, setSubmitting] = useState(false);
 
     // States Timer
-    const TEST_DURATION = 600; // 10 phút
+    const TEST_DURATION = 900; // 15 phút cho 40 câu
     const [timeLeft, setTimeLeft] = useState(TEST_DURATION);
 
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const TOTAL_QUESTIONS = 20;
-    const PASS_SCORE = 16;
+    const TOTAL_QUESTIONS = 40;
+    const PASS_SCORE = 32;
 
     // --- TIMER LOGIC ---
     useEffect(() => {
         let timer: NodeJS.Timeout;
-        if (status === 'playing' && timeLeft > 0 && !feedback) { // Dừng time khi đang hiện feedback
+        if (status === 'playing' && timeLeft > 0 && !feedback) {
             timer = setInterval(() => {
                 setTimeLeft((prev) => prev - 1);
             }, 1000);
@@ -84,21 +68,41 @@ export default function FinalTestPhase1() {
 
     // --- GAME LOGIC ---
     const startTest = () => {
-        const shuffledVocab = [...VOCAB_DATA].sort(() => 0.5 - Math.random());
-        const selectedVocab = shuffledVocab.slice(0, TOTAL_QUESTIONS);
+        // Determine the data source based on questIdFromUrl
+        const dataSource = questIdFromUrl === 'w2_4'
+            ? UNIQUE_WEEK2_TEST_DATA
+            : UNIQUE_WEEK1_TEST_DATA;
 
-        const newQuestions: Question[] = selectedVocab.map((item, index) => {
-            const type: QuestionType = Math.random() > 0.5 ? 'choice' : 'input';
+        const shuffledData = [...dataSource].sort(() => 0.5 - Math.random());
+        const selected = shuffledData.slice(0, TOTAL_QUESTIONS);
+
+        const newQuestions: Question[] = selected.map((item, index) => {
+            const rand = Math.random();
+            let type: QuestionType = 'choice';
+            if (rand > 0.66) type = 'input';
+            else if (rand > 0.33) type = 'boolean';
+
             let options: string[] = [];
+            let booleanData;
+
             if (type === 'choice') {
-                const wrongs = VOCAB_DATA
+                const wrongs = UNIQUE_WEEK1_TEST_DATA
                     .filter(v => v.romaji !== item.romaji)
                     .sort(() => 0.5 - Math.random())
                     .slice(0, 3)
                     .map(v => v.romaji);
                 options = [...wrongs, item.romaji].sort(() => 0.5 - Math.random());
+            } else if (type === 'boolean') {
+                const isCorrect = Math.random() > 0.5;
+                let displayRomaji = item.romaji;
+                if (!isCorrect) {
+                    const wrongItem = UNIQUE_WEEK1_TEST_DATA.find(v => v.romaji !== item.romaji);
+                    displayRomaji = wrongItem?.romaji || 'unknown';
+                }
+                booleanData = { displayRomaji, isCorrect };
             }
-            return { id: index, type, target: item, options };
+
+            return { id: index, type, target: item, options, booleanData };
         });
 
         setQuestions(newQuestions);
@@ -110,11 +114,17 @@ export default function FinalTestPhase1() {
         setTimeLeft(TEST_DURATION);
     };
 
-    const handleAnswer = (answer: string) => {
+    const handleAnswer = (answer: string | boolean) => {
         if (feedback !== null) return;
 
         const currentQ = questions[currentQIndex];
-        const isCorrect = answer.toLowerCase().trim() === currentQ.target.romaji.toLowerCase();
+        let isCorrect = false;
+
+        if (currentQ.type === 'boolean') {
+            isCorrect = answer === currentQ.booleanData?.isCorrect;
+        } else {
+            isCorrect = (answer as string).toLowerCase().trim() === currentQ.target.romaji.toLowerCase();
+        }
 
         if (isCorrect) {
             setScore(s => s + 1);
@@ -123,17 +133,18 @@ export default function FinalTestPhase1() {
             setFeedback('wrong');
         }
 
-        // Delay chuyển câu để user xem kết quả
         setTimeout(() => {
             if (currentQIndex < TOTAL_QUESTIONS - 1) {
                 setCurrentQIndex(prev => prev + 1);
                 setInputValue('');
                 setFeedback(null);
-                setTimeout(() => inputRef.current?.focus(), 100);
+                if (questions[currentQIndex + 1].type === 'input') {
+                    setTimeout(() => inputRef.current?.focus(), 100);
+                }
             } else {
                 finishTest(score + (isCorrect ? 1 : 0));
             }
-        }, 1200);
+        }, 800);
     };
 
     const finishTest = async (finalScore: number) => {
@@ -143,7 +154,8 @@ export default function FinalTestPhase1() {
             try {
                 await fetch('/api/user/complete-quest', {
                     method: 'POST',
-                    body: JSON.stringify({ questId: 'q1_4' })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ questId: questIdFromUrl })
                 });
             } catch (e) { console.error(e); }
             setSubmitting(false);
@@ -188,23 +200,20 @@ export default function FinalTestPhase1() {
                             <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-lg shadow-blue-200 rotate-3 hover:rotate-6 transition-transform">
                                 <Trophy size={48} className="text-white drop-shadow-md" />
                             </div>
-                            <h1 className="text-3xl font-black text-slate-800 mb-3">Kiểm Tra Giai Đoạn 1</h1>
-                            <p className="text-slate-500 mb-8 font-medium leading-relaxed">
-                                Thử thách tổng hợp kiến thức Hiragana, Katakana và Từ vựng cơ bản.
-                            </p>
+                            <h1 className="text-3xl font-black text-slate-800 mb-3">Kiểm Tra</h1>
 
                             <div className="bg-slate-50 rounded-2xl p-6 mb-8 text-left space-y-4 border border-slate-100">
                                 <div className="flex items-center gap-4 text-slate-700 font-bold text-sm">
                                     <div className="p-2 bg-white rounded-xl shadow-sm text-blue-600"><Clock size={18} /></div>
-                                    <span>Thời gian: 10 Phút</span>
+                                    <span>Thời gian: 15 Phút</span>
                                 </div>
                                 <div className="flex items-center gap-4 text-slate-700 font-bold text-sm">
                                     <div className="p-2 bg-white rounded-xl shadow-sm text-purple-600"><CheckCircle2 size={18} /></div>
-                                    <span>20 Câu hỏi liên tục</span>
+                                    <span>40 Câu hỏi ngẫu nhiên</span>
                                 </div>
                                 <div className="flex items-center gap-4 text-slate-700 font-bold text-sm">
                                     <div className="p-2 bg-white rounded-xl shadow-sm text-orange-600"><AlertCircle size={18} /></div>
-                                    <span>Cần đúng {PASS_SCORE}/20 câu</span>
+                                    <span>Cần đúng {PASS_SCORE}/40 câu</span>
                                 </div>
                             </div>
 
@@ -288,13 +297,15 @@ export default function FinalTestPhase1() {
                                 <div className="absolute top-6 right-6">
                                     {questions[currentQIndex].type === 'choice' ? (
                                         <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 border border-blue-100"><MousePointer2 size={14} /> Trắc nghiệm</span>
-                                    ) : (
+                                    ) : questions[currentQIndex].type === 'input' ? (
                                         <span className="bg-purple-50 text-purple-600 px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 border border-purple-100"><Keyboard size={14} /> Gõ phím</span>
+                                    ) : (
+                                        <span className="bg-orange-50 text-orange-600 px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 border border-orange-100"><CheckCircle2 size={14} /> Đúng / Sai</span>
                                     )}
                                 </div>
 
                                 <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-10 text-left">
-                                    {questions[currentQIndex].type === 'choice' ? 'Chọn Romaji đúng' : 'Nhập Romaji tương ứng'}
+                                    {questions[currentQIndex].type === 'choice' ? 'Chọn Romaji đúng' : questions[currentQIndex].type === 'input' ? 'Nhập Romaji tương ứng' : 'Phát âm này đúng hay sai?'}
                                 </p>
 
                                 {/* Nội dung câu hỏi (Kana) */}
@@ -304,22 +315,25 @@ export default function FinalTestPhase1() {
                                     </span>
                                 </div>
 
-                                {/* Nghĩa tiếng Việt */}
-                                <div className="mb-10">
+                                {/* Nghĩa tiếng Việt & Boolean Display */}
+                                <div className="mb-10 flex flex-col items-center gap-3">
                                     <span className="text-sm font-bold text-slate-500 bg-slate-100 px-4 py-2 rounded-xl border border-slate-200">
                                         Nghĩa: {questions[currentQIndex].target.meaning}
                                     </span>
+                                    {questions[currentQIndex].type === 'boolean' && (
+                                        <div className="text-2xl font-black text-blue-600 animate-pulse">
+                                            Romaji: {questions[currentQIndex].booleanData?.displayRomaji}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* --- VÙNG TRẢ LỜI --- */}
                                 {feedback ? (
-                                    // HIỂN THỊ KẾT QUẢ NGAY LẬP TỨC
                                     <div className={`py-4 rounded-2xl font-bold text-lg animate-in zoom-in flex items-center justify-center gap-2 ${feedback === 'correct' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`}>
                                         {feedback === 'correct' ? <CheckCircle2 size={24} /> : <XCircle size={24} />}
                                         {feedback === 'correct' ? 'CHÍNH XÁC!' : `SAI RỒI! Đáp án: ${questions[currentQIndex].target.romaji}`}
                                     </div>
                                 ) : (
-                                    // FORM TRẢ LỜI
                                     questions[currentQIndex].type === 'choice' ? (
                                         <div className="grid grid-cols-2 gap-4">
                                             {questions[currentQIndex].options?.map((opt, idx) => (
@@ -332,7 +346,7 @@ export default function FinalTestPhase1() {
                                                 </button>
                                             ))}
                                         </div>
-                                    ) : (
+                                    ) : questions[currentQIndex].type === 'input' ? (
                                         <div className="relative group">
                                             <input
                                                 ref={inputRef}
@@ -350,6 +364,26 @@ export default function FinalTestPhase1() {
                                                 className="mt-4 w-full py-3.5 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-purple-200 hover:-translate-y-0.5"
                                             >
                                                 Kiểm tra
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center justify-center gap-8 md:gap-12">
+                                            <button
+                                                onClick={() => handleAnswer(true)}
+                                                className="p-4 hover:scale-110 transition-all active:scale-90 group"
+                                            >
+                                                <Check size={80} strokeWidth={4} className="text-green-600 drop-shadow-sm" />
+                                            </button>
+
+                                            <span className="text-2xl font-black text-slate-300 italic tracking-widest">
+                                                or
+                                            </span>
+
+                                            <button
+                                                onClick={() => handleAnswer(false)}
+                                                className="p-4 hover:scale-110 transition-all active:scale-90 group"
+                                            >
+                                                <X size={80} strokeWidth={4} className="text-red-600 drop-shadow-sm" />
                                             </button>
                                         </div>
                                     )

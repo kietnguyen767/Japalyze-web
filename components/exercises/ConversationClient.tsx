@@ -39,7 +39,15 @@ const FuriganaText = ({ segments, isLeft, isQuizTitle }: { segments: Segment[], 
   );
 };
 
-export default function ConversationClient({ lesson }: { lesson: ConversationLesson }) {
+export default function ConversationClient({
+  lesson,
+  isRoadmapMode,
+  questId
+}: {
+  lesson: ConversationLesson,
+  isRoadmapMode?: boolean,
+  questId?: string
+}) {
   const { user } = useAuth();
   const router = useRouter();
 
@@ -111,24 +119,30 @@ export default function ConversationClient({ lesson }: { lesson: ConversationLes
     if (hasStarted && currentIndex >= lesson.lines.length && user && saveStatus === 'idle') {
       setSaveStatus('saving');
 
-      // 👇 GỌI API MỚI (Bỏ email trong body, chỉ gửi lessonId)
+      // 1. Lưu bài tập thường
       fetch('/api/exercises/progress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lessonId: lesson.id }) // Server tự lấy userId từ session
+        body: JSON.stringify({ lessonId: lesson.id })
       })
         .then(async (res) => {
-          const data = await res.json();
-          if (res.ok && data.success) {
-            setSaveStatus('success');
+          if (res.ok) {
             new BroadcastChannel('exercise-progress').postMessage({ lessonId: lesson.id });
+
+            // 2. Lưu Quest Roadmap (Nếu có)
+            if (isRoadmapMode && questId) {
+              await fetch('/api/user/complete-quest', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ questId })
+              });
+            }
+            setSaveStatus('success');
           } else {
             setSaveStatus('error');
           }
         })
-        .catch(err => {
-          setSaveStatus('error');
-        });
+        .catch(() => setSaveStatus('error'));
     }
   }, [currentIndex, hasStarted, lesson.lines.length, lesson.id, user, saveStatus]);
 
@@ -207,8 +221,12 @@ export default function ConversationClient({ lesson }: { lesson: ConversationLes
   };
 
   const handleGoBack = () => {
-    router.push('/exercises');
-    router.refresh();
+    if (isRoadmapMode) {
+      router.back();
+    } else {
+      router.push('/exercises');
+      router.refresh();
+    }
   };
 
   // --- RENDER ---
@@ -231,9 +249,12 @@ export default function ConversationClient({ lesson }: { lesson: ConversationLes
     return (
       <div className="max-w-4xl mx-auto min-h-[80vh] flex flex-col items-center justify-center p-6 animate-fade-in relative">
         <div className="absolute top-0 left-4">
-          <Link href="/exercises" className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold py-4">
-            <ArrowLeft size={20} /> Quay lại thư viện
-          </Link>
+          <button
+            onClick={handleGoBack}
+            className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold py-4"
+          >
+            <ArrowLeft size={20} /> Quay lại {isRoadmapMode ? 'Lộ trình' : 'Thư viện'}
+          </button>
         </div>
         <div className="bg-white p-10 rounded-3xl shadow-xl border border-slate-100 w-full max-w-lg text-center">
           <div className="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6">
