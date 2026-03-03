@@ -327,7 +327,7 @@ export const N5_WEEKS = [
         desc: "Học mẫu câu cơ bản và Roleplay chào hỏi Bài 1.",
         type: "roleplay",
         icon: Mic,
-        link: "/exercises/conv_1_intro?context=roadmap&questId=w3_2",
+        link: "/roadmap/n5/w3/w3-grammar?questId=w3_2",
         xp: 250
       },
       {

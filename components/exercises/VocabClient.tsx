@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 
 /* ================= TYPES ================= */
 
@@ -205,6 +206,7 @@ function VocabQuizView({
   questId?: string;
 }) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [quizData, setQuizData] = useState<QuizItem[]>([]);
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
   const [score, setScore] = useState(0);
@@ -290,7 +292,11 @@ function VocabQuizView({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ questId })
-        }).then(() => console.log('Saved roadmap quest progress'));
+        }).then(() => {
+          console.log('Saved roadmap quest progress');
+          queryClient.invalidateQueries({ queryKey: ['roadmap-progress'] });
+          queryClient.invalidateQueries({ queryKey: ['dashboard-data'] });
+        });
       }
     }
   }, [isAllDone, isPerfectScore, user, lessonId, isRoadmapMode, questId]);

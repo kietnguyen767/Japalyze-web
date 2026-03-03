@@ -5,6 +5,7 @@ import {
   Clock, PauseCircle, PlayCircle, List, ArrowLeft,
   Flag, X, Loader2, CheckCircle2, Circle, Image as ImageIcon
 } from 'lucide-react';
+import FormattedText from '@/components/FormattedText';
 
 // Định nghĩa Type cục bộ (Cập nhật thêm imageUrl, audioUrl)
 interface TakingTestProps {
@@ -284,9 +285,10 @@ export default function TakingTest({
                   </div>
                   {/* --------------------------- */}
 
-                  <h3 className="text-base md:text-lg font-semibold text-slate-800 leading-relaxed mb-6 whitespace-pre-line break-words">
-                    {q.content}
-                  </h3>
+                  <FormattedText
+                    text={q.content}
+                    className="text-base md:text-lg font-semibold text-slate-800 leading-relaxed mb-6 whitespace-pre-line break-words block"
+                  />
 
                   <div className="space-y-2.5">
                     {q.options.map((opt, optIdx) => {

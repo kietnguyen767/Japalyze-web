@@ -6,10 +6,12 @@ import { HIRAGANA_DATA, KATAKANA_DATA, HIRAGANA_DAKUTEN, KATAKANA_DAKUTEN, KanaC
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Loader2, Volume2, BookOpen } from 'lucide-react';
 import Link from 'next/link';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function LearnKanaPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const initialTab = (searchParams?.get('tab') as 'hira' | 'kata') || 'hira';
   const questId = searchParams?.get('questId') || 'w1_1';
@@ -18,17 +20,25 @@ export default function LearnKanaPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const handleNext = async () => {
+    // Determine the actual questId based on the active tab
+    let finalQuestId = questId;
+    if (activeTab === 'kata' && questId.startsWith('w1')) {
+      finalQuestId = questId.replace('w1', 'w2');
+    } else if (activeTab === 'hira' && questId.startsWith('w2')) {
+      finalQuestId = questId.replace('w2', 'w1');
+    }
+
     setSubmitting(true);
     try {
       await fetch('/api/user/complete-quest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ questId }),
+        body: JSON.stringify({ questId: finalQuestId }),
       });
 
-      // If we are in w1_1 or w2_1, maybe go to the second learning part (Dakuten)?
-      // For now, redirecting back to roadmap is safer, or to practice as before.
-      // Move back to roadmap
+      // Invalidate cache and go back
+      queryClient.invalidateQueries({ queryKey: ['roadmap-progress'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-data'] });
       router.back();
     } catch {
       setSubmitting(false);
@@ -213,14 +223,19 @@ export default function LearnKanaPage() {
           <button
             onClick={handleNext}
             disabled={submitting}
-            className="w-full md:w-auto flex items-center justify-center gap-2
-              px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm md:text-base
-              hover:bg-blue-700 hover:-translate-y-0.5 shadow-lg shadow-blue-200/60
-              transition-all disabled:opacity-70 disabled:hover:translate-y-0"
+            className={`w-full md:w-auto flex items-center justify-center gap-2
+              px-8 py-4 rounded-2xl font-black text-sm md:text-lg shadow-xl 
+              transition-all flex-shrink-0 active:scale-95
+              ${submitting
+                ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                : isHira
+                  ? 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-blue-200/50 hover:-translate-y-1 shadow-blue-500/20'
+                  : 'bg-orange-500 text-white hover:bg-orange-600 hover:shadow-orange-200/50 hover:-translate-y-1 shadow-orange-500/20'
+              }`}
           >
             {submitting
-              ? <><Loader2 size={18} className="animate-spin" /> Đang lưu...</>
-              : <><span>Hoàn thành &amp; Luyện tập</span><ArrowRight size={18} /></>
+              ? <><Loader2 size={22} className="animate-spin" /> Đang lưu tiến độ...</>
+              : <><span>Hoàn thành &amp; Luyện tập</span><ArrowRight size={22} /></>
             }
           </button>
         </div>

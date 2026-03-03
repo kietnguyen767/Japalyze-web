@@ -5,6 +5,7 @@ import { ArrowLeft, Sword, CheckCircle2 } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 // Sub-quest IDs nội bộ cho từng bài tập (không hiện trên roadmap)
 // Khi đủ cả nhóm → API tự mark quest cha (w1_2 / w2_2)
@@ -66,6 +67,7 @@ const PRACTICE_CARDS = [
 export default function Phase1PracticeMenu() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const tab = searchParams?.get('tab'); // 'hira' or 'kata'
   const questId = searchParams?.get('questId');
 
@@ -171,6 +173,8 @@ export default function Phase1PracticeMenu() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ questId }),
                   });
+                  queryClient.invalidateQueries({ queryKey: ['roadmap-progress'] });
+                  queryClient.invalidateQueries({ queryKey: ['dashboard-data'] });
                   router.back();
                 } catch { setSubmitting(false); }
               }}

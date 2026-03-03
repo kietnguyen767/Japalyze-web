@@ -38,12 +38,24 @@ export default function N5RoadmapPage() {
             if (!res.ok) throw new Error('Failed to fetch');
             return res.json() as Promise<{ completedQuestIds: string[] }>;
         },
-        staleTime: 5 * 60 * 1000, // Cache for 5 mins
+        staleTime: 0, // Ensure real-time update when navigating back
     });
 
     const completedIds = useMemo(() =>
         new Set(progressData?.completedQuestIds || []),
         [progressData]);
+
+    const allOfficialQuestIds = useMemo(() =>
+        new Set(N5_WEEKS.flatMap(w => w.quests.map(q => q.id))),
+        []);
+
+    const officialCompletedCount = useMemo(() => {
+        let count = 0;
+        completedIds.forEach(id => {
+            if (allOfficialQuestIds.has(id)) count++;
+        });
+        return count;
+    }, [completedIds, allOfficialQuestIds]);
 
     // ── Selected Week state driven by URL ────────────────────────────────────
     const weekParam = parseInt(searchParams?.get('week') || '1');
@@ -73,7 +85,7 @@ export default function N5RoadmapPage() {
     const weekCompleted = selectedWeek.quests.filter(q => completedIds.has(q.id)).length;
     const weekTotal = selectedWeek.quests.length;
     const weekPct = Math.round((weekCompleted / weekTotal) * 100);
-    const overallPct = Math.round((completedIds.size / totalQuests) * 100);
+    const overallPct = Math.round((officialCompletedCount / totalQuests) * 100);
 
     const isCompleted = (w: Week) => w.quests.every(q => completedIds.has(q.id));
     const isCurrent = (w: Week) => w.week === currentWeek;
@@ -199,7 +211,7 @@ export default function N5RoadmapPage() {
                         {/* Overall % badge */}
                         <div className="text-right">
                             <div className="text-xl font-black text-slate-800">{overallPct}%</div>
-                            <div className="text-[10px] text-slate-400">{completedIds.size}/{totalQuests} nhiệm vụ</div>
+                            <div className="text-[10px] text-slate-400">{officialCompletedCount}/{totalQuests} nhiệm vụ</div>
                         </div>
                     </div>
 
@@ -274,7 +286,7 @@ export default function N5RoadmapPage() {
                         <div className="mt-3">
                             <div className="flex justify-between text-[10px] font-semibold text-slate-400 mb-1">
                                 <span>Tiến độ tổng</span>
-                                <span>{completedIds.size}/{totalQuests} nhiệm vụ</span>
+                                <span>{officialCompletedCount}/{totalQuests} nhiệm vụ</span>
                             </div>
                             <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                                 <div

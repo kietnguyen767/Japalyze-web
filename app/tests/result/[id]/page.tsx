@@ -1,3 +1,4 @@
+//app/tests/result/[id]/page.tsx
 'use client';
 
 import React, { useState } from 'react';
@@ -8,6 +9,7 @@ import {
   Loader2, Trophy, Home, Sparkles, HelpCircle, AlertCircle, PlayCircle
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import FormattedText from '@/components/FormattedText';
 // Assuming useAuth is a custom hook, add its import if necessary
 // import { useAuth } from '@/hooks/useAuth'; // Uncomment if useAuth is used
 
@@ -177,7 +179,7 @@ export default function TestResultPage() { // Changed back to TestResultPage to 
                     )}
 
                     {/* Question Content */}
-                    <p className="font-bold text-slate-800 text-lg mb-5 leading-relaxed">{q.content}</p>
+                    <FormattedText text={q.content} className="font-bold text-slate-800 text-lg mb-5 leading-relaxed block" />
 
                     {/* Options Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">

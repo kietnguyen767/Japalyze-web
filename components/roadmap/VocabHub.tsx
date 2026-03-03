@@ -5,6 +5,7 @@ import { ArrowLeft, BookOpen, CheckCircle2, LucideIcon } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 export type VocabTopic = {
     subQuestId: string;
@@ -24,6 +25,7 @@ interface VocabHubProps {
 
 export default function VocabHub({ weekTitle, lessonTitle, topics, questId }: VocabHubProps) {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -130,6 +132,8 @@ export default function VocabHub({ weekTitle, lessonTitle, topics, questId }: Vo
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ questId }),
                                     });
+                                    queryClient.invalidateQueries({ queryKey: ['roadmap-progress'] });
+                                    queryClient.invalidateQueries({ queryKey: ['dashboard-data'] });
                                     router.back();
                                 } catch { setSubmitting(false); }
                             }}

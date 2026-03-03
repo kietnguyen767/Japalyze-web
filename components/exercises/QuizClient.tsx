@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, CheckCircle, XCircle, RefreshCw, Trophy, AlertTriangle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation'; // 👈 Import router
+import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 
 // Helper trộn mảng
 function shuffleArray(array: any[]) {
@@ -20,13 +21,14 @@ type QuizClientProps = {
   data: any[];
   title: string;
   lessonId: string;
-  isRoadmapMode?: boolean; // 👈 Thêm
-  questId?: string;        // 👈 Thêm
+  isRoadmapMode?: boolean;
+  questId?: string;
 };
 
 export default function QuizClient({ data, title, lessonId, isRoadmapMode, questId }: QuizClientProps) {
   const { user } = useAuth();
-  const router = useRouter(); // 👈 Khởi tạo router
+  const router = useRouter();
+  const queryClient = useQueryClient();
 
   const [quizData, setQuizData] = useState<any[]>([]);
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
@@ -60,7 +62,7 @@ export default function QuizClient({ data, title, lessonId, isRoadmapMode, quest
 
   // Hàm chuyển bước tiếp theo trong lộ trình
   const handleNextStep = () => {
-    router.push('/roadmap/n5/phase1/reading');
+    router.back();
   };
 
   const answeredCount = Object.keys(userAnswers).length;
@@ -68,7 +70,7 @@ export default function QuizClient({ data, title, lessonId, isRoadmapMode, quest
   const isAllDone = answeredCount === totalCount && totalCount > 0;
   const isPerfectScore = score === totalCount;
 
-  // === 🔥 LOGIC LƯU ĐIỂM (Gộp cả Roadmap và Bài tập thường) 🔥 ===
+  // ===  LOGIC LƯU ĐIỂM (Gộp cả Roadmap và Bài tập thường)  ===
   useEffect(() => {
     if (isAllDone && isPerfectScore && user) {
 
@@ -86,8 +88,13 @@ export default function QuizClient({ data, title, lessonId, isRoadmapMode, quest
       if (isRoadmapMode && questId) {
         fetch('/api/user/complete-quest', {
           method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ questId })
-        }).then(() => console.log("✅ Đã lưu Quest Roadmap"));
+        }).then(() => {
+          console.log("✅ Đã lưu Quest Roadmap");
+          queryClient.invalidateQueries({ queryKey: ['roadmap-progress'] });
+          queryClient.invalidateQueries({ queryKey: ['dashboard-data'] });
+        });
       }
     }
   }, [isAllDone, isPerfectScore, user, lessonId, isRoadmapMode, questId]);
@@ -144,7 +151,7 @@ export default function QuizClient({ data, title, lessonId, isRoadmapMode, quest
               <RefreshCw size={18} /> Làm lại
             </button>
 
-            {/* 👇 NÚT TIẾP THEO (Chỉ hiện khi Roadmap + 100 điểm) */}
+            {/* NÚT TIẾP THEO (Chỉ hiện khi Roadmap + 100 điểm) */}
             {isRoadmapMode && isPerfectScore && (
               <button onClick={handleNextStep} className="bg-white text-green-700 px-6 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-green-50 shadow-md animate-pulse">
                 Bài tiếp theo <ArrowRight size={18} />

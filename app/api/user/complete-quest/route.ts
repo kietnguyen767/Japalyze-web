@@ -6,10 +6,10 @@ import redis from '@/lib/redis';
 // ── Định nghĩa nhóm: khi tất cả sub-quest trong nhóm hoàn thành
 //    thì tự động mark quest cha (parentId) ──────────────────────
 const QUEST_GROUPS: { subIds: string[]; parentId: string }[] = [
-  // Tuần 1: cần hoàn thành cả Hiragana cơ bản + Hiragana âm đục
-  { subIds: ['prac_hira', 'prac_hira_daku'], parentId: 'w1_2' },
-  // Tuần 2: cần hoàn thành cả Katakana cơ bản + Katakana âm đục
-  { subIds: ['prac_kata', 'prac_kata_daku'], parentId: 'w2_2' },
+  // Tuần 1: Khi xong 2 bài tập phụ -> Mark xong quest 'w1_3' (Hira: Luyện tập)
+  { subIds: ['prac_hira', 'prac_hira_daku'], parentId: 'w1_3' },
+  // Tuần 2: Khi xong 2 bài tập phụ -> Mark xong quest 'w2_3' (Kata: Luyện tập)
+  { subIds: ['prac_kata', 'prac_kata_daku'], parentId: 'w2_3' },
 ];
 
 export async function POST(request: Request) {

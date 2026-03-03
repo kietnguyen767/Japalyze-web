@@ -67,7 +67,7 @@ function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: ()
             return res.json();
         },
         enabled: !!user,
-        staleTime: 5 * 60 * 1000,
+        staleTime: 0,
     });
 
 
