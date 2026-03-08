@@ -11,6 +11,7 @@ type Card = {
   id: string;
   front: string;
   back: string;
+  example?: string | null;
   isLearned: boolean;
 };
 
@@ -64,23 +65,26 @@ export default function DeckQuiz({
     const shuffledCards = shuffleArray(cards);
 
     const questions: QuizQuestion[] = shuffledCards.map(card => {
-      // Get all possible wrong translations (unique)
-      const allWrongBacks = Array.from(new Set(
+      const getMeaning = (c: Card) => c.example || c.back;
+      const cardMeaning = getMeaning(card);
+
+      // Get all possible wrong translations (unique meanings)
+      const allWrongMeanings = Array.from(new Set(
         cards
-          .filter(c => c.back !== card.back) // Must have different meaning
-          .map(c => c.back)
+          .filter(c => getMeaning(c) !== cardMeaning)
+          .map(c => getMeaning(c))
       ));
 
       // Shuffle and pick up to 3 wrong options
-      const shuffledWrong = shuffleArray(allWrongBacks).slice(0, 3);
+      const shuffledWrong = shuffleArray(allWrongMeanings).slice(0, 3);
 
       // Final options: Correct answer + up to 3 wrong ones
-      const options = shuffleArray([...shuffledWrong, card.back]);
+      const options = shuffleArray([...shuffledWrong, cardMeaning]);
 
       return {
         id: card.id,
         question: card.front,
-        correctAnswer: card.back,
+        correctAnswer: cardMeaning,
         options
       };
     });

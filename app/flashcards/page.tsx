@@ -53,15 +53,19 @@ export default function FlashcardsPage() {
       if (res.ok) {
         const data = await res.json();
         return data.decks || [];
-      } else if (is401Error(res.status)) {
-        handle401Error(router);
-        return [];
       }
       return [];
     },
-    enabled: !authLoading && !!user,
+    enabled: true, // Cho phép fetch ngay cả khi chưa login
     staleTime: 5 * 60 * 1000,
   });
+
+  const sampleDecks = decks.filter(d => d.description?.includes('[SAMPLE]'));
+  const userDecks = decks.filter(d => !d.description?.includes('[SAMPLE]'));
+
+  // Pagination state for Sample Decks
+  const [displayCount, setDisplayCount] = useState(3);
+  const visibleSamples = sampleDecks.slice(0, displayCount);
 
   // UI state
   const [isCreating, setIsCreating] = useState(false);
@@ -245,12 +249,99 @@ export default function FlashcardsPage() {
           </div>
         )}
 
+        {/* --- KHU VỰC BỘ THẺ MẪU --- */}
+        {sampleDecks.length > 0 && (
+          <div className="mb-14">
+            <h2 className="text-lg font-bold text-indigo-700 mb-6 border-l-4 border-indigo-500 pl-3 flex items-center gap-2">
+              <GraduationCap className="text-indigo-500" size={24} /> Danh sách bộ thẻ mẫu
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {visibleSamples.map((deck) => {
+                const learnedCount = deck.cards.filter((c) => c.isLearned).length;
+                const progress = deck.cards.length > 0
+                  ? Math.round((learnedCount / deck.cards.length) * 100)
+                  : 0;
+
+                return (
+                  <div
+                    key={deck.id}
+                    className="group relative flex flex-col p-5 bg-gradient-to-br from-white to-indigo-50/30 rounded-2xl border-2 border-indigo-100 shadow-sm transition hover:border-indigo-400 hover:shadow-md"
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-100">
+                          <Book size={20} />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <h3 className="font-bold text-slate-800 leading-tight">{deck.title}</h3>
+                            <span className="text-[9px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter">Official</span>
+                          </div>
+                          <p className="text-xs text-slate-400 font-medium">{deck.cards.length} thẻ ghi nhớ</p>
+                        </div>
+                      </div>
+                      {/* Bỏ nút xóa bộ thẻ mẫu */}
+                    </div>
+
+                    <div className="mt-auto pt-4 border-t border-indigo-100/50">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Tiến độ cá nhân</span>
+                        <span className="text-xs font-bold text-indigo-600">{progress}%</span>
+                      </div>
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden mb-4">
+                        <div
+                          className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600 transition-all duration-700"
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (!user) {
+                            router.push('/login');
+                            return;
+                          }
+                          router.push(`/flashcards/${deck.id}`);
+                        }}
+                        className="w-full flex items-center justify-between bg-indigo-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-indigo-700 transition-all group/btn shadow-lg shadow-indigo-100 active:scale-95"
+                      >
+                        <span className="text-sm">Bắt đầu học ngay</span>
+                        <ArrowRight size={18} className="group-hover/btn:translate-x-1 transition-transform" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Điều khiển xem thêm / xem tất cả */}
+            {sampleDecks.length > 3 && (
+              <div className="mt-8 flex justify-center gap-4">
+                {displayCount < sampleDecks.length && (
+                  <button
+                    onClick={() => setDisplayCount(prev => Math.min(prev + 3, sampleDecks.length))}
+                    className="flex items-center gap-2 text-indigo-600 font-bold px-6 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 transition-all active:scale-95 text-sm"
+                  >
+                    Xem thêm
+                  </button>
+                )}
+                <button
+                  onClick={() => setDisplayCount(displayCount === sampleDecks.length ? 3 : sampleDecks.length)}
+                  className="flex items-center gap-2 text-slate-500 font-bold px-6 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 transition-all active:scale-95 text-sm"
+                >
+                  {displayCount === sampleDecks.length ? 'Ẩn bớt' : 'Xem tất cả'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* --- KHU VỰC BỘ THẺ CỦA BẠN --- */}
         <div>
           <h2 className="text-lg font-bold text-slate-700 mb-6 border-l-4 border-blue-500 pl-3">
-            Danh sách bộ thẻ của bạn ({decks.length})
+            Danh sách bộ thẻ của bạn ({userDecks.length})
           </h2>
 
-          {decks.length === 0 && !isDataLoading ? (
+          {userDecks.length === 0 && !isDataLoading ? (
             <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-slate-200 animate-fade-in-up">
               <div className="w-20 h-20 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <Layers className="text-blue-500" size={32} />
@@ -268,7 +359,7 @@ export default function FlashcardsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {decks.map((deck) => {
+              {userDecks.map((deck) => {
                 const learnedCount = deck.cards.filter((c) => c.isLearned).length;
                 const progress = deck.cards.length > 0
                   ? Math.round((learnedCount / deck.cards.length) * 100)

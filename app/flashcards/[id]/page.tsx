@@ -10,12 +10,14 @@ import { useToast } from '@/context/ToastContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import DeckQuiz from '@/components/flashcards/DeckQuiz';
 import ConfirmModal from '@/components/ConfirmModal';
+import * as wanakana from 'wanakana';
 
 
 type Card = {
   id: string;
   front: string;
   back: string;
+  example?: string | null;
   isLearned: boolean;
   nextReviewAt?: string | Date;
   interval?: number;
@@ -79,6 +81,7 @@ export default function DeckDetailPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newFront, setNewFront] = useState('');
   const [newBack, setNewBack] = useState('');
+  const [newExample, setNewExample] = useState('');
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [quizStats, setQuizStats] = useState({ score: 0, answeredCount: 0, total: 0 });
 
@@ -184,7 +187,8 @@ export default function DeckDetailPage() {
         body: JSON.stringify({
           deckId: deck.id,
           front: newFront,
-          back: newBack
+          back: newBack,
+          example: newExample
         })
       });
 
@@ -198,7 +202,7 @@ export default function DeckDetailPage() {
           };
         });
 
-        setNewFront(''); setNewBack(''); setShowAddForm(false);
+        setNewFront(''); setNewBack(''); setNewExample(''); setShowAddForm(false);
         showToast('Đã thêm thẻ mới thành công!');
       } else if (res.status === 401) {
         showToast('Phiên đăng nhập hết hạn.', 'error');
@@ -428,12 +432,81 @@ export default function DeckDetailPage() {
           )}
         </div>
 
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-800 via-blue-700 to-indigo-700 bg-clip-text text-transparent mb-2">
-            {deck.title}
-          </h1>
-          <div className="h-1 w-24 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full mx-auto"></div>
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+          <div className="text-center md:text-left">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-800 via-blue-700 to-indigo-700 bg-clip-text text-transparent mb-2">
+              {deck.title}
+            </h1>
+            <div className="h-1 w-24 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full mx-auto md:mx-0"></div>
+          </div>
+
+          {/* Nút thêm thẻ mới - Compact */}
+          {!deck.description?.includes('[SAMPLE]') && mode === 'flip' && (
+            <button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-2xl font-bold transition-all shadow-lg hover:scale-105 active:scale-95 ${showAddForm
+                ? 'bg-slate-800 text-white'
+                : 'bg-white text-blue-600 border-2 border-blue-100 hover:border-blue-400'
+                }`}
+            >
+              {showAddForm ? <Check size={18} /> : <Plus size={18} />}
+              <span>{showAddForm ? 'Đóng form' : 'Thêm thẻ mới'}</span>
+            </button>
+          )}
         </div>
+
+        {/* Form Thêm thẻ - Slide down animation effect logic */}
+        {showAddForm && !deck.description?.includes('[SAMPLE]') && (
+          <div className="mb-8 bg-white p-6 rounded-2xl shadow-xl border-2 border-blue-400 animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-[1.5] flex flex-col gap-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase ml-2">Chữ Hán/Từ vựng</p>
+                <input
+                  value={newFront}
+                  onChange={e => setNewFront(e.target.value)}
+                  placeholder="VD: 日本語"
+                  className="w-full border-2 border-slate-100 p-3 rounded-xl focus:border-blue-400 outline-none transition-all"
+                  autoFocus
+                />
+              </div>
+              <div className="flex-1 flex flex-col gap-1">
+                <p className="text-[10px] font-bold text-blue-400 uppercase ml-2">Cách đọc (Auto-Romaji)</p>
+                <input
+                  value={newBack}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setNewBack(val);
+                  }}
+                  onBlur={() => {
+                    // Tự động chuyển hiragana sang romaji nếu user chưa làm
+                    if (newBack && wanakana.isHiragana(newBack)) {
+                      setNewBack(prev => `${prev} (${wanakana.toRomaji(prev)})`);
+                    }
+                  }}
+                  placeholder="VD: にほんご"
+                  className="w-full border-2 border-slate-100 p-3 rounded-xl focus:border-blue-400 outline-none transition-all"
+                />
+              </div>
+              <div className="flex-[1.5] flex flex-col gap-1">
+                <p className="text-[10px] font-bold text-indigo-400 uppercase ml-2">Nghĩa tiếng Việt</p>
+                <input
+                  value={newExample}
+                  onChange={e => setNewExample(e.target.value)}
+                  placeholder="Nghĩa của từ"
+                  className="w-full border-2 border-slate-100 p-3 rounded-xl focus:border-blue-400 outline-none transition-all"
+                />
+              </div>
+              <div className="flex-none flex items-end">
+                <button
+                  onClick={handleAddCard}
+                  className="w-full bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 shadow-md transition-all active:scale-95 h-[52px]"
+                >
+                  Lưu
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Thống kê SRS - Thông minh hơn */}
         {mode === 'flip' && deck.cards.length > 0 && (
@@ -555,7 +628,10 @@ export default function DeckDetailPage() {
                       {/* Speaker button */}
                       <div className="absolute bottom-6 z-20" onClick={e => e.stopPropagation()}>
                         <button
-                          onClick={() => speakText(deck.cards[index].front)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            speakText(deck.cards[index].front);
+                          }}
                           className="p-3 from-slate-100 to-slate-200 rounded-full hover:from-blue-100 hover:to-blue-200 text-blue-600 shadow-md hover:shadow-lg transition-all hover:scale-110"
                         >
                           <Volume2 size={20} />
@@ -597,12 +673,16 @@ export default function DeckDetailPage() {
 
                       {/* Card content */}
                       <div className="relative z-10 text-center px-8">
-                        <p className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-3">
+                        <p className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2">
                           Nghĩa
                         </p>
-                        <h2 className="font-bold leading-tight text-3xl text-blue-600 break-words">
-                          {deck.cards[index].back}
+                        <h2 className="font-bold leading-tight text-3xl text-blue-600 break-words mb-4">
+                          {deck.cards[index].example || deck.cards[index].back}
                         </h2>
+                        <div className="h-[1px] w-12 bg-blue-100 mx-auto mb-4"></div>
+                        <p className="text-sm font-medium text-slate-400 italic">
+                          {deck.cards[index].back}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -685,40 +765,72 @@ export default function DeckDetailPage() {
               </div>
             )}
 
-            {/* Form Thêm thẻ */}
-            <div className="mt-12 bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-lg border-2 border-slate-200 max-w-xl mx-auto hover:shadow-xl transition-shadow">
-              <h3 className="font-bold text-slate-800 text-lg mb-6 flex items-center gap-2">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Plus size={20} className="text-blue-600" />
-                </div>
-                Thêm thẻ mới
-              </h3>
-
-              <div className="space-y-3">
-                <input
-                  value={newFront}
-                  onChange={e => setNewFront(e.target.value)}
-                  placeholder="Từ vựng (Mặt trước)"
-                  className="w-full border-2 border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                />
-
-                <input
-                  value={newBack}
-                  onChange={e => setNewBack(e.target.value)}
-                  placeholder="Nghĩa (Mặt sau)"
-                  className="w-full border-2 border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                />
-
-                <button
-                  onClick={handleAddCard}
-                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-md hover:shadow-lg hover:scale-105"
-                >
-                  Thêm
-                </button>
+            {/* Danh sách thẻ - Quizlet style */}
+            <div className="mt-20">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-bold text-2xl text-slate-800 flex items-center gap-3">
+                  <Layers className="text-blue-500" />
+                  Danh sách thẻ ({deck.cards.length})
+                </h3>
               </div>
+
+              <div className="space-y-4">
+                {deck.cards.map((card, idx) => (
+                  <div
+                    key={card.id}
+                    className="group bg-white rounded-2xl p-5 border-2 border-slate-100 shadow-sm hover:border-blue-300 hover:shadow-md transition-all flex flex-col md:flex-row md:items-center gap-4 md:gap-8"
+                  >
+                    <div className="flex-none text-slate-300 font-bold text-sm w-6">{idx + 1}</div>
+
+                    <div className="flex-1 md:border-r border-slate-100 pr-4">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Chữ Hán</p>
+                      <p className="text-xl font-bold text-slate-800 break-words">{card.front}</p>
+                    </div>
+
+                    <div className="flex-1 md:border-r border-slate-100 pr-4">
+                      <p className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-1">Phát âm</p>
+                      <p className="text-lg font-medium text-slate-500 italic break-words">{card.back}</p>
+                    </div>
+
+                    <div className="flex-[1.5]">
+                      <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-1">Nghĩa</p>
+                      <p className="text-xl font-bold text-slate-700 break-words">{card.example || card.back}</p>
+                    </div>
+
+                    <div className="flex-none flex items-center gap-2 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => speakText(card.front)}
+                        className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                        title="Nghe phát âm"
+                      >
+                        <Volume2 size={20} />
+                      </button>
+                      {!deck.description?.includes('[SAMPLE]') && (
+                        <button
+                          onClick={() => {
+                            setIndex(idx);
+                            handleDeleteCardClick();
+                          }}
+                          className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                          title="Xóa thẻ"
+                        >
+                          <Trash2 size={20} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {deck.cards.length === 0 && (
+                <div className="text-center py-12 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                  <p className="text-slate-400 font-medium italic">Không có thẻ nào để hiển thị trong danh sách</p>
+                </div>
+              )}
             </div>
           </>
         )}
+
         <ConfirmModal
           isOpen={isConfirmOpen}
           onClose={() => setIsConfirmOpen(false)}

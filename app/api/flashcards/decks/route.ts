@@ -11,10 +11,30 @@ export async function GET(request: Request) {
   const userId = await getUserId();
   console.log('👤 userId:', userId);
 
+  // Nếu KHÔNG có userId (Chưa đăng nhập) -> Trả về dữ liệu mẫu tĩnh
   if (!userId) {
-    console.error('❌ Unauthorized - không có userId');
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { SAMPLE_DECKS } = await import('@/lib/flashcardData');
+    const formattedSamples = SAMPLE_DECKS.map((s, idx) => ({
+      id: `sample-${idx}`,
+      title: s.title,
+      description: `[SAMPLE] ${s.description}`,
+      userId: null,
+      createdAt: new Date(),
+      cards: s.cards.map((c, cIdx) => ({
+        id: `sample-card-${idx}-${cIdx}`,
+        front: c.front,
+        back: c.back,
+        example: c.example,
+        isLearned: false,
+        nextReviewAt: null
+      }))
+    }));
+    return NextResponse.json({ decks: formattedSamples });
   }
+
+  // Đảm bảo có deck mẫu nếu user đã đăng nhập nhưng chưa có gì
+  const { ensureSampleDeck } = await import('@/lib/flashcardUtils');
+  await ensureSampleDeck(userId);
 
   try {
     const decks = await prisma.deck.findMany({
