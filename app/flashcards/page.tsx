@@ -34,6 +34,8 @@ type Deck = {
   title: string;
   description?: string | null;
   cards: Card[];
+  learnedCount?: number;
+  _count?: { cards: number };
 };
 
 export default function FlashcardsPage() {
@@ -189,14 +191,11 @@ export default function FlashcardsPage() {
     }
   };
 
-  if (authLoading || (isInitialLoading && decks.length === 0)) {
+  // Chỉ hiện loading nhẹ nếu đang check auth lần đầu để tránh flash giao diện không đúng quyền
+  if (authLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 gap-4">
-        <Loader2 size={48} className="text-blue-600 animate-spin" strokeWidth={1.5} />
-        <div className="flex flex-col items-center animate-pulse">
-          <p className="text-slate-800 font-black text-xl tracking-tight">JapaLyze Flashcards</p>
-          <p className="text-slate-500 font-medium">Đang chuẩn bị thư viện của bạn...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 size={32} className="text-blue-600 animate-spin" strokeWidth={2} />
       </div>
     );
   }
@@ -257,9 +256,10 @@ export default function FlashcardsPage() {
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {visibleSamples.map((deck) => {
-                const learnedCount = deck.cards.filter((c) => c.isLearned).length;
-                const progress = deck.cards.length > 0
-                  ? Math.round((learnedCount / deck.cards.length) * 100)
+                const totalCount = deck._count?.cards || 0;
+                const learnedCount = deck.learnedCount || 0;
+                const progress = totalCount > 0
+                  ? Math.round((learnedCount / totalCount) * 100)
                   : 0;
 
                 return (
@@ -277,7 +277,7 @@ export default function FlashcardsPage() {
                             <h3 className="font-bold text-slate-800 leading-tight">{deck.title}</h3>
                             <span className="text-[9px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter">Official</span>
                           </div>
-                          <p className="text-xs text-slate-400 font-medium">{deck.cards.length} thẻ ghi nhớ</p>
+                          <p className="text-xs text-slate-400 font-medium">{deck._count?.cards || 0} thẻ ghi nhớ</p>
                         </div>
                       </div>
                       {/* Bỏ nút xóa bộ thẻ mẫu */}
@@ -360,9 +360,10 @@ export default function FlashcardsPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {userDecks.map((deck) => {
-                const learnedCount = deck.cards.filter((c) => c.isLearned).length;
-                const progress = deck.cards.length > 0
-                  ? Math.round((learnedCount / deck.cards.length) * 100)
+                const totalCount = deck._count?.cards || 0;
+                const learnedCount = deck.learnedCount || 0;
+                const progress = totalCount > 0
+                  ? Math.round((learnedCount / totalCount) * 100)
                   : 0;
 
                 return (
@@ -391,7 +392,7 @@ export default function FlashcardsPage() {
                         ) : (
                           <div>
                             <h3 className="font-bold text-slate-800 leading-tight">{deck.title}</h3>
-                            <p className="text-xs text-slate-400 font-medium">{deck.cards.length} thẻ ghi nhớ</p>
+                            <p className="text-xs text-slate-400 font-medium">{deck._count?.cards || 0} thẻ ghi nhớ</p>
                           </div>
                         )}
                       </div>

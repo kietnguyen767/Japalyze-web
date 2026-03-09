@@ -7,8 +7,20 @@ import { SAMPLE_DECKS } from './flashcardData';
  */
 export async function ensureSampleDeck(userId: string) {
     try {
-        // 0. DỌN DẸP: Xóa các bộ thẻ mẫu cũ không còn nằm trong danh sách SAMPLE_DECKS hiện tại
+        // 0. KIỂM TRA NHANH: Nếu user đã có bất kỳ bộ thẻ nào (kể cả mẫu hay tự tạo), bỏ qua.
+        // Điều này giúp tránh chạy logic dọn dẹp/cập nhật phức tạp mỗi lần load trang.
+        const deckCount = await prisma.deck.count({ where: { userId } });
+        if (deckCount > 0) {
+            return;
+        }
+
+        console.log(`🚀 Initializing sample decks for user ${userId}...`);
+
+        // 1. DỌN DẸP & ĐỒNG BỘ (Chỉ chạy khi deckCount === 0 - trường hợp hiếm hoặc lần đầu)
         const currentSampleTitles = SAMPLE_DECKS.map(s => s.title);
+
+        // (Logic này thực tế chỉ cần thiết nếu ta muốn "reset" mẫu, 
+        // nhưng với deckCount === 0 thì các lệnh delete/update dưới đây sẽ nhanh vì không có data)
 
         await prisma.deck.deleteMany({
             where: {
@@ -18,44 +30,8 @@ export async function ensureSampleDeck(userId: string) {
             }
         });
 
-        // 1. Gắn nhãn lại cho các bộ thẻ đã tồn tại nhưng có tiêu đề trùng với bộ mẫu mới
-        // (Bao gồm cả các bộ mẫu cũ bạn đã tạo trước đây)
+        // 2. Tạo các bộ thẻ mẫu
         for (const sample of SAMPLE_DECKS) {
-            await prisma.deck.updateMany({
-                where: {
-                    userId,
-                    title: sample.title,
-                    NOT: {
-                        description: { contains: '[SAMPLE]' }
-                    }
-                },
-                data: {
-                    description: `[SAMPLE] ${sample.description}`
-                }
-            });
-        }
-
-        // 2. Tìm danh sách các tiêu đề mẫu đã có (đã gắn tag) của User
-        const existingSamples = await prisma.deck.findMany({
-            where: {
-                userId,
-                description: { contains: '[SAMPLE]' }
-            },
-            select: { title: true }
-        });
-
-        const existingTitles = existingSamples.map(d => d.title);
-
-        // 3. Tạo các bộ thẻ mẫu CHƯA CÓ
-        const decksToCreate = SAMPLE_DECKS.filter(s => !existingTitles.includes(s.title));
-
-        if (decksToCreate.length === 0) {
-            return;
-        }
-
-        console.log(`🚀 Creating ${decksToCreate.length} new sample decks for user ${userId}...`);
-
-        for (const sample of decksToCreate) {
             await prisma.deck.create({
                 data: {
                     title: sample.title,

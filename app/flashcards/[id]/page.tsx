@@ -29,6 +29,7 @@ type Deck = {
   title: string;
   description?: string | null;
   cards: Card[];
+  _count?: { cards: number };
 };
 
 export default function DeckDetailPage() {
@@ -53,7 +54,8 @@ export default function DeckDetailPage() {
         const headers: HeadersInit = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const res = await fetch('/api/flashcards/decks', { headers });
+        // Fetch specifically for THIS deck to get full cards
+        const res = await fetch(`/api/flashcards/decks/${deckId}`, { headers });
 
         if (res.status === 401) {
           showToast('Phiên đăng nhập hết hạn.', 'error');
@@ -64,7 +66,7 @@ export default function DeckDetailPage() {
         if (!res.ok) return null;
 
         const data = await res.json();
-        return (data.decks || []).find((d: any) => d.id === deckId) || null;
+        return data || null;
       } catch (e) {
         console.error('❌ Error fetching deck:', e);
         return null;

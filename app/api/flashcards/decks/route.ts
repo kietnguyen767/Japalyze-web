@@ -20,14 +20,11 @@ export async function GET(request: Request) {
       description: `[SAMPLE] ${s.description}`,
       userId: null,
       createdAt: new Date(),
-      cards: s.cards.map((c, cIdx) => ({
-        id: `sample-card-${idx}-${cIdx}`,
-        front: c.front,
-        back: c.back,
-        example: c.example,
-        isLearned: false,
-        nextReviewAt: null
-      }))
+      _count: {
+        cards: s.cards.length
+      },
+      learnedCount: 0, // Mặc định 0 cho mẫu khi chưa login
+      cards: []
     }));
     return NextResponse.json({ decks: formattedSamples });
   }
@@ -37,17 +34,38 @@ export async function GET(request: Request) {
   await ensureSampleDeck(userId);
 
   try {
+    // Lấy decks kèm theo count cards
     const decks = await prisma.deck.findMany({
       where: { userId },
       include: {
-        cards: {
-          orderBy: { createdAt: 'asc' }
-        }
+        _count: {
+          select: { cards: true }
+        },
+        // Ta không lấy cards, nhưng muốn lấy số card đã learned
+        // Prisma không hỗ trợ đếm filter trực tiếp trong include dễ dàng ở bản cũ hoặc tùy setup, 
+        // nhưng ta có thể dùng một query riêng hoặc chấp nhận query thô hơn.
+        // Cách tối ưu: dùng select
       },
       orderBy: { createdAt: 'desc' }
     });
-    console.log('✅ Tìm thấy decks:', decks.length);
-    return NextResponse.json({ decks });
+
+    // Để lấy learnedCount, ta cần chạy thêm 1 query aggregate hoặc map (nhưng map sẽ chậm nếu dùng prisma gọi nhiều lần)
+    // Thay vào đó, ta fetch card count có điều kiện:
+    const decksWithLearned = await Promise.all(decks.map(async (deck) => {
+      const learned = await prisma.card.count({
+        where: {
+          deckId: deck.id,
+          isLearned: true
+        }
+      });
+      return {
+        ...deck,
+        learnedCount: learned
+      };
+    }));
+
+    console.log('✅ Tìm thấy decks:', decksWithLearned.length);
+    return NextResponse.json({ decks: decksWithLearned });
   } catch (error: any) {
     console.error('❌ Lỗi lấy decks:', error);
     return NextResponse.json({ error: 'Lỗi lấy danh sách' }, { status: 500 });
