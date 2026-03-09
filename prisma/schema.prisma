@@ -300,3 +300,13 @@ model PasswordResetToken {
 
   @@unique([email, token])
 }
+
+// ==========================================
+// 9. ANALYTICS
+// ==========================================
+
+model Visit {
+  id        String   @id @default(uuid())
+  path      String   @default("/")
+  timestamp DateTime @default(now())
+}

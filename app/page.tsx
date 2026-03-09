@@ -3,7 +3,7 @@
 
 import { useAuth, User } from '@/context/AuthContext';
 import Link from "next/link";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
     Play, Zap, Languages, BookOpen, BookOpenText, FileText,
@@ -25,6 +25,27 @@ export default function Home() {
             setTimeout(() => setShowSurvey(true), 0);
         }
     }, [authLoading, user]);
+
+    const isRecorded = useRef(false);
+    useEffect(() => {
+        // --- ANALYTICS TRACKING (Chỉ chạy 1 lần khi mount trang chủ) ---
+        if (isRecorded.current) return;
+        isRecorded.current = true;
+
+        const recordVisit = async () => {
+            try {
+                // Ta bỏ sessionStorage để mỗi lần bạn vào/ra hoặc F5 đều được tính +1
+                await fetch('/api/analytics/collect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: '/' })
+                });
+            } catch (e) {
+                console.error('Analytics error:', e);
+            }
+        };
+        recordVisit();
+    }, []);
 
     const handleSkipSurvey = () => setShowSurvey(false);
     const handleOpenSurvey = () => setShowSurvey(true);
