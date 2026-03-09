@@ -1,16 +1,13 @@
 //app/roadmap/n5/w3/w3-vocab-2/page.tsx
 'use client';
 
-import { UtensilsCrossed, Apple, Carrot, Music, School } from 'lucide-react';
+import { Laptop, PenTool, Book, Gift, Key } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import VocabHub, { VocabTopic } from '@/components/roadmap/VocabHub';
+import { WEEK3_VOCAB } from '@/lib/n5VocabData';
 
 const VOCAB_TOPICS: VocabTopic[] = [
-    { subQuestId: 'w3_3_food', lessonId: 'food', label: 'Ẩm thực', desc: 'Món ăn & Đồ uống', icon: UtensilsCrossed, color: 'orange' },
-    { subQuestId: 'w3_3_fruits', lessonId: 'fruits', label: 'Trái cây', desc: 'Các loại hoa quả', icon: Apple, color: 'red' },
-    { subQuestId: 'w3_3_veggies', lessonId: 'vegetables', label: 'Rau củ', desc: 'Rau củ tươi sống', icon: Carrot, color: 'green' },
-    { subQuestId: 'w3_3_music', lessonId: 'music', label: 'Âm nhạc', desc: 'Nhạc cụ & Thể loại', icon: Music, color: 'fuchsia' },
-    { subQuestId: 'w3_3_school', lessonId: 'school', label: 'Trường học', desc: 'Dụng cụ & Môn học', icon: School, color: 'indigo' },
+    { subQuestId: 'w3_2_objects', categoryId: 'w3_2_objects', label: 'Đồ vật (Lesson 2)', desc: 'Cái này, cái đó, cái kia, sách, vở...', icon: Laptop, color: 'blue' },
 ];
 
 export default function Week3Vocab2Hub() {
@@ -20,8 +17,9 @@ export default function Week3Vocab2Hub() {
     return (
         <VocabHub
             weekTitle="Tuần 3 - Bài 2"
-            lessonTitle="Từ vựng & Chữ Hán"
+            lessonTitle="Từ vựng: Đồ vật"
             topics={VOCAB_TOPICS}
+            vocabData={WEEK3_VOCAB}
             questId={questId}
         />
     );

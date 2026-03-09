@@ -1,28 +1,61 @@
 //app/roadmap/n5/w5/w5-vocab/page.tsx
 'use client';
 
-import { Utensils, ShoppingBag, Armchair, PartyPopper, Cpu } from 'lucide-react';
+import { Suspense } from 'react';
+import { MapPin, Move, Plane } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import VocabHub, { VocabTopic } from '@/components/roadmap/VocabHub';
+import { WEEK5_VOCAB } from '@/lib/n5VocabData';
 
-const VOCAB_TOPICS: VocabTopic[] = [
-    { subQuestId: 'w5_vocab_food', lessonId: 'food', label: 'Ăn uống', desc: 'Nhà hàng & Thực đơn', icon: Utensils, color: 'orange' },
-    { subQuestId: 'w5_vocab_shop', lessonId: 'housework', label: 'Mua sắm', desc: 'Siêu thị & Chợ', icon: ShoppingBag, color: 'cyan' },
-    { subQuestId: 'w5_vocab_tools', lessonId: 'household', label: 'Công cụ', desc: 'Dụng cụ gia đình', icon: Armchair, color: 'amber' },
-    { subQuestId: 'w5_vocab_gifts', lessonId: 'festivals', label: 'Quà tặng', desc: 'Biếu tặng & Cảm ơn', icon: PartyPopper, color: 'rose' },
-    { subQuestId: 'w5_vocab_electronics', lessonId: 'electronics', label: 'Điện tử', desc: 'Thiết bị gia dụng', icon: Cpu, color: 'blue' },
-];
+const LESSON_TOPICS: Record<string, VocabTopic[]> = {
+    'lesson6': [
+        {
+            subQuestId: 'lesson6',
+            categoryId: 'lesson6',
+            label: 'Bài 6: Ăn uống',
+            desc: 'Đồ ăn, đồ uống, hành động ăn uống...',
+            icon: Move,
+            color: 'emerald'
+        }
+    ],
+    'lesson7': [
+        {
+            subQuestId: 'lesson7',
+            categoryId: 'lesson7',
+            label: 'Bài 7: Công cụ & Quà tặng',
+            desc: 'Dao, kéo, máy tính, tặng, nhận...',
+            icon: Plane,
+            color: 'sky'
+        }
+    ]
+};
 
-export default function Week5VocabHub() {
+function VocabContent() {
     const searchParams = useSearchParams();
-    const questId = searchParams?.get('questId') || 'w5_2';
+    const questId = searchParams?.get('questId') || 'w5_1';
+    const lesson = searchParams?.get('lesson') || 'lesson6';
+
+    const topics = LESSON_TOPICS[lesson] || LESSON_TOPICS['lesson6'];
 
     return (
         <VocabHub
-            weekTitle="Tuần 5 - Bài 7"
-            lessonTitle="Từ vựng & Chữ Hán"
-            topics={VOCAB_TOPICS}
+            weekTitle={`Tuần 5 - ${lesson === 'lesson6' ? 'Bài 6' : 'Bài 7'}`}
+            lessonTitle={lesson === 'lesson6' ? "Từ vựng: Ăn uống & Hành động" : "Từ vựng: Công cụ & Tặng nhận"}
+            topics={topics}
+            vocabData={WEEK5_VOCAB}
             questId={questId}
         />
+    );
+}
+
+export default function Week5VocabHub() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-slate-50">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+        }>
+            <VocabContent />
+        </Suspense>
     );
 }

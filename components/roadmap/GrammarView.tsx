@@ -41,8 +41,8 @@ export default function GrammarView({ point }: GrammarViewProps) {
     const isCorrect = selectedOption === point.quiz.correctIndex;
 
     return (
-        <div className={`bg-white rounded-2xl border-2 transition-all overflow-hidden mb-4 shadow-sm
-      ${isOpen ? 'border-blue-400 ring-2 ring-blue-50' : 'border-slate-100 hover:border-blue-200'}
+        <div className={`bg-white rounded-2xl border-2 transition-all overflow-hidden mb-6 shadow-sm break-inside-avoid
+      ${isOpen ? 'border-blue-400 ring-4 ring-blue-50' : 'border-slate-100 hover:border-blue-200'}
     `}>
             {/* Header */}
             <div
@@ -54,8 +54,8 @@ export default function GrammarView({ point }: GrammarViewProps) {
                         <BookOpen size={20} />
                     </div>
                     <div>
-                        <h3 className="font-black text-slate-800 text-lg md:text-xl tracking-tight">{point.title}</h3>
-                        <p className="text-sm text-slate-500 font-bold uppercase tracking-wider">{point.meaning}</p>
+                        <h3 className="font-bold text-slate-800 text-lg md:text-xl tracking-tight">{point.title}</h3>
+                        <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest">{point.meaning}</p>
                     </div>
                 </div>
                 <div className="text-slate-400 bg-slate-50 p-2 rounded-full">
@@ -72,9 +72,9 @@ export default function GrammarView({ point }: GrammarViewProps) {
                         <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
                             <div className="flex items-center gap-2 mb-3 text-blue-700">
                                 <Lightbulb size={18} fill="currentColor" className="opacity-20" />
-                                <span className="font-black text-xs uppercase tracking-widest">Cấu trúc</span>
+                                <span className="font-bold text-[10px] uppercase tracking-widest">Cấu trúc</span>
                             </div>
-                            <div className="text-xl font-bold text-slate-800 font-mono">
+                            <div className="text-xl font-semibold text-slate-800 font-mono">
                                 {point.structure}
                             </div>
                             <p className="mt-3 text-slate-600 text-sm leading-relaxed font-medium">
@@ -86,7 +86,7 @@ export default function GrammarView({ point }: GrammarViewProps) {
                         <div>
                             <div className="flex items-center gap-2 mb-4">
                                 <div className="h-px flex-1 bg-slate-100" />
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Ví dụ · 例文</span>
+                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Ví dụ · 例文</span>
                                 <div className="h-px flex-1 bg-slate-100" />
                             </div>
                             <div className="space-y-4">
@@ -99,11 +99,11 @@ export default function GrammarView({ point }: GrammarViewProps) {
                                             <Volume2 size={18} />
                                         </button>
                                         <div className="flex-1">
-                                            <div className="text-lg font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
+                                            <div className="text-lg font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">
                                                 {ex.jp}
                                             </div>
                                             <div className="text-xs text-slate-400 font-medium mb-1">{ex.kana}</div>
-                                            <div className="text-sm text-slate-500 font-bold italic">{ex.vn}</div>
+                                            <div className="text-sm text-slate-500 font-semibold italic">{ex.vn}</div>
                                         </div>
                                     </div>
                                 ))}
@@ -114,9 +114,9 @@ export default function GrammarView({ point }: GrammarViewProps) {
                         <div className="bg-indigo-50/50 rounded-[2rem] p-6 border-2 border-dashed border-indigo-100">
                             <div className="flex items-center gap-2 mb-4 text-indigo-700">
                                 <CheckCircle2 size={18} />
-                                <span className="font-black text-xs uppercase tracking-widest">Luyện tập nhanh</span>
+                                <span className="font-bold text-[10px] uppercase tracking-widest">Luyện tập nhanh</span>
                             </div>
-                            <p className="text-slate-800 font-bold mb-5 text-lg leading-snug">
+                            <p className="text-slate-800 font-semibold mb-5 text-lg leading-snug">
                                 {point.quiz.question}
                             </p>
 
@@ -137,7 +137,7 @@ export default function GrammarView({ point }: GrammarViewProps) {
                                             key={idx}
                                             disabled={selectedOption !== null}
                                             onClick={() => handleSelectOption(idx)}
-                                            className={`w-full p-4 rounded-xl border-2 text-left font-black text-sm transition-all flex items-center justify-between ${btnStyle}`}
+                                            className={`w-full p-4 rounded-xl border-2 text-left font-bold text-sm transition-all flex items-center justify-between ${btnStyle}`}
                                         >
                                             <span>{opt}</span>
                                             {selectedOption !== null && isCorrectAnswer && <Check size={18} />}
@@ -148,9 +148,9 @@ export default function GrammarView({ point }: GrammarViewProps) {
                             </div>
 
                             {showExplanation && (
-                                <div className={`mt-5 p-4 rounded-xl text-sm font-bold border animate-in slide-in-from-bottom-2 duration-300
-                  ${isCorrect ? 'bg-green-50 border-green-100 text-green-700' : 'bg-red-50 border-red-100 text-red-700'}
-                `}>
+                                <div className={`mt-5 p-4 rounded-xl text-sm font-semibold border animate-in slide-in-from-bottom-2 duration-300
+                                  ${isCorrect ? 'bg-green-50 border-green-100 text-green-700' : 'bg-red-50 border-red-100 text-red-700'}
+                                `}>
                                     {isCorrect ? 'Chính xác! ' : 'Sai rồi! '}
                                     <span className="opacity-80 leading-relaxed font-medium">{point.quiz.explanation}</span>
                                 </div>

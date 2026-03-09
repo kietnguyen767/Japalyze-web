@@ -1,27 +1,61 @@
 //app/roadmap/n5/w7/w7-vocab/page.tsx
 'use client';
 
-import { Hash, AlarmClock, Home, Map } from 'lucide-react';
+import { Suspense } from 'react';
+import { Play } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import VocabHub, { VocabTopic } from '@/components/roadmap/VocabHub';
+import { WEEK7_VOCAB } from '@/lib/n5VocabData';
 
-const VOCAB_TOPICS: VocabTopic[] = [
-    { subQuestId: 'w7_vocab_numbers', lessonId: 'numbers', label: 'Số lượng', desc: 'Đếm đồ vật & người', icon: Hash, color: 'emerald' },
-    { subQuestId: 'w7_vocab_time', lessonId: 'routine', label: 'Thời gian', desc: 'Khoảng thời gian', icon: AlarmClock, color: 'teal' },
-    { subQuestId: 'w7_vocab_pos', lessonId: 'household', label: 'Vị trí', desc: 'Trên, dưới, trái, phải', icon: Home, color: 'amber' },
-    { subQuestId: 'w7_vocab_places', lessonId: 'travel', label: 'Địa điểm', desc: 'Sắp xếp đồ vật', icon: Map, color: 'sky' },
-];
+const LESSON_TOPICS: Record<string, VocabTopic[]> = {
+    'lesson10': [
+        {
+            subQuestId: 'lesson10',
+            categoryId: 'lesson10',
+            label: 'Bài 10: Tồn tại',
+            desc: 'Đồ vật, con vật, vị trí...',
+            icon: Play,
+            color: 'rose'
+        }
+    ],
+    'lesson11': [
+        {
+            subQuestId: 'lesson11',
+            categoryId: 'lesson11',
+            label: 'Bài 11: Lượng từ',
+            desc: 'Cách đếm, số người, thời gian...',
+            icon: Play,
+            color: 'rose'
+        }
+    ]
+};
 
-export default function Week7VocabHub() {
+function VocabContent() {
     const searchParams = useSearchParams();
-    const questId = searchParams?.get('questId') || 'w7_2';
+    const questId = searchParams?.get('questId') || 'w7_1';
+    const lesson = searchParams?.get('lesson') || 'lesson10';
+
+    const topics = LESSON_TOPICS[lesson] || LESSON_TOPICS['lesson10'];
 
     return (
         <VocabHub
-            weekTitle="Tuần 7 - Bài 11"
-            lessonTitle="Từ vựng & Chữ Hán"
-            topics={VOCAB_TOPICS}
+            weekTitle={`Tuần 7 - ${lesson === 'lesson10' ? 'Bài 10' : 'Bài 11'}`}
+            lessonTitle={lesson === 'lesson10' ? "Từ vựng: Tồn tại & Vị trí" : "Từ vựng: Lượng từ & Đếm"}
+            topics={topics}
+            vocabData={WEEK7_VOCAB}
             questId={questId}
         />
+    );
+}
+
+export default function Week7VocabHub() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-slate-50">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+        }>
+            <VocabContent />
+        </Suspense>
     );
 }

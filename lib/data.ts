@@ -1,3 +1,4 @@
+//lib/data.ts
 import { BookOpen, Mic, Zap, CheckCircle2, Users, Eye, FileText, Trophy, PenTool } from 'lucide-react';
 
 
@@ -306,8 +307,8 @@ export const N5_WEEKS = [
   },
   {
     week: 3,
-    title: "Tuần 3: Bài 1 & 2 - Khởi đầu",
-    description: "Học từ vựng, chữ Hán bài 1, 2 và làm quen với ngữ pháp cơ bản.",
+    title: "Tuần 3: Bài 1, 2 & 3 - Khởi đầu",
+    description: "Học từ vựng, chữ Hán bài 1, 2, 3 và làm quen với ngữ pháp cơ bản.",
     color: "bg-blue-100 border-blue-200",
     iconColor: "text-blue-600",
     badgeColor: "bg-blue-500",
@@ -319,33 +320,60 @@ export const N5_WEEKS = [
         type: "flashcard",
         icon: Zap,
         link: "/roadmap/n5/w3/w3-vocab?questId=w3_1",
-        xp: 200
+        xp: 150
       },
       {
         id: 'w3_2',
         title: "Bài 1: Ngữ pháp & Giao tiếp",
-        desc: "Học mẫu câu cơ bản và Roleplay chào hỏi Bài 1.",
+        desc: "Học mẫu câu cơ bản (wa, mo, no) và Roleplay.",
         type: "roleplay",
         icon: Mic,
         link: "/roadmap/n5/w3/w3-grammar?questId=w3_2",
-        xp: 250
+        xp: 200
       },
       {
         id: 'w3_3',
         title: "Bài 2: Từ vựng & Chữ Hán",
-        desc: "Luyện đọc và làm bài tập từ vựng, Kanji Bài 2.",
+        desc: "Luyện đọc và làm bài tập từ vựng đồ vật (Kore/Sore/Are).",
         type: "flashcard",
         icon: Zap,
         link: "/roadmap/n5/w3/w3-vocab-2?questId=w3_3",
-        xp: 200
+        xp: 150
       },
       {
         id: 'w3_4',
+        title: "Bài 2: Ngữ pháp",
+        desc: "Học cách chỉ định vật và sở hữu nâng cao.",
+        type: "test",
+        icon: PenTool,
+        link: "/roadmap/n5/w3/w3-grammar?questId=w3_4",
+        xp: 200
+      },
+      {
+        id: 'w3_5',
+        title: "Bài 3: Từ vựng & Chữ Hán",
+        desc: "Từ vựng địa điểm (Koko/Soko/Asoko) và vị trí.",
+        type: "flashcard",
+        icon: Zap,
+        link: "/roadmap/n5/w3/w3-vocab-3?questId=w3_5",
+        xp: 150
+      },
+      {
+        id: 'w3_6',
+        title: "Bài 3: Ngữ pháp",
+        desc: "Học cách chỉ vị trí và nơi chốn.",
+        type: "test",
+        icon: PenTool,
+        link: "/roadmap/n5/w3/w3-grammar?questId=w3_6",
+        xp: 200
+      },
+      {
+        id: 'w3_7',
         title: "Kiểm tra Tuần 3",
-        desc: "Đánh giá kiến thức Bài 1 và Bài 2.",
+        desc: "Tổng ôn kiến thức Bài 1, 2 và 3.",
         type: "test",
         icon: Trophy,
-        link: "/tests/n5-w3-test",
+        link: "/tests/n5-test?week=w3&questId=w3_7",
         xp: 400
       },
     ]
@@ -360,38 +388,47 @@ export const N5_WEEKS = [
     quests: [
       {
         id: 'w4_1',
-        title: "Bài 4: Từ vựng & Chữ Hán",
-        desc: "Luyện đọc và làm bài tập từ vựng, Kanji Bài 4.",
+        title: "Bài 4: Từ vựng",
+        desc: "Luyện đọc và làm bài tập từ vựng Bài 4.",
         type: "flashcard",
         icon: Zap,
-        link: "/roadmap/n5/w4/w4-vocab-1?questId=w4_1",
+        link: "/roadmap/n5/w4/w4-vocab-1?questId=w4_1&lesson=lesson4",
         xp: 200
       },
       {
         id: 'w4_2',
-        title: "Bài 4: Ngữ pháp & Giao tiếp",
-        desc: "Ngữ pháp về thời giờ và Roleplay hỏi đáp Bài 4.",
-        type: "roleplay",
-        icon: Mic,
-        link: "/exercises/routine?context=roadmap&questId=w4_2",
+        title: "Bài 4: Ngữ pháp",
+        desc: "Ngữ pháp về thời giờ và mẫu câu cơ bản Bài 4.",
+        type: "test",
+        icon: BookOpen,
+        link: "/roadmap/n5/w4/w4-grammar?questId=w4_2&lesson=lesson4",
         xp: 250
       },
       {
         id: 'w4_3',
-        title: "Bài 5: Từ vựng & Chữ Hán",
-        desc: "Luyện đọc và làm bài tập từ vựng, Kanji Bài 5.",
+        title: "Bài 5: Từ vựng",
+        desc: "Luyện đọc và làm bài tập từ vựng Bài 5.",
         type: "flashcard",
         icon: Zap,
-        link: "/roadmap/n5/w4/w4-vocab-2?questId=w4_3",
+        link: "/roadmap/n5/w4/w4-vocab-2?questId=w4_3&lesson=lesson5",
         xp: 200
       },
       {
         id: 'w4_4',
+        title: "Bài 5: Ngữ pháp",
+        desc: "Học về di chuyển và phương tiện Bài 5.",
+        type: "test",
+        icon: BookOpen,
+        link: "/roadmap/n5/w4/w4-grammar?questId=w4_4&lesson=lesson5",
+        xp: 250
+      },
+      {
+        id: 'w4_5',
         title: "Kiểm tra Tuần 4",
         desc: "Đánh giá kiến thức Bài 4 và Bài 5.",
         type: "test",
         icon: Trophy,
-        link: "/tests/n5-w4-test",
+        link: "/tests/n5-test?week=w4&questId=w4_test",
         xp: 400
       },
     ]
@@ -406,38 +443,47 @@ export const N5_WEEKS = [
     quests: [
       {
         id: 'w5_1',
-        title: "Bài 6: Đọc hiểu & Giao tiếp",
-        desc: "Luyện đọc đoạn văn và Roleplay về ăn uống.",
-        type: "reading",
-        icon: Eye,
-        link: "/exercises/conv_6_shopping?context=roadmap&questId=w5_1",
-        xp: 250
-      },
-      {
-        id: 'w5_2',
-        title: "Bài 7: Từ vựng & Chữ Hán",
-        desc: "Từ vựng về công cụ, tặng quà và bài tập Kanji.",
+        title: "Bài 6: Từ vựng",
+        desc: "Từ vựng về ăn uống và hành động đời thường.",
         type: "flashcard",
         icon: Zap,
-        link: "/roadmap/n5/w5/w5-vocab?questId=w5_2",
+        link: "/roadmap/n5/w5/w5-vocab?questId=w5_1&lesson=lesson6",
         xp: 200
       },
       {
-        id: 'w5_3',
-        title: "Bài 7: Ngữ pháp",
-        desc: "Luyện tập cấu trúc ngữ pháp bài 7.",
+        id: 'w5_2',
+        title: "Bài 6: Ngữ pháp",
+        desc: "Mẫu câu rủ rê và thực hiện hành động Bài 6.",
         type: "test",
-        icon: PenTool,
-        link: "/exercises/electronics?context=roadmap&questId=w5_3",
+        icon: BookOpen,
+        link: "/roadmap/n5/w5/w5-grammar?questId=w5_2&lesson=lesson6",
+        xp: 250
+      },
+      {
+        id: 'w5_3',
+        title: "Bài 7: Từ vựng",
+        desc: "Từ vựng về công cụ, tặng quà Bài 7.",
+        type: "flashcard",
+        icon: Zap,
+        link: "/roadmap/n5/w5/w5-vocab?questId=w5_3&lesson=lesson7",
         xp: 200
       },
       {
         id: 'w5_4',
+        title: "Bài 7: Ngữ pháp",
+        desc: "Luyện tập cấu trúc cho nhận và công cụ Bài 7.",
+        type: "test",
+        icon: BookOpen,
+        link: "/roadmap/n5/w5/w5-grammar?questId=w5_4&lesson=lesson7",
+        xp: 250
+      },
+      {
+        id: 'w5_5',
         title: "Kiểm tra Tuần 5",
         desc: "Đánh giá kiến thức Bài 6 và Bài 7.",
         type: "test",
         icon: Trophy,
-        link: "/tests/n5-w5-test",
+        link: "/tests/n5-test?week=w5&questId=w5_test",
         xp: 400
       },
     ]
@@ -452,38 +498,47 @@ export const N5_WEEKS = [
     quests: [
       {
         id: 'w6_1',
-        title: "Bài 8: Đọc hiểu & Giao tiếp",
-        desc: "Luyện đọc và Roleplay miêu tả sự vật, sự việc.",
-        type: "reading",
-        icon: Eye,
-        link: "/exercises/emotions?context=roadmap&questId=w6_1",
-        xp: 250
-      },
-      {
-        id: 'w6_2',
-        title: "Bài 9: Từ vựng & Chữ Hán",
-        desc: "Từ vựng về sở thích, năng lực và chữ Hán.",
+        title: "Bài 8: Từ vựng",
+        desc: "Tính từ đuôi i và đuôi na cơ bản.",
         type: "flashcard",
         icon: Zap,
-        link: "/roadmap/n5/w6/w6-vocab?questId=w6_2",
+        link: "/roadmap/n5/w6/w6-vocab?questId=w6_1&lesson=lesson8",
         xp: 200
       },
       {
-        id: 'w6_3',
-        title: "Bài 9: Ngữ pháp",
-        desc: "Bài tập về cấu trúc chỉ lý do và năng lực.",
+        id: 'w6_2',
+        title: "Bài 8: Ngữ pháp",
+        desc: "Cách sử dụng tính từ miêu tả sự vật.",
         type: "test",
-        icon: PenTool,
-        link: "/exercises/media?context=roadmap&questId=w6_3",
+        icon: BookOpen,
+        link: "/roadmap/n5/w6/w6-grammar?questId=w6_2&lesson=lesson8",
+        xp: 250
+      },
+      {
+        id: 'w6_3',
+        title: "Bài 9: Từ vựng",
+        desc: "Từ vựng về sở thích và năng lực.",
+        type: "flashcard",
+        icon: Zap,
+        link: "/roadmap/n5/w6/w6-vocab?questId=w6_3&lesson=lesson9",
         xp: 200
       },
       {
         id: 'w6_4',
+        title: "Bài 9: Ngữ pháp",
+        desc: "Diễn đạt sở thích, năng lực và lý do.",
+        type: "test",
+        icon: BookOpen,
+        link: "/roadmap/n5/w6/w6-grammar?questId=w6_4&lesson=lesson9",
+        xp: 250
+      },
+      {
+        id: 'w6_5',
         title: "Kiểm tra Tuần 6",
         desc: "Đánh giá kiến thức Bài 8 và Bài 9.",
         type: "test",
         icon: Trophy,
-        link: "/tests/n5-w6-test",
+        link: "/tests/n5-test?week=w6&questId=w6_test",
         xp: 400
       },
     ]
@@ -498,38 +553,47 @@ export const N5_WEEKS = [
     quests: [
       {
         id: 'w7_1',
-        title: "Bài 10: Đọc hiểu & Giao tiếp",
-        desc: "Đọc hiểu về mô tả vị trí và thực hành Roleplay.",
-        type: "reading",
-        icon: Eye,
-        link: "/exercises/household?context=roadmap&questId=w7_1",
-        xp: 250
-      },
-      {
-        id: 'w7_2',
-        title: "Bài 11: Từ vựng & Chữ Hán",
-        desc: "Từ vựng về số lượng và bài tập chữ Hán.",
+        title: "Bài 10: Từ vựng",
+        desc: "Từ vựng về đồ vật và vị trí Bài 10.",
         type: "flashcard",
         icon: Zap,
-        link: "/roadmap/n5/w7/w7-vocab?questId=w7_2",
+        link: "/roadmap/n5/w7/w7-vocab?questId=w7_1&lesson=lesson10",
         xp: 200
       },
       {
-        id: 'w7_3',
-        title: "Bài 11: Ngữ pháp",
-        desc: "Bài tập ngữ pháp về cách đếm và khoảng thời gian.",
+        id: 'w7_2',
+        title: "Bài 10: Ngữ pháp",
+        desc: "Cấu trúc tồn tại Arimasu/Irimasu Bài 10.",
         type: "test",
-        icon: PenTool,
-        link: "/exercises/routine?context=roadmap&questId=w7_3",
+        icon: BookOpen,
+        link: "/roadmap/n5/w7/w7-grammar?questId=w7_2&lesson=lesson10",
+        xp: 250
+      },
+      {
+        id: 'w7_3',
+        title: "Bài 11: Từ vựng",
+        desc: "Lượng từ và cách đếm cơ bản Bài 11.",
+        type: "flashcard",
+        icon: Zap,
+        link: "/roadmap/n5/w7/w7-vocab?questId=w7_3&lesson=lesson11",
         xp: 200
       },
       {
         id: 'w7_4',
+        title: "Bài 11: Ngữ pháp",
+        desc: "Cách sử dụng lượng từ trong câu Bài 11.",
+        type: "test",
+        icon: BookOpen,
+        link: "/roadmap/n5/w7/w7-grammar?questId=w7_4&lesson=lesson11",
+        xp: 250
+      },
+      {
+        id: 'w7_5',
         title: "Kiểm tra Tuần 7",
         desc: "Đánh giá kiến thức Bài 10 và Bài 11.",
         type: "test",
         icon: Trophy,
-        link: "/tests/n5-w7-test",
+        link: "/tests/n5-test?week=w7&questId=w7_test",
         xp: 400
       },
     ]
@@ -544,38 +608,47 @@ export const N5_WEEKS = [
     quests: [
       {
         id: 'w8_1',
-        title: "Bài 12: Đọc hiểu & Giao tiếp",
-        desc: "Đọc hiểu về so sánh và Roleplay thảo luận sở thích.",
-        type: "reading",
-        icon: Eye,
-        link: "/exercises/sports?context=roadmap&questId=w8_1",
-        xp: 250
-      },
-      {
-        id: 'w8_2',
-        title: "Bài 13: Từ vựng & Chữ Hán",
-        desc: "Từ vựng về nhu cầu, mong muốn và chữ Hán.",
+        title: "Bài 12: Từ vựng",
+        desc: "Từ vựng về lễ hội và so sánh Bài 12.",
         type: "flashcard",
         icon: Zap,
-        link: "/roadmap/n5/w8/w8-vocab?questId=w8_2",
+        link: "/roadmap/n5/w8/w8-vocab?questId=w8_1&lesson=lesson12",
         xp: 200
       },
       {
-        id: 'w8_3',
-        title: "Bài 13: Ngữ pháp",
-        desc: "Bài tập ngữ pháp về cấu trúc 'muốn làm gì'.",
+        id: 'w8_2',
+        title: "Bài 12: Ngữ pháp",
+        desc: "Cấu trúc so sánh hơn, nhất Bài 12.",
         type: "test",
-        icon: PenTool,
-        link: "/exercises/festivals?context=roadmap&questId=w8_3",
+        icon: BookOpen,
+        link: "/roadmap/n5/w8/w8-grammar?questId=w8_2&lesson=lesson12",
+        xp: 250
+      },
+      {
+        id: 'w8_3',
+        title: "Bài 13: Từ vựng",
+        desc: "Từ vựng về nhu cầu và mong muốn Bài 13.",
+        type: "flashcard",
+        icon: Zap,
+        link: "/roadmap/n5/w8/w8-vocab?questId=w8_3&lesson=lesson13",
         xp: 200
       },
       {
         id: 'w8_4',
+        title: "Bài 13: Ngữ pháp",
+        desc: "Cách diễn đạt mong muốn hoshii/tai Bài 13.",
+        type: "test",
+        icon: BookOpen,
+        link: "/roadmap/n5/w8/w8-grammar?questId=w8_4&lesson=lesson13",
+        xp: 250
+      },
+      {
+        id: 'w8_5',
         title: "Kiểm tra Tuần 8",
         desc: "Đánh giá kiến thức Bài 12 và Bài 13.",
         type: "test",
         icon: Trophy,
-        link: "/tests/n5-w8-test",
+        link: "/tests/n5-test?week=w8&questId=w8_test",
         xp: 400
       },
     ]
@@ -590,38 +663,47 @@ export const N5_WEEKS = [
     quests: [
       {
         id: 'w9_1',
-        title: "Bài 14: Đọc hiểu & Giao tiếp",
-        desc: "Đọc hiểu yêu cầu và Roleplay nhờ vả, sai khiến.",
-        type: "reading",
-        icon: Eye,
-        link: "/exercises/housework?context=roadmap&questId=w9_1",
-        xp: 250
-      },
-      {
-        id: 'w9_2',
-        title: "Bài 15: Từ vựng & Chữ Hán",
-        desc: "Từ vựng nghề nghiệp, trạng thái và chữ Hán.",
+        title: "Bài 14: Từ vựng",
+        desc: "Động từ nhóm 1, 2, 3 và thể Te.",
         type: "flashcard",
         icon: Zap,
-        link: "/roadmap/n5/w9/w9-vocab?questId=w9_2",
+        link: "/roadmap/n5/w9/w9-vocab?questId=w9_1&lesson=lesson14",
         xp: 200
       },
       {
-        id: 'w9_3',
-        title: "Bài 15: Ngữ pháp",
-        desc: "Ngữ pháp về sự cho phép, cấm đoán.",
+        id: 'w9_2',
+        title: "Bài 14: Ngữ pháp",
+        desc: "Cách chia thể Te và mẫu câu yêu cầu.",
         type: "test",
-        icon: PenTool,
-        link: "/exercises/routine?context=roadmap&questId=w9_3",
+        icon: BookOpen,
+        link: "/roadmap/n5/w9/w9-grammar?questId=w9_2&lesson=lesson14",
+        xp: 250
+      },
+      {
+        id: 'w9_3',
+        title: "Bài 15: Từ vựng",
+        desc: "Từ vựng về nghề nghiệp và trạng thái.",
+        type: "flashcard",
+        icon: Zap,
+        link: "/roadmap/n5/w9/w9-vocab?questId=w9_3&lesson=lesson15",
         xp: 200
       },
       {
         id: 'w9_4',
+        title: "Bài 15: Ngữ pháp",
+        desc: "Mẫu câu cho phép, cấm đoán Te-moii/wa-ikemasen.",
+        type: "test",
+        icon: BookOpen,
+        link: "/roadmap/n5/w9/w9-grammar?questId=w9_4&lesson=lesson15",
+        xp: 250
+      },
+      {
+        id: 'w9_5',
         title: "Kiểm tra Tuần 9",
         desc: "Đánh giá kiến thức Bài 14 và Bài 15.",
         type: "test",
         icon: Trophy,
-        link: "/tests/n5-w9-test",
+        link: "/tests/n5-test?week=w9&questId=w9_test",
         xp: 400
       },
     ]
@@ -636,38 +718,47 @@ export const N5_WEEKS = [
     quests: [
       {
         id: 'w10_1',
-        title: "Bài 16: Đọc hiểu & Giao tiếp",
-        desc: "Đọc hiểu hướng dẫn và Roleplay trình tự hành động.",
-        type: "reading",
-        icon: Eye,
-        link: "/exercises/fruits?context=roadmap&questId=w10_1",
-        xp: 250
-      },
-      {
-        id: 'w10_2',
-        title: "Bài 17: Từ vựng & Chữ Hán",
-        desc: "Từ vựng sinh hoạt, cơ thể và chữ Hán.",
+        title: "Bài 16: Từ vựng",
+        desc: "Từ vựng về sinh hoạt và hoạt động kết nối.",
         type: "flashcard",
         icon: Zap,
-        link: "/roadmap/n5/w10/w10-vocab?questId=w10_2",
+        link: "/roadmap/n5/w10/w10-vocab?questId=w10_1&lesson=lesson16",
         xp: 200
       },
       {
-        id: 'w10_3',
-        title: "Bài 17: Ngữ pháp",
-        desc: "Bài tập về thể Nai và sự cần thiết (phải làm gì).",
+        id: 'w10_2',
+        title: "Bài 16: Ngữ pháp",
+        desc: "Cách kết nối động từ, tính từ Bài 16.",
         type: "test",
-        icon: PenTool,
-        link: "/exercises/routine?context=roadmap&questId=w10_3",
+        icon: BookOpen,
+        link: "/roadmap/n5/w10/w10-grammar?questId=w10_2&lesson=lesson16",
+        xp: 250
+      },
+      {
+        id: 'w10_3',
+        title: "Bài 17: Từ vựng",
+        desc: "Từ vựng về cơ thể và sức khỏe Bài 17.",
+        type: "flashcard",
+        icon: Zap,
+        link: "/roadmap/n5/w10/w10-vocab?questId=w10_3&lesson=lesson17",
         xp: 200
       },
       {
         id: 'w10_4',
+        title: "Bài 17: Ngữ pháp",
+        desc: "Thể Nai và mẫu câu khuyên nhủ, bắt buộc.",
+        type: "test",
+        icon: BookOpen,
+        link: "/roadmap/n5/w10/w10-grammar?questId=w10_4&lesson=lesson17",
+        xp: 250
+      },
+      {
+        id: 'w10_5',
         title: "Kiểm tra Tuần 10",
         desc: "Đánh giá kiến thức Bài 16 và Bài 17.",
         type: "test",
         icon: Trophy,
-        link: "/tests/n5-w10-test",
+        link: "/tests/n5-test?week=w10&questId=w10_test",
         xp: 400
       },
     ]
@@ -682,38 +773,47 @@ export const N5_WEEKS = [
     quests: [
       {
         id: 'w11_1',
-        title: "Bài 18: Đọc hiểu & Giao tiếp",
-        desc: "Đọc hiểu về sở trường và Roleplay về khả năng.",
-        type: "reading",
-        icon: Eye,
-        link: "/exercises/hobbies?context=roadmap&questId=w11_1",
-        xp: 250
-      },
-      {
-        id: 'w11_2',
-        title: "Bài 19: Từ vựng & Chữ Hán",
-        desc: "Từ vựng du lịch, kinh nghiệm và chữ Hán.",
+        title: "Bài 18: Từ vựng",
+        desc: "Từ vựng về khả năng và sở thích Bài 18.",
         type: "flashcard",
         icon: Zap,
-        link: "/roadmap/n5/w11/w11-vocab?questId=w11_2",
+        link: "/roadmap/n5/w11/w11-vocab?questId=w11_1&lesson=lesson18",
         xp: 200
       },
       {
-        id: 'w11_3',
-        title: "Bài 19: Ngữ pháp",
-        desc: "Bài tập ngữ pháp về thể Ta và kể về kinh nghiệm.",
+        id: 'w11_2',
+        title: "Bài 18: Ngữ pháp",
+        desc: "Cấu trúc có thể làm gì và sở thích Bài 18.",
         type: "test",
-        icon: PenTool,
-        link: "/exercises/casual?context=roadmap&questId=w11_3",
+        icon: BookOpen,
+        link: "/roadmap/n5/w11/w11-grammar?questId=w11_2&lesson=lesson18",
+        xp: 250
+      },
+      {
+        id: 'w11_3',
+        title: "Bài 19: Từ vựng",
+        desc: "Từ vựng về kinh nghiệm và dọn dẹp Bài 19.",
+        type: "flashcard",
+        icon: Zap,
+        link: "/roadmap/n5/w11/w11-vocab?questId=w11_3&lesson=lesson19",
         xp: 200
       },
       {
         id: 'w11_4',
+        title: "Bài 19: Ngữ pháp",
+        desc: "Thể Ta và mẫu câu kinh nghiệm V-ta koto ga arimasu.",
+        type: "test",
+        icon: BookOpen,
+        link: "/roadmap/n5/w11/w11-grammar?questId=w11_4&lesson=lesson19",
+        xp: 250
+      },
+      {
+        id: 'w11_5',
         title: "Kiểm tra Tuần 11",
         desc: "Đánh giá kiến thức Bài 18 và Bài 19.",
         type: "test",
         icon: Trophy,
-        link: "/tests/n5-w11-test",
+        link: "/tests/n5-test?week=w11&questId=w11_test",
         xp: 450
       },
     ]

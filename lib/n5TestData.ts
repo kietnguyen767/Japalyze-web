@@ -5,6 +5,262 @@ export interface TestItem {
     romaji: string;
     meaning: string;
 }
+import { Question } from '@/app/tests/page';
+
+export const WEEK3_TEST: Question[] = [
+    {
+        id: 'w3_q1', type: 'grammar',
+        content: 'Tôi là người Việt Nam.',
+        options: ['わたし は べとなむじん です。', 'わたし は べとなむじん じゃありません。', 'わたし は べとなむじん ですか。', 'わたし の べとなむじん です。'],
+        correctAnswer: 0
+    },
+    {
+        id: 'w3_q2', type: 'vocab',
+        content: 'Số 3 (trong đếm vật)?',
+        options: ['ひとつ', 'ふたつ', 'みっつ', 'よっつ'],
+        correctAnswer: 2
+    },
+    {
+        id: 'w3_q3', type: 'grammar',
+        content: 'あの 人 は 先生 ______。 (Người kia không phải là giáo viên)',
+        options: ['です', 'じゃありません', 'ですか', 'の'],
+        correctAnswer: 1
+    },
+    {
+        id: 'w3_q4', type: 'vocab',
+        content: 'Mẹ (của mình) gọi là gì?',
+        options: ['おとうさん', 'おかあさん', 'はは', 'ちち'],
+        correctAnswer: 2
+    },
+    {
+        id: 'w3_q5', type: 'grammar',
+        content: '______ は わたしの ほんです。(Đây là quyển sách của tôi)',
+        options: ['これ', 'この', 'ここ', 'こちら'],
+        correctAnswer: 0
+    }
+];
+
+export const WEEK4_TEST: Question[] = [
+    {
+        id: 'w4_q1', type: 'grammar',
+        content: '______ の けいたいでんわ です。(Cái điện thoại này)',
+        options: ['これ', 'この', 'ここ', 'こちら'],
+        correctAnswer: 1
+    },
+    {
+        id: 'w4_q2', type: 'vocab',
+        content: '"Của tôi" trong tiếng Nhật là gì?',
+        options: ['わたしの', 'あなた', 'かれ', 'わたしたち'],
+        correctAnswer: 0
+    },
+    {
+        id: 'w4_q3', type: 'vocab',
+        content: '"Pasokon" là gì?',
+        options: ['Điện thoại', 'Máy ảnh', 'Máy tính', 'Đồng hồ'],
+        correctAnswer: 2
+    },
+    {
+        id: 'w4_q4', type: 'vocab',
+        content: '"Bánh mỳ" tiếng Nhật là gì?',
+        options: ['ごはん', 'さかな', 'たまご', 'パン'],
+        correctAnswer: 3
+    }
+];
+
+export const WEEK5_TEST: Question[] = [
+    {
+        id: 'w5_q1', type: 'grammar',
+        content: 'トイレ は ______ です。(Nhà vệ sinh ở đằng kia - lịch sự)',
+        options: ['あそこ', 'あれ', 'あちら', 'あの'],
+        correctAnswer: 2
+    },
+    {
+        id: 'w5_q2', type: 'vocab',
+        content: 'Bệnh viện là gì?',
+        options: ['がっこう', 'びょういん', 'ぎんこう', 'だいがく'],
+        correctAnswer: 1
+    },
+    {
+        id: 'w5_q3', type: 'vocab',
+        content: 'Bên trên là gì?',
+        options: ['うえ', 'した', 'まえ', 'うしろ'],
+        correctAnswer: 0
+    },
+    {
+        id: 'w5_q4', type: 'grammar',
+        content: '______ じん ですか。 (Bạn là người nước nào?)',
+        options: ['どこ', 'どの', 'どこの', 'どちら'],
+        correctAnswer: 2
+    }
+];
+
+export const WEEK6_TEST: Question[] = [
+    {
+        id: 'w6_q1', type: 'grammar',
+        content: '今 10時 ______。(Bây giờ là 10h15p)',
+        options: ['15分', '15分です', '15時です', '15月です'],
+        correctAnswer: 1
+    },
+    {
+        id: 'w6_q2', type: 'vocab',
+        content: 'Hôm qua là gì?',
+        options: ['きょう', 'あした', 'きのう', 'さき'],
+        correctAnswer: 2
+    },
+    {
+        id: 'w6_q3', type: 'grammar',
+        content: 'Trường học bắt đầu từ 8h (chọn trợ từ)',
+        options: ['から', 'まで', 'に', 'と'],
+        correctAnswer: 0
+    },
+    {
+        id: 'w6_q4', type: 'vocab',
+        content: 'Mùa đông là gì?',
+        options: ['はる', 'なつ', 'あき', 'ふゆ'],
+        correctAnswer: 3
+    }
+];
+
+export const WEEK7_TEST: Question[] = [
+    {
+        id: 'w7_q1', type: 'grammar',
+        content: 'Đi đến Nhật Bản (trợ từ)?',
+        options: ['を', 'に / へ', 'で', 'と'],
+        correctAnswer: 1
+    },
+    {
+        id: 'w7_q2', type: 'vocab',
+        content: '"Ăn cơm" là gì?',
+        options: ['ごはん を のみます', 'ごはん を たべます', 'ごはん を かいます', 'ごはん を よみます'],
+        correctAnswer: 1
+    },
+    {
+        id: 'w7_q3', type: 'grammar',
+        content: 'Đi bằng tàu điện (trợ từ)?',
+        options: ['に', 'で', 'を', 'と'],
+        correctAnswer: 1
+    },
+    {
+        id: 'w7_q4', type: 'vocab',
+        content: '"Tháng 4" đọc là gì?',
+        options: ['よんがつ', 'しがつ', 'なながつ', 'ひがつ'],
+        correctAnswer: 1
+    }
+];
+
+export const WEEK8_TEST: Question[] = [
+    {
+        id: 'w8_q1', type: 'grammar',
+        content: '"Bạn đã ăn cơm chưa?"',
+        options: ['ごはん を たべましたか', 'ごはん を たべますか', 'ごはん を たべませんでしたか', 'ごはん を たべたいですか'],
+        correctAnswer: 0
+    },
+    {
+        id: 'w8_q2', type: 'vocab',
+        content: '"Đắt / Cao" là gì?',
+        options: ['やすい', 'たかい', 'ふるい', 'あたらしい'],
+        correctAnswer: 1
+    },
+    {
+        id: 'w8_q3', type: 'grammar',
+        content: 'Ăn cơm cùng với bạn bè (trợ từ)?',
+        options: ['に', 'を', 'と', 'で'],
+        correctAnswer: 2
+    },
+    {
+        id: 'w8_q4', type: 'vocab',
+        content: '"Ngon" là gì?',
+        options: ['たのしい', 'おもしろい', 'おいしい', 'いそがしい'],
+        correctAnswer: 2
+    }
+];
+
+export const WEEK9_TEST: Question[] = [
+    {
+        id: 'w9_q1', type: 'grammar',
+        content: '______ ほしい ですか。 (Bạn muốn cái gì?)',
+        options: ['なんの', 'どこ', 'いつ', 'なに が'],
+        correctAnswer: 3
+    },
+    {
+        id: 'w9_q2', type: 'vocab',
+        content: '"Dạy (tiếng Nhật)" là gì?',
+        options: ['ならいます', 'おしえます', 'かします', 'かります'],
+        correctAnswer: 1
+    },
+    {
+        id: 'w9_q3', type: 'grammar',
+        content: 'Tôi muốn ăn sushi.',
+        options: ['すし を たべました', 'すし が たべたい です', 'すし を たべません', 'すし が たべた です'],
+        correctAnswer: 1
+    },
+    {
+        id: 'w9_q4', type: 'vocab',
+        content: '"Rất" là gì?',
+        options: ['すこし', 'たくさん', 'とても', 'いつも'],
+        correctAnswer: 2
+    }
+];
+
+export const WEEK10_TEST: Question[] = [
+    {
+        id: 'w10_q1', type: 'grammar',
+        content: 'Hãy đưa cho tôi quyển sách kia.',
+        options: ['その ほん を ください', 'その ほん が ください', 'その ほん です ください', 'その ほん に ください'],
+        correctAnswer: 0
+    },
+    {
+        id: 'w10_q2', type: 'vocab',
+        content: '"Đi bộ" là gì?',
+        options: ['あそびます', 'あるきます', 'はしります', 'およぎます'],
+        correctAnswer: 1
+    },
+    {
+        id: 'w10_q3', type: 'grammar',
+        content: 'Có hoa ở trong vườn.',
+        options: ['にわ に はな が あります', 'にわ に はな が います', 'にわ を はな が あります', 'にわ で はな が あります'],
+        correctAnswer: 0
+    },
+    {
+        id: 'w10_q4', type: 'vocab',
+        content: '"Cố gắng hết sức" là gì?',
+        options: ['いっしょうけんめい', 'おめでとう', 'すみません', 'しつれいします'],
+        correctAnswer: 0
+    }
+];
+
+export const WEEK11_TEST: Question[] = [
+    {
+        id: 'w11_q1', type: 'grammar',
+        content: 'Thể từ điển của "いきます" là gì?',
+        options: ['いかない', 'いく', 'いった', 'いきる'],
+        correctAnswer: 1
+    },
+    {
+        id: 'w11_q2', type: 'vocab',
+        content: '"Sở thích" trong tiếng Nhật là gì?',
+        options: ['しゅみ', 'ゆめ', 'しごと', 'あそび'],
+        correctAnswer: 0
+    },
+    {
+        id: 'w11_q3', type: 'grammar',
+        content: 'Tôi đã từng đi Nhật Bản.',
+        options: ['にほん へ いきます', 'にほん へ いきました', 'にほん へ いった こと が あります', 'にほん へ いく こと が できます'],
+        correctAnswer: 2
+    },
+    {
+        id: 'w11_q4', type: 'grammar',
+        content: 'Lúc thì đọc sách, lúc thì xem phim.',
+        options: ['ほん を よんで、えいが を みます', 'ほん を よんだり、えいが を みたり します', 'ほん を よむ こと と えいが を みる こと です', 'ほん を よみながら えいが を みます'],
+        correctAnswer: 1
+    },
+    {
+        id: 'w11_q5', type: 'vocab',
+        content: '"Lái xe" là gì?',
+        options: ['うんてんします', 'じゅうてんします', 'べんきょうします', 'よやくします'],
+        correctAnswer: 0
+    }
+];
 
 export const WEEK1_TEST_DATA: TestItem[] = [
     { kana: 'ひと', romaji: 'hito', meaning: 'người' },

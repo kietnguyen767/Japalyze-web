@@ -1,28 +1,61 @@
 //app/roadmap/n5/w6/w6-vocab/page.tsx
 'use client';
 
-import { Smile, Palette, Clapperboard, Heart, Music } from 'lucide-react';
+import { Suspense } from 'react';
+import { Clock, CloudSun } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import VocabHub, { VocabTopic } from '@/components/roadmap/VocabHub';
+import { WEEK6_VOCAB } from '@/lib/n5VocabData';
 
-const VOCAB_TOPICS: VocabTopic[] = [
-    { subQuestId: 'w6_vocab_emotions', lessonId: 'emotions', label: 'Tính chất', desc: 'Miêu tả sự vật', icon: Smile, color: 'yellow' },
-    { subQuestId: 'w6_vocab_hobbies', lessonId: 'hobbies', label: 'Sở thích', desc: 'Năng lực cá nhân', icon: Palette, color: 'pink' },
-    { subQuestId: 'w6_vocab_media', lessonId: 'media', label: 'Truyền thông', desc: 'Phim & Báo chí', icon: Clapperboard, color: 'violet' },
-    { subQuestId: 'w6_vocab_interests', lessonId: 'love', label: 'Quan tâm', desc: 'Yêu thích & Đam mê', icon: Heart, color: 'rose' },
-    { subQuestId: 'w6_vocab_arts', lessonId: 'music', label: 'Nghệ thuật', desc: 'Âm nhạc & Nhạc cụ', icon: Music, color: 'fuchsia' },
-];
+const LESSON_TOPICS: Record<string, VocabTopic[]> = {
+    'lesson8': [
+        {
+            subQuestId: 'lesson8',
+            categoryId: 'lesson8',
+            label: 'Bài 8: Tính từ',
+            desc: 'Mới, cũ, to, nhỏ, nóng, lạnh...',
+            icon: Clock,
+            color: 'indigo'
+        }
+    ],
+    'lesson9': [
+        {
+            subQuestId: 'lesson9',
+            categoryId: 'lesson9',
+            label: 'Bài 9: Sở thích',
+            desc: 'Thích, ghét, giỏi, kém, thể thao...',
+            icon: CloudSun,
+            color: 'sky'
+        }
+    ]
+};
 
-export default function Week6VocabHub() {
+function VocabContent() {
     const searchParams = useSearchParams();
-    const questId = searchParams?.get('questId') || 'w6_2';
+    const questId = searchParams?.get('questId') || 'w6_1';
+    const lesson = searchParams?.get('lesson') || 'lesson8';
+
+    const topics = LESSON_TOPICS[lesson] || LESSON_TOPICS['lesson8'];
 
     return (
         <VocabHub
-            weekTitle="Tuần 6 - Bài 9"
-            lessonTitle="Từ vựng & Chữ Hán"
-            topics={VOCAB_TOPICS}
+            weekTitle={`Tuần 6 - ${lesson === 'lesson8' ? 'Bài 8' : 'Bài 9'}`}
+            lessonTitle={lesson === 'lesson8' ? "Từ vựng: Tính từ miêu tả" : "Từ vựng: Sở thích & Năng lực"}
+            topics={topics}
+            vocabData={WEEK6_VOCAB}
             questId={questId}
         />
+    );
+}
+
+export default function Week6VocabHub() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-slate-50">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+        }>
+            <VocabContent />
+        </Suspense>
     );
 }
