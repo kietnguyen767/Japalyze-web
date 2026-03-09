@@ -2,8 +2,6 @@
 import React, { useEffect, useState } from 'react';
 import { Users, FileText, BookOpenText, FileQuestion, TrendingUp, Loader2 } from 'lucide-react';
 import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -25,16 +23,24 @@ interface OverviewTabProps {
 export default function OverviewTab({ counts }: OverviewTabProps) {
   const [chartData, setChartData] = useState<any[]>([]);
   const [totalVisits, setTotalVisits] = useState<number>(0);
+  const [weekRange, setWeekRange] = useState({ start: '', end: '' });
+  const [weekOffset, setWeekOffset] = useState(0); // 0: Tuần này, -1: Tuần trước...
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await fetch('/api/admin/analytics/stats');
+        const res = await fetch(`/api/admin/analytics/stats?offset=${weekOffset}`);
         if (res.ok) {
           const { summary, chartData } = await res.json();
           setChartData(chartData);
           setTotalVisits(summary.totalVisits);
+          if (summary.range) {
+            setWeekRange({
+              start: new Date(summary.range.start).toLocaleDateString('vi-VN'),
+              end: new Date(summary.range.end).toLocaleDateString('vi-VN')
+            });
+          }
         }
       } catch (error) {
         console.error('❌ Error fetching chart data:', error);
@@ -44,10 +50,13 @@ export default function OverviewTab({ counts }: OverviewTabProps) {
     };
 
     fetchStats();
-    // Tự động làm mới dữ liệu sau mỗi 30 giây để bạn thấy số liệu nhảy realtime
-    const interval = setInterval(fetchStats, 30000);
+    // Chỉ polling nếu đang ở tuần hiện tại (offset === 0)
+    let interval: any;
+    if (weekOffset === 0) {
+      interval = setInterval(fetchStats, 30000);
+    }
     return () => clearInterval(interval);
-  }, []);
+  }, [weekOffset]);
 
   const stats = [
     { label: 'Người dùng', count: counts.users, icon: Users, color: 'text-blue-500', bg: 'bg-blue-50' },
@@ -76,16 +85,42 @@ export default function OverviewTab({ counts }: OverviewTabProps) {
 
       {/* CHART SECTION */}
       <div className="bg-white p-6 md:p-8 rounded-[2rem] border border-slate-100 shadow-sm">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
           <div>
             <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
-              <TrendingUp className="text-blue-600" /> Biểu đồ truy cập tuần này
+              <TrendingUp className="text-blue-600" /> Biểu đồ truy cập
             </h3>
-            <p className="text-slate-500 text-sm font-medium mt-1">Hôm nay: {new Date().toLocaleDateString('vi-VN')}</p>
+            <p className="text-slate-500 text-sm font-medium mt-1">
+              Tuần: <span className="text-blue-600 font-bold">{weekRange.start} - {weekRange.end}</span>
+              {weekOffset === 0 && <span className="ml-2 text-[10px] bg-blue-50 px-2 py-0.5 rounded text-blue-600">Tuần hiện tại</span>}
+            </p>
           </div>
-          <div className="flex gap-2">
-            <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold">
-              <div className="w-2 h-2 bg-blue-600 rounded-full"></div> Truy cập Homepage
+
+          <div className="flex items-center gap-3">
+            <div className="flex bg-slate-100 p-1 rounded-xl">
+              <button
+                onClick={() => setWeekOffset(prev => prev - 1)}
+                className="px-3 py-1.5 hover:bg-white hover:shadow-sm rounded-lg text-xs font-bold text-slate-600 transition-all font-sans"
+              >
+                Trước
+              </button>
+              <button
+                onClick={() => setWeekOffset(0)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${weekOffset === 0 ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Hiện tại
+              </button>
+              <button
+                onClick={() => setWeekOffset(prev => prev + 1)}
+                className="px-3 py-1.5 hover:bg-white hover:shadow-sm rounded-lg text-xs font-bold text-slate-600 transition-all disabled:opacity-30"
+                disabled={weekOffset >= 0}
+              >
+                Tiếp
+              </button>
+            </div>
+
+            <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold">
+              <div className="w-2 h-2 bg-blue-600 rounded-full"></div> Homepage
             </div>
           </div>
         </div>
@@ -130,7 +165,7 @@ export default function OverviewTab({ counts }: OverviewTabProps) {
                   labelFormatter={(label, payload) => {
                     if (payload && payload[0]) {
                       const dayName = payload[0].payload.name;
-                      const isToday = label === `${new Date().getDate().toString().padStart(2, '0')}/${(new Date().getMonth() + 1).toString().padStart(2, '0')}`;
+                      const isToday = label === `${new Date().getDate().toString().padStart(2, '0')}/${(new Date().getMonth() + 1).toString().padStart(2, '0')}` && weekOffset === 0;
                       return `${dayName} (${label})${isToday ? ' - Hôm nay' : ''}`;
                     }
                     return label;
