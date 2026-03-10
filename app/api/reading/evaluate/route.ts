@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { headers } from 'next/headers';
 import prisma from "@/lib/prisma";
 import { getUserId } from "@/lib/get-user";
 import { geminiModel } from "@/lib/gemini"; // Import Gemini Model
@@ -8,12 +9,21 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
     try {
         // 1. Authentication
-        const userId = await getUserId();
-        if (!userId) {
+        const headersList = await headers();
+        const isMobile = headersList.get('x-mobile-app') === 'true';
+
+        let userId = await getUserId();
+
+        if (!userId && !isMobile) {
             return NextResponse.json(
                 { error: "Vui lòng đăng nhập để sử dụng tính năng này." },
                 { status: 401 }
             );
+        }
+
+        // If mobile, we use a default ID or bypass user check
+        if (!userId && isMobile) {
+            userId = "mobile_user_bypass";
         }
 
         const { transcribedText, originalText, durationMs } = await req.json();
@@ -26,14 +36,19 @@ export async function POST(req: Request) {
         }
 
         // 2. Kiểm tra User & Quota (Optional)
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
-            select: { isPremium: true, analysisUsage: true },
-        });
+        let isPremium = true; // Assume premium for mobile_user_bypass or if user not found
+        if (userId !== "mobile_user_bypass") {
+            const user = await prisma.user.findUnique({
+                where: { id: userId as string },
+                select: { isPremium: true, analysisUsage: true },
+            });
 
-        if (!user) {
-            return NextResponse.json({ error: "User not found" }, { status: 404 });
+            if (!user) {
+                return NextResponse.json({ error: "User not found" }, { status: 404 });
+            }
+            isPremium = user.isPremium;
         }
+
 
         // 3. Tính toán thời gian kỳ vọng
         const charCount = originalText.length;
@@ -79,9 +94,9 @@ export async function POST(req: Request) {
         }
 
         // 4. Update usage count (Optional)
-        if (!user.isPremium) {
+        if (userId !== "mobile_user_bypass" && !isPremium) {
             await prisma.user.update({
-                where: { id: userId },
+                where: { id: userId as string },
                 data: { analysisUsage: { increment: 1 } }
             });
         }

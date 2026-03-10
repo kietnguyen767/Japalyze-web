@@ -1,3 +1,4 @@
+//app/api/analytics/collect/route.ts
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
