@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import prisma from '@/lib/prisma';
 import redis from '@/lib/redis';
 
@@ -8,25 +8,37 @@ export async function GET(
   props: { params: Promise<{ id: string }> }
 ) {
   try {
-    // 1. Kiểm tra đăng nhập (Session Token)
-    const cookieStore = await cookies();
-    let token = cookieStore.get('session_token')?.value;
+    // 0. Check for mobile app bypass
+    const headersList = await headers();
+    const isMobileApp = headersList.get('x-mobile-app') === 'true';
 
-    if (!token) {
-      const authHeader = request.headers.get('Authorization');
-      if (authHeader) {
-        token = authHeader.replace('Bearer ', '');
+    // 1. Kiểm tra đăng nhập (Session Token)
+    let hasValidAuth = false;
+
+    if (isMobileApp) {
+      hasValidAuth = true; // Bypass authentication for mobile app internal requests
+    } else {
+      const cookieStore = await cookies();
+      let token = cookieStore.get('session_token')?.value;
+
+      if (!token) {
+        const authHeader = request.headers.get('Authorization');
+        if (authHeader) {
+          token = authHeader.replace('Bearer ', '');
+        }
+      }
+
+      if (token) {
+        // Validate Token với Redis cho web users
+        const userId = await redis.get(`session:${token}`);
+        if (userId) {
+          hasValidAuth = true;
+        }
       }
     }
 
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // 2. Validate Token với Redis
-    const userId = await redis.get(`session:${token}`);
-    if (!userId) {
-      return NextResponse.json({ error: 'Session expired' }, { status: 401 });
+    if (!hasValidAuth) {
+      return NextResponse.json({ error: 'Unauthorized or Session expired' }, { status: 401 });
     }
 
     // 3. Lấy ID bài viết
