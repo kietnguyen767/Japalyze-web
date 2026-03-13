@@ -68,7 +68,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (storedUser) {
         try {
           setUser(JSON.parse(storedUser));
-          // 🔥 Tối ưu: Nếu đã có user từ localStorage, hãy tắt loading ngay để hiện UI
+          //  Tối ưu: Nếu đã có user từ localStorage, hãy tắt loading ngay để hiện UI
           setLoading(false);
         } catch {
           localStorage.removeItem('user_session');

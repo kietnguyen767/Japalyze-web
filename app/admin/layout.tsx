@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react'; // Thêm icon loading cho đẹp
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  // 👇 SỬA Ở ĐÂY: Dùng 'loading' thay vì 'isLoading'
+  //  SỬA Ở ĐÂY: Dùng 'loading' thay vì 'isLoading'
   const { user, loading } = useAuth(); 
   const router = useRouter();
 

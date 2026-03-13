@@ -316,7 +316,7 @@ export default function ConversationClient({
                 <div className={`p-5 rounded-2xl shadow-sm border relative group transition-all
                   ${isLeft ? 'bg-white border-slate-200 rounded-tl-none text-slate-700' : 'bg-indigo-600 text-white border-indigo-600 rounded-tr-none'}`}>
 
-                  {/* 🔥 BUTTON MIC (ĐÃ SỬA) 🔥 */}
+                  {/* BUTTON MIC (FIXED) */}
                   <button
                     onClick={() => speak(line.kana, line.speaker)}
                     className={`absolute top-2 p-2 rounded-full hover:bg-slate-200 transition-colors text-slate-400

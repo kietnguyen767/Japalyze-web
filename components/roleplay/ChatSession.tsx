@@ -50,7 +50,7 @@ export default function ChatSession({ character, topic, assignedMissions, onBack
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false); // STT State
 
-  // ✅ STATE: Khởi tạo missions ngay từ prop được truyền vào
+  //  STATE: Khởi tạo missions ngay từ prop được truyền vào
   const [missions, setMissions] = useState<string[]>(assignedMissions);
   const [completedMissions, setCompletedMissions] = useState<boolean[]>([false, false, false]);
 
@@ -217,7 +217,7 @@ export default function ChatSession({ character, topic, assignedMissions, onBack
         return;
       }
 
-      // ✅ AUTO TTS: Phát âm thanh ngay khi AI trả lời xong (Chỉ cho Agent Chat)
+      //  AUTO TTS: Phát âm thanh ngay khi AI trả lời xong (Chỉ cho Agent Chat)
       if (!silent && agentType === 'chat') {
         // Tách lấy phần lời thoại (không bao gồm JSON nếu có)
         let finalDisplay = '';
@@ -247,7 +247,7 @@ export default function ChatSession({ character, topic, assignedMissions, onBack
       cleanJson = cleanJson.replace(/^```json /, '').replace(/^```/, '').replace(/```$/, '');
       const data = JSON.parse(cleanJson);
 
-      // ✅ LOGIC CHẶN CẬP NHẬT NHIỆM VỤ
+      //  LOGIC CHẶN CẬP NHẬT NHIỆM VỤ
       // Chỉ cập nhật nếu isCheckMission = true (User đã chat)
       if (isCheckMission && Array.isArray(data.completed_indices)) {
         const indices = sanitizeCompletedIndices(data.completed_indices);
@@ -319,7 +319,7 @@ export default function ChatSession({ character, topic, assignedMissions, onBack
       .map((m) => ({ role: m.role, content: m.content }));
 
 
-    // ✅ Parallel Agents
+    //  Parallel Agents
     if (isOutOfTurns) {
       // Hết lượt → Grading agent chấm điểm theo thang S/A/B/C/D
       const gradingHistory = [

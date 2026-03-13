@@ -218,7 +218,7 @@ export default function DeckQuiz({
 
                   return (
                     <button
-                      key={`${q.id}-${opt}`} // ✅ FIX KEY
+                      key={`${q.id}-${opt}`} //  FIX KEY
                       disabled={isAnswered}
                       onClick={() =>
                         handleSelectOption(
