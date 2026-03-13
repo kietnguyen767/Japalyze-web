@@ -28,7 +28,11 @@ export function getApiUrl(path: string): string {
 }
 
 export async function apiFetch(inputPath: string, init?: RequestInit): Promise<Response> {
-  const url = getApiUrl(inputPath);
+  const isAbsoluteInput = /^https?:\/\//i.test(inputPath);
+  const browserRelativeUrl = normalizePath(inputPath);
+  const url = typeof window !== 'undefined' && !isAbsoluteInput
+    ? browserRelativeUrl
+    : getApiUrl(inputPath);
 
   // Automatically attach Authorization: Bearer <session_token> from frontend cookies
   // for browser requests, unless caller already set an Authorization header.
@@ -57,4 +61,3 @@ export async function apiFetch(inputPath: string, init?: RequestInit): Promise<R
 }
 
 export { API_BASE_URL };
-

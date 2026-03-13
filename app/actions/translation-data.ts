@@ -1,11 +1,13 @@
 'use server'
 
+import { getApiUrl } from '@/lib/apiClient';
+
 // getTranslationHistory: calls backend dashboard endpoint and extracts translation history
 export async function getTranslationHistory(userId: string) {
   if (!userId) return { success: false, data: [] };
 
   try {
-    const res = await fetch('http://localhost:5062/api/user/dashboard', {
+    const res = await fetch(getApiUrl('/api/user/dashboard'), {
       headers: { 'Content-Type': 'application/json' },
       cache: 'no-store',
     });
@@ -22,7 +24,7 @@ export async function getTranslationHistory(userId: string) {
 // getDashboardVocabulary: calls backend random-vocabulary endpoint
 export async function getDashboardVocabulary() {
   try {
-    const res = await fetch('http://localhost:5062/api/dictionary/random-vocabulary', {
+    const res = await fetch(getApiUrl('/api/dictionary/random-vocabulary'), {
       cache: 'no-store',
     });
     if (!res.ok) return { success: false, data: null };
