@@ -27,8 +27,9 @@ type Post = {
   rating: number;
   createdAt: string;
   user: APIUser;
-  _count: { likes: number; comments: number };
-  likes: { id: string }[]; // Mảng này dùng để check xem user đã like chưa
+  likesCount: number;
+  commentsCount: number;
+  liked: boolean;
 };
 
 export default function CommunityPage() {
@@ -80,16 +81,16 @@ export default function CommunityPage() {
       const formattedPost: Post = {
         ...newPost,
         user: { name: user.name, avatar: user.avatar, email: user.email },
-        _count: { likes: 0, comments: 0 },
-        likes: []
+        likesCount: 0,
+        commentsCount: 0,
+        liked: false
       };
       queryClient.setQueryData(['community-posts'], (old: Post[] = []) => [formattedPost, ...old]);
 
       setNewContent('');
       setNewRating(5);
-      console.log("✅ Posted new content");
     } catch (error) {
-      console.error("❌ Error posting:", error);
+      console.error("Error posting:", error);
       alert("⚠️ Lỗi kết nối server");
     } finally {
       setIsSubmitting(false);
@@ -196,9 +197,9 @@ function PostCard({ post, user }: { post: Post; user: any | null }) {
   const queryClient = useQueryClient();
 
   // State quản lý Like/Comment cục bộ
-  const [isLiked, setIsLiked] = useState(Array.isArray(post.likes) && post.likes.length > 0);
-  const [likesCount, setLikesCount] = useState(post._count.likes);
-  const [commentsCount, setCommentsCount] = useState(post._count.comments);
+  const [isLiked, setIsLiked] = useState(post.liked);
+  const [likesCount, setLikesCount] = useState(post.likesCount);
+  const [commentsCount, setCommentsCount] = useState(post.commentsCount);
 
   // Comment logic
   const [showComments, setShowComments] = useState(false);
@@ -234,7 +235,7 @@ function PostCard({ post, user }: { post: Post; user: any | null }) {
       });
 
       if (!res.ok) {
-        console.error("❌ Lỗi like:", res.status);
+        console.error("Lỗi like:", res.status);
         const errData = await res.json().catch(() => ({ error: 'Unknown' }));
         alert(`⚠️ Lỗi like: ${errData.error}`);
         // Revert nếu lỗi
@@ -244,9 +245,8 @@ function PostCard({ post, user }: { post: Post; user: any | null }) {
       }
 
       const data = await res.json();
-      console.log("✅ Like status:", data.status);
     } catch (e) {
-      console.error("❌ Error liking post:", e);
+      console.error("Error liking post:", e);
       alert("⚠️ Lỗi kết nối server");
       // Revert nếu lỗi
       setIsLiked(prevLiked);
@@ -275,7 +275,7 @@ function PostCard({ post, user }: { post: Post; user: any | null }) {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({ error: 'Unknown error' }));
-        console.error("❌ Lỗi gửi comment:", errData.error);
+        console.error("Lỗi gửi comment:", errData.error);
         alert(`⚠️ Lỗi: ${errData.error}`);
         return;
       }
@@ -284,10 +284,8 @@ function PostCard({ post, user }: { post: Post; user: any | null }) {
       queryClient.setQueryData(['post-comments', post.id], (old: Comment[] = []) => [newCmt, ...old]);
       setCommentsCount(prev => prev + 1);
       setCommentText('');
-
-      console.log("✅ Comment sent");
     } catch (e) {
-      console.error("❌ Error sending comment:", e);
+      console.error("Error sending comment:", e);
       alert("⚠️ Lỗi kết nối server");
     }
     finally { setIsSending(false); }

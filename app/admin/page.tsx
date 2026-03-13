@@ -40,7 +40,7 @@ export type QuestionInput = {
 export type MockTest = {
   id: string; title: string; level: string; duration: number; isPremium: boolean;
   questions?: QuestionInput[];
-  _count?: { questions: number }; createdAt: string;
+  questionCount: number; createdAt: string;
 };
 
 // --- CONSTANTS ---

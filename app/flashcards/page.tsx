@@ -35,7 +35,6 @@ type Deck = {
   description?: string | null;
   cards: Card[];
   learnedCount?: number;
-  _count?: { cards: number };
 };
 
 export default function FlashcardsPage() {
@@ -255,9 +254,9 @@ export default function FlashcardsPage() {
               <GraduationCap className="text-indigo-500" size={24} /> Danh sách bộ thẻ mẫu
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {visibleSamples.map((deck) => {
-                const totalCount = deck._count?.cards || 0;
-                const learnedCount = deck.learnedCount || 0;
+               {visibleSamples.map((deck) => {
+                 const totalCount = deck.cards?.length ?? 0;
+                 const learnedCount = deck.learnedCount || 0;
                 const progress = totalCount > 0
                   ? Math.round((learnedCount / totalCount) * 100)
                   : 0;
@@ -277,7 +276,7 @@ export default function FlashcardsPage() {
                             <h3 className="font-bold text-slate-800 leading-tight">{deck.title}</h3>
                             <span className="text-[9px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter">Official</span>
                           </div>
-                          <p className="text-xs text-slate-400 font-medium">{deck._count?.cards || 0} thẻ ghi nhớ</p>
+                            <p className="text-xs text-slate-400 font-medium">{deck.cards?.length ?? 0} thẻ ghi nhớ</p>
                         </div>
                       </div>
                       {/* Bỏ nút xóa bộ thẻ mẫu */}
@@ -359,9 +358,9 @@ export default function FlashcardsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {userDecks.map((deck) => {
-                const totalCount = deck._count?.cards || 0;
-                const learnedCount = deck.learnedCount || 0;
+               {userDecks.map((deck) => {
+                 const totalCount = deck.cards?.length ?? 0;
+                 const learnedCount = deck.learnedCount || 0;
                 const progress = totalCount > 0
                   ? Math.round((learnedCount / totalCount) * 100)
                   : 0;
@@ -392,7 +391,7 @@ export default function FlashcardsPage() {
                         ) : (
                           <div>
                             <h3 className="font-bold text-slate-800 leading-tight">{deck.title}</h3>
-                            <p className="text-xs text-slate-400 font-medium">{deck._count?.cards || 0} thẻ ghi nhớ</p>
+                            <p className="text-xs text-slate-400 font-medium">{deck.cards?.length ?? 0} thẻ ghi nhớ</p>
                           </div>
                         )}
                       </div>
