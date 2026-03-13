@@ -80,18 +80,16 @@ export default function QuizClient({ data, title, lessonId, isRoadmapMode, quest
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lessonId })
       }).then(() => {
-        console.log("Đã lưu bài tập thường");
         new BroadcastChannel('exercise-progress').postMessage({ lessonId });
       });
 
-      // 2. 👇 LOGIC MỚI: Lưu tiến độ Roadmap (Nếu có questId)
+      // 2.  LOGIC MỚI: Lưu tiến độ Roadmap (Nếu có questId)
       if (isRoadmapMode && questId) {
         fetch('/api/user/complete-quest', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ questId })
         }).then(() => {
-          console.log("✅ Đã lưu Quest Roadmap");
           queryClient.invalidateQueries({ queryKey: ['roadmap-progress'] });
           queryClient.invalidateQueries({ queryKey: ['dashboard-data'] });
         });

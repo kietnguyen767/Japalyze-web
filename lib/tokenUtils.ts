@@ -17,15 +17,9 @@ export function getTokenFromCookie(): string | null {
       .find(row => row.startsWith('session_token='))
       ?.split('=')[1];
     
-    if (token) {
-      console.log('🔑 [getTokenFromCookie] Token found:', token.substring(0, 20) + '...');
-    } else {
-      console.warn('⚠️ [getTokenFromCookie] No token found in cookies');
-    }
-    
-    return token || null;
+     return token || null;
   } catch (error) {
-    console.error('❌ [getTokenFromCookie] Error:', error);
+     console.error('[getTokenFromCookie] Error:', error);
     return null;
   }
 }
@@ -59,7 +53,7 @@ export function is401Error(status: number): boolean {
  * @param router Next router
  */
 export function handle401Error(router: any): void {
-  console.error('❌ 401 Unauthorized - Token expired or invalid');
+   console.error('401 Unauthorized - Token expired or invalid');
   alert('❌ Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
   router.push('/login');
 }

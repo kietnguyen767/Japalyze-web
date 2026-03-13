@@ -242,7 +242,7 @@ function VocabQuizView({
     generateQuiz();
   }, [sections]);
 
-  // 🔥 UPDATE LOGIC: Xử lý chọn và tự động cuộn
+  //  UPDATE LOGIC: Xử lý chọn và tự động cuộn
   const handleSelect = (qId: number, index: number, opt: string, correct: string, speak: string) => {
     if (userAnswers[qId]) return;
 
@@ -293,7 +293,6 @@ function VocabQuizView({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ questId })
         }).then(() => {
-          console.log('Saved roadmap quest progress');
           queryClient.invalidateQueries({ queryKey: ['roadmap-progress'] });
           queryClient.invalidateQueries({ queryKey: ['dashboard-data'] });
         });

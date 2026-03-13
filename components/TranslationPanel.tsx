@@ -491,7 +491,7 @@ export default function TranslationPanel() {
         resetTranslateMeta();
       }, 1000);
     } catch (error: any) {
-      console.error('❌ Lỗi lưu:', error);
+      console.error('Lỗi lưu:', error);
       alert('❌ Lỗi: ' + (error.message || 'Không xác định'));
     } finally {
       setProcessing(false);
