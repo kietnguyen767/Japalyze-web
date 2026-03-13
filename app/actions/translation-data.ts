@@ -1,60 +1,46 @@
 'use server'
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
-
-// 1. Lấy lịch sử dịch (Giống logic trong Dashboard của bạn nhưng chỉ lấy 10 dòng mới nhất)
+// getTranslationHistory: calls backend dashboard endpoint and extracts translation history
 export async function getTranslationHistory(userId: string) {
-    if (!userId) return { success: false, data: [] };
+  if (!userId) return { success: false, data: [] };
 
-    try {
-        const history = await prisma.translationHistory.findMany({
-            where: { userId: userId }, // Lọc theo User đang đăng nhập
-            take: 10,
-            orderBy: { createdAt: 'desc' },
-        });
-        return { success: true, data: history };
-    } catch (error) {
-        console.error("Lỗi lấy history:", error);
-        return { success: false, data: [] };
-    }
+  try {
+    const res = await fetch('http://localhost:5062/api/user/dashboard', {
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+    });
+    if (!res.ok) return { success: false, data: [] };
+    const json = await res.json();
+    // Dashboard returns { history: { translation: [...] } }
+    const history = json?.history?.translation ?? [];
+    return { success: true, data: history };
+  } catch {
+    return { success: false, data: [] };
+  }
 }
 
-// 2. Lấy từ vựng ngẫu nhiên cho Dashboard (Khi chưa dịch)
+// getDashboardVocabulary: calls backend random-vocabulary endpoint
 export async function getDashboardVocabulary() {
-    try {
-        // Helper function để lấy từ theo loại (PosTag) bằng Raw SQL để ngẫu nhiên nhanh hơn
-        const getWords = async (tag: string) => {
-            try {
-                // Sử dụng TABLESAMPLE hoặc ORDER BY RANDOM() để lấy dữ liệu ngẫu nhiên nhanh
-                // PostgreSQL: ORDER BY RANDOM() nhanh vừa đủ cho bảng cỡ này
-                return await prisma.$queryRaw`
-                    SELECT id, lemma, "meaningVi", romaji, "posTag"
-                    FROM "DictionaryEntry"
-                    WHERE "posTag" LIKE ${'%' + tag + '%'} 
-                      AND "meaningVi" IS NOT NULL
-                    ORDER BY RANDOM()
-                    LIMIT 4
-                `;
-            } catch (e) {
-                console.error(`Lỗi lấy từ random (${tag}):`, e);
-                return [];
-            }
-        };
-
-        const [nouns, verbs, adjs, others] = await Promise.all([
-            getWords('n'),   // Danh từ
-            getWords('v'),   // Động từ
-            getWords('adj'), // Tính từ
-            getWords('exp')  // Cụm từ/Khác
-        ]);
-
-        return {
-            success: true,
-            data: { nouns, verbs, adjs, others }
-        };
-    } catch (error) {
-        return { success: false, data: null };
-    }
+  try {
+    const res = await fetch('http://localhost:5062/api/dictionary/random-vocabulary', {
+      cache: 'no-store',
+    });
+    if (!res.ok) return { success: false, data: null };
+    const json = await res.json();
+    if (!json?.success) return { success: false, data: null };
+    // Backend returns { success: true, data: { Nouns, Verbs, Adjs, Others } } (PascalCase from C# records)
+    // Map to camelCase to match frontend expectations
+    const d = json.data;
+    return {
+      success: true,
+      data: {
+        nouns: d.nouns ?? d.Nouns ?? [],
+        verbs: d.verbs ?? d.Verbs ?? [],
+        adjs:  d.adjs  ?? d.Adjs  ?? [],
+        others: d.others ?? d.Others ?? [],
+      }
+    };
+  } catch {
+    return { success: false, data: null };
+  }
 }

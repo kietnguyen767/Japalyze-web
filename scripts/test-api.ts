@@ -3,7 +3,7 @@
  * Chạy: npx ts-node scripts/test-api.ts
  */
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5062';
 
 async function testRegisterAPI() {
   console.log('\n📝 Testing Register API...');

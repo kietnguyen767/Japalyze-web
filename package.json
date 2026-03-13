@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
@@ -15,16 +15,12 @@
     "@google/generative-ai": "^0.24.1",
     "@heroicons/react": "^2.2.0",
     "@payos/node": "^2.0.3",
-    "@prisma/client": "^5.22.0",
     "@tanstack/react-query": "^5.90.21",
-    "@upstash/redis": "^1.36.0",
     "ai": "^6.0.6",
-    "bcryptjs": "^3.0.3",
     "cloudinary": "^2.9.0",
     "dotenv": "^17.2.3",
     "enhanced-resolve": "^5.18.3",
     "framer-motion": "^12.26.2",
-    "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.560.0",
     "next": "16.0.8",
     "openai": "^6.16.0",
@@ -37,7 +33,6 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -45,7 +40,6 @@
     "baseline-browser-mapping": "^2.10.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.8",
-    "prisma": "^5.22.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
