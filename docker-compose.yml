@@ -1,0 +1,12 @@
+services:
+  fe:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: japalyze-fe-docker
+    ports:
+      - "3001:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://host.docker.internal:8080}
+    restart: unless-stopped
