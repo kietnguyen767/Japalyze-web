@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCache, setCache } from "@/lib/redis";
 import { createHash } from "node:crypto";
-import { Prisma } from "@prisma/client";
+// import { Prisma } from "@prisma/client"; // Temporary removal to fix build
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
         meaningVi: string | null;
         score: number;
       }>
-    >(Prisma.sql`
+    >((prisma as any).sql`
       SELECT
         id,
         lemma,
