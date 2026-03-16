@@ -52,7 +52,7 @@ export async function POST(request: Request) {
         where: { userId: userId as string },
         select: { questId: true }
       });
-      const completedSet = new Set(completed.map(c => c.questId));
+      const completedSet = new Set(completed.map((c: any) => c.questId));
 
       // Nếu toàn bộ sub-quest đã done → mark quest cha
       const allDone = group.subIds.every(id => completedSet.has(id));
