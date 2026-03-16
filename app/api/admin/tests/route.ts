@@ -10,7 +10,7 @@ export async function GET() {
     const tests = await prisma.mockTest.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
-        questions: { orderBy: { id: 'asc' } } 
+        questions: { orderBy: { id: 'asc' } }
       }
     });
     return NextResponse.json(tests);
@@ -62,7 +62,7 @@ export async function PUT(req: Request) {
     const body = await req.json();
     const { id, title, level, duration, isPremium, questions } = body;
 
-    const updatedTest = await prisma.$transaction(async (tx) => {
+    const updatedTest = await prisma.$transaction(async (tx: any) => {
       // 1. Update MockTest info
       const test = await tx.mockTest.update({
         where: { id },
