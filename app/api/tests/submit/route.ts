@@ -7,17 +7,17 @@ export async function POST(req: Request) {
   try {
     // 1. Xác thực người dùng
     const userId = await getUserId();
-    
+
     if (!userId) {
       return NextResponse.json(
-        { error: 'Unauthorized: Bạn cần đăng nhập để nộp bài' }, 
+        { error: 'Unauthorized: Bạn cần đăng nhập để nộp bài' },
         { status: 401 }
       );
     }
 
     // 2. Lấy dữ liệu gửi lên
     const body = await req.json();
-    const { testId, answers } = body; 
+    const { testId, answers } = body;
 
     if (!testId) {
       return NextResponse.json({ error: 'Thiếu thông tin bài thi' }, { status: 400 });
@@ -26,13 +26,13 @@ export async function POST(req: Request) {
     // 3. Lấy đề thi gốc từ DB để chấm điểm
     const test = await prisma.mockTest.findUnique({
       where: { id: testId },
-      include: { 
+      include: {
         questions: {
           select: {
             id: true,
             correctAnswer: true
           }
-        } 
+        }
       }
     });
 
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     let score = 0;
     let totalQuestions = test.questions.length;
 
-    test.questions.forEach((question) => {
+    test.questions.forEach((question: any) => {
       // So sánh đáp án (lưu ý answers gửi lên có thể thiếu câu trả lời nên cần check undefined)
       if (answers[question.id] !== undefined && Number(answers[question.id]) === question.correctAnswer) {
         score++;
@@ -62,8 +62,8 @@ export async function POST(req: Request) {
       }
     });
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       resultId: result.id,
       score: score,
       total: totalQuestions
@@ -72,7 +72,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("❌ [API Submit Test] Error:", error);
     return NextResponse.json(
-      { error: 'Lỗi máy chủ nội bộ', details: error.message }, 
+      { error: 'Lỗi máy chủ nội bộ', details: error.message },
       { status: 500 }
     );
   }
