@@ -5,7 +5,7 @@ const globalForPrisma = global as unknown as { prisma: any };
 
 export const prisma =
     globalForPrisma.prisma ||
-    new PrismaClient({
+    new (PrismaClient as any)({
         log: ['query'],
     });
 
