@@ -22,7 +22,7 @@ export default function TarotGamePage() {
     // Trạng thái lật mặt bài (Hình ảnh)
     const [flippedIndices, setFlippedIndices] = useState<boolean[]>([false, false, false]);
 
-    // 👇 SỬA Ở ĐÂY: Trạng thái xem ý nghĩa (Text) - Độc lập cho từng lá
+    //  SỬA Ở ĐÂY: Trạng thái xem ý nghĩa (Text) - Độc lập cho từng lá
     const [viewingMeanings, setViewingMeanings] = useState<boolean[]>([false, false, false]);
 
     const [aiResponse, setAiResponse] = useState('');
@@ -55,7 +55,7 @@ export default function TarotGamePage() {
             setTimeout(() => {
                 setSelectedCards(fetchedCards);
                 setFlippedIndices([false, false, false]);
-                // 👇 Reset trạng thái xem ý nghĩa về false hết
+                //  Reset trạng thái xem ý nghĩa về false hết
                 setViewingMeanings([false, false, false]);
                 setGameState('spread');
                 setHasAskedAi(false);
@@ -76,7 +76,7 @@ export default function TarotGamePage() {
         setFlippedIndices(newFlipped);
     };
 
-    // 👇 THÊM MỚI: Xử lý bật/tắt xem ý nghĩa (Text)
+    //  THÊM MỚI: Xử lý bật/tắt xem ý nghĩa (Text)
     const toggleMeaning = (index: number) => {
         const newMeanings = [...viewingMeanings];
         newMeanings[index] = !newMeanings[index]; // Chỉ đảo ngược lá bài được nhấn
@@ -202,7 +202,7 @@ export default function TarotGamePage() {
                                 const isFlipped = flippedIndices[index];
                                 const positionName = ["Quá Khứ", "Hiện Tại", "Tương Lai"][index];
 
-                                // 👇 Kiểm tra xem lá này có đang mở nghĩa không
+                                //  Kiểm tra xem lá này có đang mở nghĩa không
                                 const isViewingMeaning = viewingMeanings[index];
 
                                 return (
@@ -249,7 +249,7 @@ export default function TarotGamePage() {
                                                     className="w-full flex flex-col items-center"
                                                 >
                                                     <button
-                                                        // 👇 Sửa sự kiện onClick để dùng hàm toggle mới
+                                                        //  Sửa sự kiện onClick để dùng hàm toggle mới
                                                         onClick={() => toggleMeaning(index)}
                                                         className={`
                                                     flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all

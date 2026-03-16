@@ -13,7 +13,7 @@ function AuthSuccessContent() {
   const { login } = useAuth();
 
   useEffect(() => {
-    // ✅ FIX: guard cho TypeScript + App Router
+    //  FIX: guard cho TypeScript + App Router
     if (!searchParams) return;
 
     const token = searchParams.get('token');

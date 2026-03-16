@@ -19,7 +19,7 @@ export default function RegisterPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    // 🔒 KIỂM TRA ĐỘ MẠNH MẬT KHẨU TẠI FRONTEND
+    //  KIỂM TRA ĐỘ MẠNH MẬT KHẨU TẠI FRONTEND
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
     if (!passwordRegex.test(formData.password)) {
       alert('Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường và số.');
@@ -46,10 +46,9 @@ export default function RegisterPage() {
       }
 
       if (res.ok) {
-        // 🔥 LƯU TOKEN VÀO COOKIE
+        //  LƯU TOKEN VÀO COOKIE
         if (data.token) {
           document.cookie = `session_token=${data.token}; path=/; max-age=86400; SameSite=Lax`;
-          console.log("✅ Token đã lưu vào cookie");
         }
 
         // Tự động login
@@ -81,7 +80,7 @@ export default function RegisterPage() {
         {/* --- CỘT TRÁI: FORM --- */}
         <div className="md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-white relative">
 
-          {/* 🔥 NÚT QUAY LẠI (Desktop) 🔥 */}
+          {/*  NÚT QUAY LẠI (Desktop)  */}
           <Link href="/" className="hidden md:flex items-center gap-2 text-slate-400 hover:text-blue-600 transition-colors w-fit mb-6 font-medium text-sm group">
             <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Quay lại trang chủ
           </Link>

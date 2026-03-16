@@ -30,11 +30,11 @@ type SuggestItem = {
   meaningVi?: string | null;
 };
 
-// ✅ CẤU HÌNH MENU: Đã thêm lại "Bài tập"
+//  CẤU HÌNH MENU: Đã thêm lại "Bài tập"
 const NAV_ITEMS = [
   { href: '/translate', label: 'Dịch thuật', icon: Languages },    // 1. Công cụ chính
   { href: '/flashcards', label: 'Flashcards', icon: BookOpen },
-  { href: '/exercises', label: 'Bài tập', icon: ClipboardList },   // 3. ✅ Đã khôi phục       // 4. Giao lưu
+  { href: '/exercises', label: 'Bài tập', icon: ClipboardList },   // 3.  Đã khôi phục       // 4. Giao lưu
   { href: '/reading', label: 'Luyện đọc', icon: BookOpenText },    // 5. Kỹ năng đọc
   { href: '/tests', label: 'Thi thử', icon: FileText },            // 6. Luyện đề JLPT
   { href: '/roleplay', label: 'Roleplay AI', icon: Zap },          // 7. Luyện nói
@@ -115,7 +115,7 @@ export default function Navbar() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
 
-  // 📱 Mobile States
+  //  Mobile States
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
@@ -485,7 +485,7 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* ✨ MOBILE MENU DRAWER */}
+      {/*  MOBILE MENU DRAWER */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-[1001] lg:hidden">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>

@@ -335,10 +335,10 @@ export default function TestsTab({ mockTests, setMockTests }: TestsTabProps) {
             <h3 className="font-bold text-slate-800 text-lg mb-2 h-14 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors">
               {test.title}
             </h3>
-            <div className="flex items-center gap-4 text-slate-500 text-xs font-medium bg-slate-50 p-2 rounded-lg">
-              <span className="flex items-center gap-1"><Clock size={14} className="text-blue-500" /> {test.duration}p</span>
-              <span className="flex items-center gap-1"><FileQuestion size={14} className="text-purple-500" /> {test.questions?.length || test._count?.questions || 0} câu</span>
-            </div>
+             <div className="flex items-center gap-4 text-slate-500 text-xs font-medium bg-slate-50 p-2 rounded-lg">
+               <span className="flex items-center gap-1"><Clock size={14} className="text-blue-500" /> {test.duration}p</span>
+               <span className="flex items-center gap-1"><FileQuestion size={14} className="text-purple-500" /> {test.questions?.length || test.questionCount || 0} câu</span>
+             </div>
             <div className="flex gap-2 mt-5 transition-all">
               <button onClick={() => {
                 setEditingTestId(test.id); setTestTitle(test.title); setTestLevel(test.level);

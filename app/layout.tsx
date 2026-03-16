@@ -18,6 +18,7 @@ const beVietnamPro = Be_Vietnam_Pro({
 import MainLayout from "@/components/MainLayout";
 import { ToastProvider } from '@/context/ToastContext';
 import QueryProvider from '@/context/QueryProvider';
+import ApiFetchEnforcer from '@/components/ApiFetchEnforcer';
 
 export default function RootLayout({
   children,
@@ -31,6 +32,7 @@ export default function RootLayout({
         <SakuraEffect />
         <QueryProvider>
           <ToastProvider>
+            <ApiFetchEnforcer />
             <AuthProvider>
               <MainLayout>
                 {children}
@@ -42,4 +44,3 @@ export default function RootLayout({
     </html>
   );
 }
-

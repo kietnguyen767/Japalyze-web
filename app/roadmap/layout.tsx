@@ -21,7 +21,6 @@ export default function RoadmapLayout({ children }: { children: React.ReactNode 
         if (!loading) {
             // Nếu không có user -> Chuyển hướng về login kèm theo callback path nếu cần
             if (!user) {
-                console.log('Roadmap protection: Unauthorized access to', pathname);
                 router.push('/login');
             }
         }

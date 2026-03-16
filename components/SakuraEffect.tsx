@@ -11,7 +11,7 @@ type SakuraPetal = {
   fontSize: string;
   color: string;
   opacity: number;
-  isPetal: boolean; // true = '❀', false = '🌸'
+   isPetal: boolean; // true = petal character, false = flower character
 };
 
 export default function SakuraEffect() {

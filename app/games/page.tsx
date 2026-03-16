@@ -19,7 +19,7 @@ const GAMES = [
     icon: Swords,
     secondaryIcon: Keyboard,
     color: 'from-red-500 to-orange-600',
-    // 👇 THÊM DÒNG NÀY: Màu chữ cụ thể cho Icon chính
+    //  THÊM DÒNG NÀY: Màu chữ cụ thể cho Icon chính
     textColor: 'text-red-600',
     shadow: 'shadow-red-200',
     tags: ['Nhập vai (RPG)', 'Gõ máy', 'Phản xạ'],
@@ -34,7 +34,7 @@ const GAMES = [
     icon: Moon,
     secondaryIcon: Flower2,
     color: 'from-violet-500 to-indigo-600',
-    // 👇 THÊM DÒNG NÀY: Màu chữ cụ thể cho Icon chính
+    //  THÊM DÒNG NÀY: Màu chữ cụ thể cho Icon chính
     textColor: 'text-violet-600',
     shadow: 'shadow-violet-200',
     tags: ['Văn hóa', 'Đọc hiểu', 'Thư giãn'],
@@ -95,7 +95,7 @@ export default function GamesPage() {
                   <div className="flex items-center gap-5">
                     {/* KHỐI CHỨA ICON CHÍNH */}
                     <div className="w-16 h-16 bg-white/90 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                      {/* 👇 ĐÃ SỬA: Dùng textColor thay vì bg-clip-text */}
+                      {/*  ĐÃ SỬA: Dùng textColor thay vì bg-clip-text */}
                       <game.icon size={32} className={game.textColor} />
                     </div>
 

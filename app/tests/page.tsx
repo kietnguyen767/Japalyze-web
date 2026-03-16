@@ -33,7 +33,7 @@ export type MockTest = {
   duration: number;
   isPremium: boolean;
   questions: Question[];
-  _count?: { questions: number };
+  questionCount: number;
 };
 
 
@@ -266,7 +266,7 @@ export default function TestsPage() {
                           <Clock size={14} className="text-slate-400" /> {test.duration} phút
                         </div>
                         <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
-                          <FileText size={14} className="text-slate-400" /> {test._count?.questions || 0} câu
+                           <FileText size={14} className="text-slate-400" /> {test.questionCount || 0} câu
                         </div>
                       </div>
                     </div>

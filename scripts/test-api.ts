@@ -3,10 +3,10 @@
  * Chạy: npx ts-node scripts/test-api.ts
  */
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5062';
 
 async function testRegisterAPI() {
-  console.log('\n📝 Testing Register API...');
+  console.log('\n Testing Register API...');
   try {
     const response = await fetch(`${BASE_URL}/api/auth/register`, {
       method: 'POST',
@@ -26,7 +26,7 @@ async function testRegisterAPI() {
 }
 
 async function testLoginAPI() {
-  console.log('\n🔑 Testing Login API...');
+  console.log('\n Testing Login API...');
   try {
     const response = await fetch(`${BASE_URL}/api/auth/login`, {
       method: 'POST',
@@ -45,7 +45,7 @@ async function testLoginAPI() {
 }
 
 async function testTranslateAPI() {
-  console.log('\n🌐 Testing Translate API...');
+  console.log('\n Testing Translate API...');
   try {
     const response = await fetch(`${BASE_URL}/api/translate`, {
       method: 'POST',
@@ -64,11 +64,11 @@ async function testTranslateAPI() {
 }
 
 async function runTests() {
-  console.log('🚀 Starting API Tests...');
+  console.log(' Starting API Tests...');
   await testRegisterAPI();
   await testLoginAPI();
   await testTranslateAPI();
-  console.log('\n✅ Tests completed!');
+  console.log('\n Tests completed!');
   process.exit(0);
 }
 

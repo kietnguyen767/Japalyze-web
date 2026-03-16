@@ -43,7 +43,7 @@ export default function OverviewTab({ counts }: OverviewTabProps) {
           }
         }
       } catch (error) {
-        console.error('❌ Error fetching chart data:', error);
+        console.error('Error fetching chart data:', error);
       } finally {
         setLoading(false);
       }

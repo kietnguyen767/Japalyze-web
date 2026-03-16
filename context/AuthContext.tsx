@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiFetch } from '@/lib/apiClient';
 
 export interface User {
   id?: string;
@@ -38,7 +39,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Hàm gọi API
   const fetchUser = async () => {
     try {
-      const res = await fetch('/api/auth/me');
+      const res = await apiFetch('/api/auth/me');
       if (res.ok) {
         const data = await res.json();
         setUser(data.user);
@@ -68,6 +69,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(parsedUser);
           // 💡 QUAN TRỌNG: Nếu đã có dữ liệu local, cho phép hiện UI ngay 
           // rồi cập nhật ngầm (Background Refresh)
+          // Tối ưu: Nếu đã có user từ localStorage, hãy tắt loading ngay để hiện UI
           setLoading(false);
         } catch {
           localStorage.removeItem('user_session');

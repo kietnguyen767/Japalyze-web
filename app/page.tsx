@@ -2,6 +2,7 @@
 'use client';
 
 import { useAuth, User } from '@/context/AuthContext';
+import { apiFetch } from '@/lib/apiClient';
 import Link from "next/link";
 import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -83,7 +84,7 @@ function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: ()
     const { data, isLoading: loadingData } = useQuery<DashboardData | null>({
         queryKey: ['dashboard-data', user?.id],
         queryFn: async () => {
-            const res = await fetch('/api/user/dashboard');
+            const res = await apiFetch('/api/user/dashboard');
             if (!res.ok) throw new Error('API Error');
             return res.json();
         },
@@ -452,7 +453,7 @@ function OnboardingModal({ onFinish, onSkip }: { onFinish: () => void, onSkip: (
     const handleSubmit = async (level: string) => {
         setLoading(true);
         try {
-            const res = await fetch('/api/user/update-profile', {
+            const res = await apiFetch('/api/user/update-profile', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -474,7 +475,7 @@ function OnboardingModal({ onFinish, onSkip }: { onFinish: () => void, onSkip: (
     const handleSkipAction = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/user/update-profile', {
+            const res = await apiFetch('/api/user/update-profile', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

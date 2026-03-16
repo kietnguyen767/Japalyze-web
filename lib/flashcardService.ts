@@ -25,27 +25,20 @@ export const FlashcardService = {
     if (typeof document === 'undefined') return null;
     
     try {
-      console.log('🔍 [FlashcardService] getToken() - Đang tìm token từ cookie');
-      console.log('🔍 [FlashcardService] document.cookie:', document.cookie || '(empty)');
-      
       // Cách 1: Tìm session_token
       const cookieArray = document.cookie.split(';');
-      console.log('🔍 [FlashcardService] cookieArray.length:', cookieArray.length);
       
       for (let cookie of cookieArray) {
         const [name, value] = cookie.trim().split('=');
-        console.log(`🔍 [FlashcardService] Cookie: name='${name}', hasValue=${!!value}`);
         if (name === 'session_token' && value) {
           const decoded = decodeURIComponent(value);
-          console.log('✅ [FlashcardService] Tìm thấy token:', decoded.substring(0, 20) + '...');
           return decoded;
         }
       }
       
-      console.warn('⚠️ [FlashcardService] Không tìm thấy session_token trong cookie');
       return null;
     } catch (error) {
-      console.error('❌ [FlashcardService] Lỗi lấy token:', error);
+      console.error('[FlashcardService] Error retrieving token:', error);
       return null;
     }
   },
@@ -54,40 +47,27 @@ export const FlashcardService = {
   getDecks: async (): Promise<Deck[]> => {
     try {
       const token = FlashcardService.getToken();
-      console.log('🔑 [FlashcardService.getDecks] token:', token ? token.substring(0, 20) + '...' : 'NULL');
       
       const headers: HeadersInit = { 'Content-Type': 'application/json' };
       
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
-        console.log('🔑 [FlashcardService.getDecks] Gửi Authorization header: Bearer ' + token.substring(0, 20) + '...');
-      } else {
-        console.warn('⚠️ [FlashcardService.getDecks] ⚠️ KHÔNG CÓ TOKEN - Gửi request mà không Authorization');
       }
 
-      console.log('📤 [FlashcardService.getDecks] GET /api/flashcards/decks');
-      console.log('📤 [FlashcardService.getDecks] Headers:', {
-        'Content-Type': headers['Content-Type'],
-        'Authorization': headers['Authorization'] ? headers['Authorization'].substring(0, 30) + '...' : 'NONE'
-      });
-      
       const res = await fetch(`/api/flashcards/decks`, { 
         headers,
         cache: 'no-store' 
       });
       
-      console.log('📥 [FlashcardService.getDecks] Response status:', res.status);
-      
       if (!res.ok) {
         const errorText = await res.text();
-        console.error('❌ [FlashcardService.getDecks] Lỗi:', res.status, errorText);
+        console.error('[FlashcardService.getDecks] Error:', res.status, errorText);
         return [];
       }
       const data = await res.json();
-      console.log('✅ [FlashcardService.getDecks] Lấy thành công:', data.decks?.length || 0, 'decks');
       return data.decks || [];
     } catch (error) {
-      console.error("❌ [FlashcardService.getDecks] Exception:", error);
+      console.error("[FlashcardService.getDecks] Exception:", error);
       return [];
     }
   },
@@ -96,10 +76,7 @@ export const FlashcardService = {
 
   createDeck: async (title: string, description?: string): Promise<Deck> => {
     try {
-      console.log('🎴 Tạo deck:', { title, description });
-      
       const token = FlashcardService.getToken();
-      console.log('🔑 Token:', token ? 'có' : 'không');
       
       const headers: HeadersInit = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -113,14 +90,13 @@ export const FlashcardService = {
       const data = await res.json();
       
       if (!res.ok) {
-        console.error('❌ API lỗi:', res.status, data);
+        console.error('[FlashcardService.createDeck] API error:', res.status, data);
         throw new Error(data.error || data.details || `Lỗi tạo deck (${res.status})`);
       }
       
-      console.log('✅ Deck tạo thành công:', data.id);
       return data;
     } catch (error: any) {
-      console.error('❌ Lỗi createDeck:', error);
+      console.error('[FlashcardService.createDeck] Error:', error);
       throw error;
     }
   },
@@ -139,7 +115,7 @@ export const FlashcardService = {
       if (!res.ok) throw new Error('Lỗi thêm thẻ');
       return await res.json();
     } catch (error) {
-      console.error("Lỗi thêm thẻ:", error);
+      console.error("Error adding card:", error);
       throw error;
     }
   },
@@ -158,7 +134,7 @@ export const FlashcardService = {
       if (!res.ok) throw new Error('Lỗi cập nhật thẻ');
       return await res.json();
     } catch (error) {
-      console.error("Lỗi cập nhật thẻ:", error);
+      console.error("Error updating card:", error);
       throw error;
     }
   },
@@ -175,7 +151,7 @@ export const FlashcardService = {
       });
       if (!res.ok) throw new Error('Lỗi xóa thẻ');
     } catch (error) {
-      console.error("Lỗi xóa thẻ:", error);
+      console.error("Error deleting card:", error);
       throw error;
     }
   },
@@ -192,7 +168,7 @@ export const FlashcardService = {
       });
       if (!res.ok) throw new Error('Lỗi xóa deck');
     } catch (error) {
-      console.error("Lỗi xóa deck:", error);
+      console.error("Error deleting deck:", error);
       throw error;
     }
   },
@@ -211,7 +187,7 @@ export const FlashcardService = {
       if (!res.ok) throw new Error('Lỗi cập nhật deck');
       return await res.json();
     } catch (error) {
-      console.error("Lỗi cập nhật deck:", error);
+      console.error("Error updating deck:", error);
       throw error;
     }
   },

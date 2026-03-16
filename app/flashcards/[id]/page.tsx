@@ -29,7 +29,6 @@ type Deck = {
   title: string;
   description?: string | null;
   cards: Card[];
-  _count?: { cards: number };
 };
 
 export default function DeckDetailPage() {
@@ -68,7 +67,7 @@ export default function DeckDetailPage() {
         const data = await res.json();
         return data || null;
       } catch (e) {
-        console.error('❌ Error fetching deck:', e);
+        console.error('Error fetching deck:', e);
         return null;
       }
     },
@@ -265,7 +264,7 @@ export default function DeckDetailPage() {
       }
 
     } catch (e) {
-      console.error("❌ Lỗi xóa:", e);
+      console.error("Lỗi xóa:", e);
       showToast('Lỗi hệ thống khi xóa', 'error');
     }
   };
@@ -325,7 +324,7 @@ export default function DeckDetailPage() {
         body: JSON.stringify({ rating })
       });
     } catch (e) {
-      console.error('❌ [handleRateCard] Error:', e);
+      console.error('[handleRateCard] Error:', e);
     }
   };
 

@@ -45,18 +45,9 @@ export default function LoginPage() {
         throw new Error(data.message || 'Đăng nhập thất bại');
       }
 
-      // 🔥 LƯU TOKEN VÀO COOKIE
+      //  LƯU TOKEN VÀO COOKIE
       if (data.token) {
-        console.log('🔑 Token từ API:', data.token.substring(0, 20) + '...');
         document.cookie = `session_token=${data.token}; path=/; max-age=86400; SameSite=Lax`;
-        console.log("✅ Token đã lưu vào cookie");
-
-        // Verify token được lưu
-        const cookieToken = document.cookie
-          .split('; ')
-          .find(row => row.startsWith('session_token='))
-          ?.split('=')[1];
-        console.log('🔐 Verify cookie token:', cookieToken?.substring(0, 20) + '...');
       }
 
       login(data.user);
@@ -110,7 +101,7 @@ export default function LoginPage() {
         {/* --- CỘT PHẢI: FORM --- */}
         <div className="md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-white relative">
 
-          {/* 🔥 NÚT QUAY LẠI (Desktop) 🔥 */}
+          {/*  NÚT QUAY LẠI (Desktop)  */}
           <Link href="/" className="hidden md:flex items-center gap-2 text-slate-400 hover:text-blue-600 transition-colors w-fit mb-6 font-medium text-sm group">
             <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Quay lại trang chủ
           </Link>

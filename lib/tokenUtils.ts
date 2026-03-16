@@ -16,7 +16,6 @@ export function getTokenFromCookie(): string | null {
       .split('; ')
       .find(row => row.startsWith('session_token='))
       ?.split('=')[1];
-
     if (token) {
       console.log('🔑 [getTokenFromCookie] Token found:', token.substring(0, 20) + '...');
     } else {
@@ -25,7 +24,7 @@ export function getTokenFromCookie(): string | null {
 
     return token || null;
   } catch (error) {
-    console.error('❌ [getTokenFromCookie] Error:', error);
+    console.error('[getTokenFromCookie] Error:', error);
     return null;
   }
 }
