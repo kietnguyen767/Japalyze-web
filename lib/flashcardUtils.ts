@@ -7,16 +7,29 @@ import { SAMPLE_DECKS } from './flashcardData';
  */
 export async function ensureSampleDeck(userId: string) {
     try {
-        // 0. KIỂM TRA NHANH: Nếu user đã có bất kỳ bộ thẻ nào (kể cả mẫu hay tự tạo), bỏ qua.
-        // Điều này giúp tránh chạy logic dọn dẹp/cập nhật phức tạp mỗi lần load trang.
-        const deckCount = await prisma.deck.count({ where: { userId } });
-        if (deckCount > 0) {
+        // 0. KIỂM TRA USER TỒN TẠI TRONG DB: Nhằm tránh lỗi Foreign Key P2003 nếu session tồn tại nhưng user đã bị xóa.
+        const userExists = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
+        if (!userExists) {
+            console.warn(`⚠️ User ${userId} not found in database. Skipping sample deck initialization.`);
             return;
         }
 
-        console.log(`🚀 Initializing sample decks for user ${userId}...`);
+        // 1. KIỂM TRA NHANH: Nếu user đã có đủ các bộ thẻ mẫu, bỏ qua.
+        const sampleCount = await prisma.deck.count({
+            where: {
+                userId,
+                description: { contains: '[SAMPLE]' }
+            }
+        });
 
-        // 1. DỌN DẸP & ĐỒNG BỘ (Chỉ chạy khi deckCount === 0 - trường hợp hiếm hoặc lần đầu)
+        // Nếu đã có đủ số lượng mẫu (hoặc tương đương), ta không cần tạo lại.
+        if (sampleCount >= SAMPLE_DECKS.length) {
+            return;
+        }
+
+        console.log(`🚀 Initializing/Syncing sample decks for user ${userId}...`);
+
+        // 2. DỌN DẸP & ĐỒNG BỘ 
         const currentSampleTitles = SAMPLE_DECKS.map(s => s.title);
 
         // (Logic này thực tế chỉ cần thiết nếu ta muốn "reset" mẫu, 
@@ -30,8 +43,18 @@ export async function ensureSampleDeck(userId: string) {
             }
         });
 
-        // 2. Tạo các bộ thẻ mẫu
+        // 3. Tạo các bộ thẻ mẫu (chỉ tạo những bộ chưa có)
+        const existingSamples = await prisma.deck.findMany({
+            where: { userId, description: { contains: '[SAMPLE]' } },
+            select: { title: true }
+        });
+        const existingTitles = existingSamples.map(s => s.title);
+
         for (const sample of SAMPLE_DECKS) {
+            if (existingTitles.includes(sample.title)) {
+                continue; // Bỏ qua nếu đã có
+            }
+
             await prisma.deck.create({
                 data: {
                     title: sample.title,

@@ -44,7 +44,8 @@ export async function POST(request: Request) {
         return NextResponse.json({ message: 'Cập nhật mật khẩu thành công!' });
 
     } catch (error) {
-        console.error('Reset Password Error:', error);
+        const err = error as { message?: string };
+        console.error('Reset Password Error:', err.message);
         return NextResponse.json({ message: 'Lỗi server' }, { status: 500 });
     }
 }

@@ -11,6 +11,7 @@ import {
     AlertCircle, Award, Gauge, Languages, ChevronLeft, ArrowRight
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getTokenFromCookie, createAuthHeaders } from '@/lib/tokenUtils';
 
 
 // --- HELPERS & COMPONENTS ---
@@ -379,7 +380,24 @@ export default function ReadingPage() {
                 ) : filteredArticles.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         {filteredArticles.map((item) => (
-                            <Link href={`/reading/${item.id}`} key={item.id} className="group">
+                            <Link
+                                href={`/reading/${item.id}`}
+                                key={item.id}
+                                className="group"
+                                onMouseEnter={async () => {
+                                    await queryClient.prefetchQuery({
+                                        queryKey: ['reading-article', String(item.id)],
+                                        queryFn: async () => {
+                                            const token = getTokenFromCookie();
+                                            const headers = createAuthHeaders(token);
+                                            const res = await fetch(`/api/reading/${item.id}`, { headers });
+                                            if (res.ok) return res.json();
+                                            return null;
+                                        },
+                                        staleTime: 5 * 60 * 1000,
+                                    });
+                                }}
+                            >
                                 <div className="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 h-full flex flex-col">
                                     <div className="relative h-48 bg-slate-200 flex items-center justify-center overflow-hidden">
                                         {item.image ? <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" /> : <BookOpenText size={40} className="text-slate-400" />}

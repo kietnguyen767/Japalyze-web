@@ -9,10 +9,12 @@ export default function QueryProvider({ children }: { children: React.ReactNode 
             queries: {
                 // Giữ dữ liệu trong 5 phút trước khi coi là cũ
                 staleTime: 5 * 60 * 1000,
-                // Giữ dữ liệu trong cache 10 phút kể cả khi không dùng
-                gcTime: 10 * 60 * 1000,
+                // Giữ dữ liệu trong cache 30 phút (gcTime thay thế cacheTime trong v5)
+                gcTime: 30 * 60 * 1000,
                 // Tắt refetch khi focus cửa sổ để tránh load quá nhiều
                 refetchOnWindowFocus: false,
+                // Thử lại tối đa 1 lần nếu lỗi mạng
+                retry: 1,
             },
         },
     }));

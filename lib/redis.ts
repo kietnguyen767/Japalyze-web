@@ -1,10 +1,16 @@
 import { Redis } from '@upstash/redis';
 
-// 1. Khởi tạo Client (Dùng biến môi trường UPSTASH...)
-// Nếu chưa cấu hình biến môi trường, nó sẽ báo lỗi rõ ràng.
+// 1. Khởi tạo Client (Sử dụng check để tránh crash nếu thiếu biến môi trường)
+const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
+const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+if (!redisUrl || !redisToken) {
+  console.error('❌ LỖI: Thiếu cấu hình UPSTASH_REDIS_REST_URL hoặc TOKEN trong .env');
+}
+
 const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+  url: redisUrl || '',
+  token: redisToken || '',
 });
 
 // --- HELPER FUNCTIONS ---
@@ -21,7 +27,7 @@ export async function setCache(key: string, value: any, ttl: number = 3600): Pro
 export async function getCache<T = any>(key: string): Promise<T | null> {
   try {
     const data = await redis.get<T>(key);
-    return data; 
+    return data;
   } catch (error) {
     console.error(`Lỗi lấy cache key "${key}":`, error);
     return null;

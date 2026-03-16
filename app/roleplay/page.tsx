@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, Sparkles, Check, Crown, Lock, Globe, MessageSquare, Zap, X, CheckCircle2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
 // Import TOPICS từ logic
 import { CHARACTERS, Character, TOPICS, Topic } from './logic';
 import ChatSession from '@/components/roleplay/ChatSession';
@@ -19,6 +20,7 @@ const getCookie = (name: string) => {
 export default function RoleplayPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedChar, setSelectedChar] = useState<Character | null>(null);
@@ -122,7 +124,10 @@ export default function RoleplayPage() {
                 <div
                   key={char.id}
                   onClick={() => handleCharacterSelect(char)}
-                  onMouseEnter={() => setHoveredChar(char.id)}
+                  onMouseEnter={() => {
+                    setHoveredChar(char.id);
+                    // Prefetch logic if Roleplay scenario data moves to API in future
+                  }}
                   onMouseLeave={() => setHoveredChar(null)}
                   className={`bg-white p-5 rounded-3xl border-2 cursor-pointer transition-all duration-300 relative overflow-hidden group ${hoveredChar === char.id ? 'border-blue-400 shadow-xl scale-[1.02]' : 'border-slate-100 shadow-sm'
                     }`}

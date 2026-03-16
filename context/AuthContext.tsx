@@ -60,28 +60,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const initAuth = async () => {
-      setLoading(true);
-
-      // 1. Lấy LocalStorage để hiện nhanh
+      // 1. Lấy LocalStorage để hiện nhanh UI (Optimistic Rendering)
       const storedUser = localStorage.getItem('user_session');
       if (storedUser) {
         try {
-          setUser(JSON.parse(storedUser));
-          // 🔥 Tối ưu: Nếu đã có user từ localStorage, hãy tắt loading ngay để hiện UI
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+          // 💡 QUAN TRỌNG: Nếu đã có dữ liệu local, cho phép hiện UI ngay 
+          // rồi cập nhật ngầm (Background Refresh)
           setLoading(false);
         } catch {
           localStorage.removeItem('user_session');
         }
       }
 
-      // 2. Gọi Server Check ngầm
-      const apiCheck = fetchUser();
-      const timeout = new Promise((resolve) => setTimeout(resolve, 1500));
-
-      await Promise.race([apiCheck, timeout]);
-
-      // 3. Đảm bảo tắt loading nếu bước 1 không có user
-      setLoading(false);
+      // 2. Gọi Server Check để đồng bộ trạng thái thực tế
+      try {
+        await fetchUser();
+      } finally {
+        // Đảm bảo loading tắt dù có user local hay không
+        setLoading(false);
+      }
     };
 
     initAuth();

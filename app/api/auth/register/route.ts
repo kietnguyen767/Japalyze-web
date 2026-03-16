@@ -54,15 +54,16 @@ export async function POST(request: Request) {
     console.log('💾 Lưu vào Redis - Key:', redisKey, '| Value:', userIdString);
 
     try {
-      const setResult = await redis.setex(redisKey, 86400, userIdString);
-      console.log('✅ redis.setex OK - Result:', setResult);
+      const setResult = await redis.set(redisKey, userIdString, { ex: 86400 });
+      console.log('✅ redis.set OK - Result:', setResult);
 
       // Verify ngay lập tức
       const verify = await redis.get(redisKey);
       console.log('🔍 Verify Redis - Retrieved:', verify, '| Expected:', userIdString, '| Match:', verify === userIdString ? '✅' : '❌');
-    } catch (redisError: any) {
-      console.error('❌ REDIS ERROR:', redisError.message);
-      throw redisError;
+    } catch (redisError) {
+      const err = redisError as { message?: string };
+      console.error('❌ REDIS ERROR:', err.message);
+      throw err;
     }
 
     return NextResponse.json({
@@ -71,7 +72,8 @@ export async function POST(request: Request) {
       token: sessionToken
     }, { status: 201 });
   } catch (error) {
-    console.error('Register Error:', error);
-    return NextResponse.json({ message: 'Lỗi server' }, { status: 500 });
+    const err = error as { message?: string };
+    console.error('❌ Register API error:', err.message);
+    return NextResponse.json({ message: err.message || 'Lỗi server' }, { status: 500 });
   }
 }

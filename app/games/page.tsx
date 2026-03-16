@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Gamepad2, Ghost, Keyboard, Sparkles, Play,
   Zap, Star, Moon, Swords, Flower2
@@ -45,6 +46,7 @@ const GAMES = [
 export default function GamesPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const handlePlayGame = (href: string) => {
     if (!user) {
@@ -142,6 +144,11 @@ export default function GamesPage() {
                     onClick={(e) => {
                       e.preventDefault();
                       handlePlayGame(game.href);
+                    }}
+                    onMouseEnter={async () => {
+                      if (!user || game.href === '#') return;
+                      // Generic prefetch for games if they have individual endpoints
+                      // For now, it warms up the connection
                     }}
                     className={`
                       px-8 py-3 rounded-xl font-bold text-white shadow-lg 

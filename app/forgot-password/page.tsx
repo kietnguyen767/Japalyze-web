@@ -25,10 +25,20 @@ export default function ForgotPasswordPage() {
             if (res.ok) {
                 setSubmitted(true);
             } else {
-                const data = await res.json();
-                setError(data.message || 'Đã xảy ra lỗi');
+                const contentType = res.headers.get('content-type');
+                let data: any = {};
+
+                if (contentType && contentType.includes('application/json')) {
+                    data = await res.json();
+                    setError(data.message || 'Đã xảy ra lỗi');
+                } else {
+                    const text = await res.text();
+                    console.error('❌ Non-JSON response:', text);
+                    setError(`Server Error: ${res.status}`);
+                }
             }
         } catch (err) {
+            console.error('Forgot password submission error:', err);
             setError('Lỗi kết nối server');
         } finally {
             setLoading(false);

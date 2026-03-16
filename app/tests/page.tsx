@@ -274,6 +274,18 @@ export default function TestsPage() {
                     {/* Action Button */}
                     <button
                       onClick={() => handleStartTest(test.id, test.isPremium)}
+                      onMouseEnter={async () => {
+                        if (isLocked) return;
+                        await queryClient.prefetchQuery({
+                          queryKey: ['test-detail', test.id],
+                          queryFn: async () => {
+                            const res = await fetch(`/api/tests/${test.id}`);
+                            if (!res.ok) throw new Error('Failed to fetch test detail');
+                            return res.json();
+                          },
+                          staleTime: 10 * 60 * 1000,
+                        });
+                      }}
                       disabled={isLocked}
                       className={`
                                         w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-sm

@@ -6,12 +6,13 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 // 👇 Thêm ArrowLeft vào import
-import { Mail, Lock, User, ArrowRight, Loader2, Sparkles, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Loader2, Sparkles, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({ email: '', password: '', name: '' });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const { login } = useAuth();
 
@@ -33,7 +34,16 @@ export default function RegisterPage() {
         body: JSON.stringify(formData),
       });
 
-      const data = await res.json();
+      const contentType = res.headers.get('content-type');
+      let data: any = {};
+
+      if (contentType && contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        console.error('❌ Non-JSON response:', text);
+        throw new Error(`Server Error: ${res.status} ${res.statusText}`);
+      }
 
       if (res.ok) {
         // 🔥 LƯU TOKEN VÀO COOKIE
@@ -44,11 +54,10 @@ export default function RegisterPage() {
 
         // Tự động login
         login(data.user);
-        router.push('/');
       } else {
         alert(data.message || 'Đăng ký thất bại');
       }
-    } catch (error) {
+    } catch (err) {
       alert('Đã xảy ra lỗi kết nối');
     } finally {
       setLoading(false);
@@ -116,12 +125,19 @@ export default function RegisterPage() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Tối thiểu 8 ký tự (A, a, 1)"
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full pl-10 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   required
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors p-1"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
               </div>
               <p className="text-[10px] text-slate-400 mt-1">Mật khẩu cần tối thiểu 8 ký tự, có chữ hoa, thường và số.</p>
             </div>
@@ -172,7 +188,7 @@ export default function RegisterPage() {
               Tham gia cùng hàng nghìn học viên khác. Luyện tập Kaiwa, làm bài tập và thăng hạng mỗi ngày.
             </p>
             <div className="mt-8 p-4 bg-white/10 backdrop-blur-md rounded-xl text-left border border-white/20">
-              <p className="text-sm italic mb-2">"Nhờ JapaLyze mà mình đã đỗ N3 chỉ sau 3 tháng luyện tập. Flashcard và Roleplay AI thực sự hữu ích!"</p>
+              <p className="text-sm italic mb-2">&quot;Nhờ JapaLyze mà mình đã đỗ N3 chỉ sau 3 tháng luyện tập. Flashcard và Roleplay AI thực sự hữu ích!&quot;</p>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center text-slate-900 font-bold">L</div>
                 <span className="text-xs font-bold">Linh Chi - Học viên</span>

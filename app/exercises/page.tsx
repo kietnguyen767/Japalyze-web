@@ -182,6 +182,19 @@ export default function ExercisesPage() {
                       key={lesson.id}
                       href={`/exercises/${lesson.id}`}
                       onClick={(e) => isLocked ? handleLockedClick(e, missingItems) : null}
+                      onMouseEnter={async () => {
+                        if (!user) return;
+                        // Prefetch progress data (already in list, but ensures fresh data if needed)
+                        await queryClient.prefetchQuery({
+                          queryKey: ['exercise-progress'],
+                          queryFn: async () => {
+                            const res = await fetch('/api/exercises/progress');
+                            if (res.ok) return res.json();
+                            return { completed: [], isPremium: false };
+                          },
+                          staleTime: 5 * 60 * 1000,
+                        });
+                      }}
                       className={`relative flex items-center gap-3 p-4 bg-white rounded-xl border shadow-sm transition
                         ${isCompleted ? 'border-green-200 bg-green-50/30' : 'border-slate-200'}
                         ${isLocked ? 'opacity-60 cursor-not-allowed grayscale' : 'hover:border-blue-400 hover:shadow-md'}

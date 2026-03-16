@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { getTokenFromCookie, createAuthHeaders } from '@/lib/tokenUtils';
 
 // --- Types ---
 type SuggestItem = {
@@ -51,6 +53,48 @@ function getCookie(name: string) {
 export default function Navbar() {
   const { user, logout, refreshUser } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
+
+  // --- PREFETCH LOGIC ---
+  const prefetchFeature = async (href: string) => {
+    const token = getTokenFromCookie();
+    const headers = createAuthHeaders(token);
+
+    if (href === '/flashcards') {
+      await queryClient.prefetchQuery({
+        queryKey: ['decks'],
+        queryFn: async () => {
+          const res = await fetch('/api/flashcards/decks', { headers });
+          if (res.ok) {
+            const data = await res.json();
+            return data.decks || [];
+          }
+          return [];
+        },
+        staleTime: 5 * 60 * 1000,
+      });
+    } else if (href === '/reading') {
+      await queryClient.prefetchQuery({
+        queryKey: ['reading-articles'],
+        queryFn: async () => {
+          const res = await fetch('/api/reading', { headers });
+          if (res.ok) return res.json();
+          return [];
+        },
+        staleTime: 5 * 60 * 1000,
+      });
+    } else if (href === '/exercises') {
+      await queryClient.prefetchQuery({
+        queryKey: ['exercise-progress'],
+        queryFn: async () => {
+          const res = await fetch('/api/exercises/progress', { headers });
+          if (res.ok) return res.json();
+          return { completed: [], isPremium: false };
+        },
+        staleTime: 5 * 60 * 1000,
+      });
+    }
+  };
 
   // --- STATES ---
   const [query, setQuery] = useState('');
@@ -337,6 +381,7 @@ export default function Navbar() {
               <button
                 key={item.href}
                 onClick={() => handleNavClick(item.href)}
+                onMouseEnter={() => prefetchFeature(item.href)}
                 className="p-2.5 text-slate-500 rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-all group relative"
               >
                 <item.icon size={20} />

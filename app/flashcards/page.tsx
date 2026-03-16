@@ -302,6 +302,20 @@ export default function FlashcardsPage() {
                           }
                           router.push(`/flashcards/${deck.id}`);
                         }}
+                        onMouseEnter={async () => {
+                          if (!user) return;
+                          await queryClient.prefetchQuery({
+                            queryKey: ['deck', deck.id],
+                            queryFn: async () => {
+                              const token = getTokenFromCookie();
+                              const headers = createAuthHeaders(token);
+                              const res = await fetch(`/api/flashcards/decks/${deck.id}`, { headers });
+                              if (res.ok) return await res.json();
+                              return null;
+                            },
+                            staleTime: 5 * 60 * 1000,
+                          });
+                        }}
                         className="w-full flex items-center justify-between bg-indigo-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-indigo-700 transition-all group/btn shadow-lg shadow-indigo-100 active:scale-95"
                       >
                         <span className="text-sm">Bắt đầu học ngay</span>
@@ -431,6 +445,20 @@ export default function FlashcardsPage() {
                       </div>
                       <button
                         onClick={() => router.push(`/flashcards/${deck.id}`)}
+                        onMouseEnter={async () => {
+                          if (!user) return;
+                          await queryClient.prefetchQuery({
+                            queryKey: ['deck', deck.id],
+                            queryFn: async () => {
+                              const token = getTokenFromCookie();
+                              const headers = createAuthHeaders(token);
+                              const res = await fetch(`/api/flashcards/decks/${deck.id}`, { headers });
+                              if (res.ok) return await res.json();
+                              return null;
+                            },
+                            staleTime: 5 * 60 * 1000,
+                          });
+                        }}
                         className="w-full flex items-center justify-between bg-slate-50 border border-slate-100 text-slate-700 font-bold py-2.5 px-4 rounded-xl hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all group/btn shadow-sm"
                       >
                         <span className="text-sm">Học ngay</span>
