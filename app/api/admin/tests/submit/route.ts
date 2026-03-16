@@ -6,17 +6,17 @@ export async function POST(req: Request) {
   try {
     // 1. Xác thực người dùng
     const userId = await getUserId();
-    
+
     if (!userId) {
       return NextResponse.json(
-        { error: 'Unauthorized: Bạn cần đăng nhập để nộp bài' }, 
+        { error: 'Unauthorized: Bạn cần đăng nhập để nộp bài' },
         { status: 401 }
       );
     }
 
     // 2. Lấy dữ liệu gửi lên
     const body = await req.json();
-    const { testId, answers } = body; 
+    const { testId, answers } = body;
     // answers structure: { "question_id_1": 2, "question_id_2": 0, ... }
 
     if (!testId || !answers) {
@@ -26,13 +26,13 @@ export async function POST(req: Request) {
     // 3. Lấy đề thi gốc từ DB để chấm điểm
     const test = await prisma.mockTest.findUnique({
       where: { id: testId },
-      include: { 
+      include: {
         questions: {
           select: {
             id: true,
             correctAnswer: true // Chỉ lấy đáp án đúng để so sánh
           }
-        } 
+        }
       }
     });
 
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     let score = 0;
     let totalQuestions = test.questions.length;
 
-    test.questions.forEach((question) => {
+    test.questions.forEach((question: any) => {
       // So sánh đáp án người dùng chọn (answers[id]) với đáp án đúng (question.correctAnswer)
       // Lưu ý: Cần kiểm tra undefined phòng trường hợp user không chọn câu đó
       if (answers[question.id] !== undefined && answers[question.id] === question.correctAnswer) {
@@ -64,8 +64,8 @@ export async function POST(req: Request) {
     });
 
     // 6. Trả về kết quả
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       resultId: result.id,
       score: score,
       total: totalQuestions,
@@ -75,7 +75,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("❌ [API Submit Test] Error:", error);
     return NextResponse.json(
-      { error: 'Lỗi máy chủ nội bộ', details: error.message }, 
+      { error: 'Lỗi máy chủ nội bộ', details: error.message },
       { status: 500 }
     );
   }
