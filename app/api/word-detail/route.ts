@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCache, setCache } from "@/lib/redis";
 import { createHash } from "node:crypto";
-import { DictionaryEntry, ExampleSentence } from "@prisma/client";
+// import { DictionaryEntry, ExampleSentence } from "@prisma/client";
 // import { Prisma } from "@prisma/client"; // Temporary removal
 import * as wanakana from "wanakana";
 import { mapPosFromTags } from "@/lib/dictionary/pos";
@@ -24,9 +24,7 @@ type RelatedWordItem = {
   relationType?: string;
 };
 
-type EntryWithExamples = DictionaryEntry & {
-  examples: ExampleSentence[];
-};
+type EntryWithExamples = any;
 
 function sha1(s: string) {
   return createHash("sha1").update(s).digest("hex");
