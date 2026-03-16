@@ -94,7 +94,7 @@ export async function POST(req: Request) {
       });
 
       if (candidates.length > 0) {
-        candidates.sort((a, b) => {
+        candidates.sort((a: any, b: any) => {
           const exDiff = b.examples.length - a.examples.length;
           if (exDiff !== 0) return exDiff;
           const defA = a.meaningVi ? a.meaningVi.length : 0;

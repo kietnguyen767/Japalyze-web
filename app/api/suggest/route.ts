@@ -97,7 +97,7 @@ export async function POST(req: Request) {
 
     const payload = {
       success: true,
-      items: rows.map((r) => ({
+      items: rows.map((r: any) => ({
         id: r.id,
         lemma: r.lemma,
         reading: r.reading ?? "",
