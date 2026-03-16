@@ -1,6 +1,6 @@
 // app/api/suggest/route.ts
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import prisma, { PrismaHelper } from "@/lib/prisma";
 import { getCache, setCache } from "@/lib/redis";
 import { createHash } from "node:crypto";
 // import { Prisma } from "@prisma/client"; // Temporary removal to fix build
@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     const viPrefix = `%${q}%`; // Tiếng Việt nên tìm chứa từ
     const romaPrefix = `${qLower}%`;
 
-    const rows = await prisma.$queryRaw((prisma as any).sql`
+    const rows = await (prisma as any).$queryRaw(PrismaHelper.sql`
       SELECT
         id,
         lemma,

@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import prisma, { PrismaHelper } from "@/lib/prisma";
 import { getCache, setCache } from "@/lib/redis";
 import { createHash } from "node:crypto";
-// import { DictionaryEntry, ExampleSentence } from "@prisma/client";
-// import { Prisma } from "@prisma/client"; // Temporary removal
 import * as wanakana from "wanakana";
 import { mapPosFromTags } from "@/lib/dictionary/pos";
 
@@ -104,7 +102,7 @@ export async function POST(req: Request) {
       }
 
       if (!entry) {
-        const rows = await (prisma as any).$queryRaw((prisma as any).sql`
+        const rows = await (prisma as any).$queryRaw(PrismaHelper.sql`
           SELECT id, lemma, GREATEST(similarity(lemma, ${text}), similarity(COALESCE(reading, ''), ${text})) AS score
           FROM "DictionaryEntry"
           WHERE lang='ja' AND (lemma % ${text} OR COALESCE(reading,'') % ${text})
