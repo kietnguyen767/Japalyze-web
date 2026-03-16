@@ -22,7 +22,7 @@ export async function GET() {
             select: { questId: true },
         });
 
-        const completedQuestIds = progress.map((p) => p.questId);
+        const completedQuestIds = progress.map((p: any) => p.questId);
 
         return NextResponse.json({ completedQuestIds });
     } catch (error) {

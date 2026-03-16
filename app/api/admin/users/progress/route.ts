@@ -10,26 +10,26 @@ export async function GET(request: Request) {
   if (!email) return NextResponse.json({ error: 'Thiếu email' }, { status: 400 });
 
   try {
-      // 1. Tìm User ID từ Email
-      const user = await prisma.user.findUnique({
-          where: { email },
-          select: { id: true }
-      });
-      
-      if (!user) return NextResponse.json({ completed: [] });
+    // 1. Tìm User ID từ Email
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true }
+    });
 
-      // 2. Lấy danh sách bài đã học từ bảng ExerciseProgress
-      const progress = await prisma.exerciseProgress.findMany({
-          where: { userId: user.id },
-          select: { exerciseId: true }
-      });
+    if (!user) return NextResponse.json({ completed: [] });
 
-      // Map về mảng string đơn giản ['bai1', 'bai2'] cho khớp Frontend
-      const completed = progress.map(p => p.exerciseId);
+    // 2. Lấy danh sách bài đã học từ bảng ExerciseProgress
+    const progress = await prisma.exerciseProgress.findMany({
+      where: { userId: user.id },
+      select: { exerciseId: true }
+    });
 
-      return NextResponse.json({ completed });
+    // Map về mảng string đơn giản ['bai1', 'bai2'] cho khớp Frontend
+    const completed = progress.map((p: any) => p.exerciseId);
+
+    return NextResponse.json({ completed });
   } catch (error) {
-      return NextResponse.json({ error: 'Lỗi server' }, { status: 500 });
+    return NextResponse.json({ error: 'Lỗi server' }, { status: 500 });
   }
 }
 
@@ -51,34 +51,34 @@ export async function POST(request: Request) {
     if (action === 'remove') {
       // Xóa bản ghi tiến độ
       await prisma.exerciseProgress.deleteMany({
-          where: {
-              userId: user.id,
-              exerciseId: lessonId
-          }
+        where: {
+          userId: user.id,
+          exerciseId: lessonId
+        }
       });
     } else if (action === 'add') {
       // Thêm bản ghi tiến độ (nếu chưa có)
       const existing = await prisma.exerciseProgress.findFirst({
-          where: { userId: user.id, exerciseId: lessonId }
+        where: { userId: user.id, exerciseId: lessonId }
       });
 
       if (!existing) {
-          await prisma.exerciseProgress.create({
-              data: {
-                  userId: user.id,
-                  exerciseId: lessonId,
-                  score: 100 // Admin tick bằng tay thì cho 100 điểm luôn
-              }
-          });
+        await prisma.exerciseProgress.create({
+          data: {
+            userId: user.id,
+            exerciseId: lessonId,
+            score: 100 // Admin tick bằng tay thì cho 100 điểm luôn
+          }
+        });
       }
     }
 
     // Trả về danh sách mới nhất để FE cập nhật UI ngay lập tức
     const updatedProgress = await prisma.exerciseProgress.findMany({
-        where: { userId: user.id },
-        select: { exerciseId: true }
+      where: { userId: user.id },
+      select: { exerciseId: true }
     });
-    const completed = updatedProgress.map(p => p.exerciseId);
+    const completed = updatedProgress.map((p: any) => p.exerciseId);
 
     return NextResponse.json({ success: true, completed });
   } catch (error) {

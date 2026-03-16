@@ -149,17 +149,17 @@ export async function POST(req: Request) {
     // 3. Gộp và Map dữ liệu
     // Chúng ta cần lấy đối tượng "DictionaryEntry" từ cả 2 chiều
     const rawRelated = [
-      ...outgoing.map(r => ({ ...r.to, relationType: r.type })),   // Lấy 'to'
-      ...incoming.map(r => ({ ...r.from, relationType: r.type }))  // Lấy 'from'
+      ...outgoing.map((r: any) => ({ ...r.to, relationType: r.type })),   // Lấy 'to'
+      ...incoming.map((r: any) => ({ ...r.from, relationType: r.type }))  // Lấy 'from'
     ];
 
     // 4. Lọc trùng lặp (Deduplicate) theo ID và lọc chính nó
-    const uniqueRelated = rawRelated.filter((item, index, self) =>
-      index === self.findIndex((t) => t.id === item.id) && item.id !== entry?.id
+    const uniqueRelated = rawRelated.filter((item: any, index: number, self: any[]) =>
+      index === self.findIndex((t: any) => t.id === item.id) && item.id !== entry?.id
     );
 
     // 5. Format dữ liệu trả về chuẩn Frontend
-    const relatedWords: RelatedWordItem[] = uniqueRelated.map((item) => ({
+    const relatedWords: RelatedWordItem[] = uniqueRelated.map((item: any) => ({
       id: item.id,
       lemma: item.lemma,
       reading: item.reading ?? "",
@@ -176,7 +176,7 @@ export async function POST(req: Request) {
     const romaji = (entry.romaji ?? "").trim() || (entry.reading ? wanakana.toRomaji(entry.reading) : "");
     const pos = mapPosFromTags(entry.posTag);
 
-    const examples = (entry.examples ?? []).slice(0, 3).map((ex) => ({
+    const examples = (entry.examples ?? []).slice(0, 3).map((ex: any) => ({
       jp: ex.jp,
       romaji: ex.romaji ?? "",
       vi: ex.vi ?? "",
