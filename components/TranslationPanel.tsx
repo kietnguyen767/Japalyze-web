@@ -889,7 +889,7 @@ export default function TranslationPanel() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map(i => <div key={i} className="h-28 bg-slate-100 rounded-xl animate-pulse"></div>)}
           </div>
-        ) : vocabData ? (
+        ) : vocabData && (vocabData.nouns.length > 0 || vocabData.verbs.length > 0 || vocabData.adjs.length > 0 || vocabData.others.length > 0) ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
             <div className="space-y-3">
               <h3 className="text-xs font-bold text-emerald-600 uppercase tracking-wide px-2">Danh từ (名詞)</h3>
@@ -908,7 +908,11 @@ export default function TranslationPanel() {
               {vocabData.others.map(renderVocabCard)}
             </div>
           </div>
-        ) : null}
+        ) : (
+          <div className="text-center py-10 text-slate-400 italic bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+            {vocabData ? "Hiện chưa có từ vựng gợi ý nào." : "Không thể tải dữ liệu từ vựng gợi ý."}
+          </div>
+        )}
       </div>
 
       <SaveFlashcardModal

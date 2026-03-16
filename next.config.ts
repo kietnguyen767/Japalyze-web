@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  /*
   async rewrites() {
     // Proxy all /api/* requests to the external API server.
     // This lets the frontend keep calling fetch('/api/...') while bypassing
@@ -18,6 +19,7 @@ const nextConfig: NextConfig = {
       ],
     };
   },
+  */
 };
 
 export default nextConfig;
