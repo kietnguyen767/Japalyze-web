@@ -41,16 +41,15 @@ export async function POST(request: Request) {
 
     // 5. 🔥 QUAN TRỌNG: Lưu UserID vào Redis để Webhook biết đơn này của ai
     // Key: order_pending:123456 -> Value: user-uuid-tu-supabase
-    await redis.set(`order_pending:${orderCode}`, userId, { ex: 3600 });
+    await redis.setex(`order_pending:${orderCode}`, 1800, userId);
 
     return NextResponse.json({
       success: true,
       checkoutUrl: paymentLink.checkoutUrl
     });
 
-  } catch (error) {
-    const err = error as { message?: string };
-    console.error("Create Link Error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (error: any) {
+    console.error("Create Link Error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

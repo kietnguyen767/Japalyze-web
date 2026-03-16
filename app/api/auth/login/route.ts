@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     }
 
     if (user.provider === 'google') {
-      return NextResponse.json({ message: 'Vui lòng đăng nhập bằng Google' }, { status: 400 });
+        return NextResponse.json({ message: 'Vui lòng đăng nhập bằng Google' }, { status: 400 });
     }
 
     // Check pass
@@ -30,35 +30,33 @@ export async function POST(request: Request) {
     // ✅ TẠO SESSION VÀO REDIS
     const sessionToken = uuidv4();
     const userIdString = String(user.id); // Convert to string
-
+    
     console.log('🔑 Tạo session token:', sessionToken);
     console.log('💾 User ID:', user.id, '| Type:', typeof user.id);
     console.log('💾 User ID as String:', userIdString, '| Type:', typeof userIdString);
-
+    
     const redisKey = `session:${sessionToken}`;
     console.log('💾 Lưu vào Redis - Key:', redisKey, '| Value:', userIdString);
-
+    
     try {
-      const setResult = await redis.set(redisKey, userIdString, { ex: 86400 });
-      console.log('✅ redis.set OK - Result:', setResult);
-
+      const setResult = await redis.setex(redisKey, 86400, userIdString);
+      console.log('✅ redis.setex OK - Result:', setResult);
+      
       // Verify ngay lập tức
       const verify = await redis.get(redisKey);
       console.log('🔍 Verify Redis - Retrieved:', verify, '| Expected:', userIdString, '| Match:', verify === userIdString ? '✅' : '❌');
-    } catch (redisError) {
-      const err = redisError as { message?: string };
-      console.error('❌ REDIS ERROR:', err.message);
-      throw err;
+    } catch (redisError: any) {
+      console.error('❌ REDIS ERROR:', redisError.message);
+      throw redisError;
     }
 
-    return NextResponse.json({
-      message: 'Thành công',
-      user: { ...user, createdAt: user.createdAt.toISOString() },
-      token: sessionToken
+    return NextResponse.json({ 
+        message: 'Thành công', 
+        user: { ...user, createdAt: user.createdAt.toISOString() },
+        token: sessionToken
     });
-  } catch (error) {
-    const err = error as { message?: string };
-    console.error('❌ Login API error:', err.message);
-    return NextResponse.json({ message: err.message || 'Lỗi server' }, { status: 500 });
+  } catch (error: any) {
+    console.error('❌ Login API error:', error.message);
+    return NextResponse.json({ message: error.message || 'Lỗi server' }, { status: 500 });
   }
 }

@@ -1,0 +1,313 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ==========================================
+// 1. USER & AUTHENTICATION
+// ==========================================
+
+model User {
+  id                  String               @id @default(uuid())
+  email               String               @unique
+  name                String?
+  password            String?
+  avatar              String?
+  role                String               @default("user") // "admin" | "user"
+  isPremium           Boolean              @default(false)
+  analysisUsage       Int                  @default(0)
+  provider            String               @default("email")
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  // --- Relations ---
+  comments            Comment[]
+  decks               Deck[]
+  exerciseProgress    ExerciseProgress[]   // Lưu điểm số bài tập cũ
+  likes               Like[]
+  payments            Payment[]
+  posts               Post[]
+  translationHistory  TranslationHistory[]
+  testResults         TestResult[]
+
+  // --- Gamification & Roadmap Fields ---
+  onboardingCompleted Boolean              @default(false)
+  currentLevel        String?              // "N5", "N4"...
+  currentPhase        Int                  @default(1) // Giai đoạn hiện tại (1-5)
+  
+  // Quan hệ lưu danh sách các Quest đã hoàn thành
+  progress            UserProgress[]       
+
+  // --- Streak Tracking ---
+  streakCount         Int                  @default(0)
+  lastActiveAt        DateTime?            // Ngày cuối cùng user truy cập dashboard
+}
+
+// 🔥 MODEL MỚI: Lưu tiến độ làm nhiệm vụ (Quest)
+model UserProgress {
+  id          String   @id @default(uuid())
+  userId      String
+  questId     String   // ID của nhiệm vụ (VD: 'q1_1', 'q1_2'...)
+  completedAt DateTime @default(now())
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questId]) // Đảm bảo 1 nhiệm vụ chỉ hoàn thành 1 lần
+}
+
+// ==========================================
+// 2. PAYMENT
+// ==========================================
+
+model Payment {
+  id        String   @id @default(uuid())
+  orderCode Int      @unique
+  amount    Int
+  status    String
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// 3. FLASHCARD SYSTEM
+// ==========================================
+
+model Deck {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+  userId      String
+  cards       Card[]
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Card {
+  id           String   @id @default(uuid())
+  front        String
+  back         String
+  example      String?
+  isLearned    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  
+  // --- SRS Fields ---
+  nextReviewAt DateTime @default(now())
+  interval     Int      @default(0)   // Khoảng cách ngày (0 = học lại ngay)
+  easeFactor   Float    @default(2.5) // Hệ số độ dễ (mặc định 2.5 theo thuật toán SM-2)
+  repetitions  Int      @default(0)   // Số lần đã nhớ đúng liên tiếp
+
+  deckId       String
+  deck         Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// 4. TRANSLATION & DICTIONARY
+// ==========================================
+
+model TranslationHistory {
+  id         String   @id @default(uuid())
+  sourceText String
+  targetText String
+  createdAt  DateTime @default(now())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model DictionaryRelation {
+  id        String          @id @default(dbgenerated("(gen_random_uuid())::text"))
+  fromId    String
+  toId      String
+  type      String          @default("related")
+  createdAt DateTime        @default(now()) @db.Timestamptz(6)
+  from      DictionaryEntry @relation("DictRelFrom", fields: [fromId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  to        DictionaryEntry @relation("DictRelTo", fields: [toId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([fromId, toId, type])
+  @@index([fromId], map: "dictrel_fromid_idx")
+  @@index([toId], map: "dictrel_toid_idx")
+}
+
+model DictionaryEntry {
+  id          String               @id @default(uuid())
+  lang        String               @default("ja")
+  lemma       String
+  reading     String?
+  romaji      String?
+  posTag      String
+  meaningVi   String?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  relatedFrom DictionaryRelation[] @relation("DictRelFrom")
+  relatedTo   DictionaryRelation[] @relation("DictRelTo")
+  examples    ExampleSentence[]
+
+  @@index([lang])
+  @@index([lemma])
+  @@index([reading])
+  @@index([romaji])
+  @@index([posTag])
+  @@index([lemma(ops: raw("gin_trgm_ops"))], map: "dictionary_lemma_trgm", type: Gin)
+  @@index([reading(ops: raw("gin_trgm_ops"))], map: "dictionary_reading_trgm", type: Gin)
+  @@index([romaji(ops: raw("gin_trgm_ops"))], map: "dictionary_romaji_trgm", type: Gin)
+}
+
+model ExampleSentence {
+  id        String          @id @default(uuid())
+  jp        String
+  romaji    String?
+  vi        String?
+  createdAt DateTime        @default(now())
+  entryId   String
+  entry     DictionaryEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@index([entryId])
+}
+
+// ==========================================
+// 5. EXERCISE & PROGRESS (Score Tracking)
+// ==========================================
+
+model ExerciseProgress {
+  id         String   @id @default(uuid())
+  exerciseId String
+  score      Int
+  completedAt DateTime @default(now())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// 6. COMMUNITY (Posts, Comments, Likes)
+// ==========================================
+
+model Post {
+  id        String    @id @default(uuid())
+  content   String
+  rating    Int       @default(5)
+  createdAt DateTime  @default(now())
+  userId    String
+  comments  Comment[]
+  likes     Like[]
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+  postId    String
+  userId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  postId    String
+  userId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+}
+
+// ==========================================
+// 7. CONTENT MODELS (Tarot, Reading, Tests)
+// ==========================================
+
+model TarotCard {
+  id             String   @id 
+  name           String   
+  nameVi         String   
+  image          String   
+  keywords       String[] 
+  meaningUpright String   
+  meaningReversed String?  
+  element        String?  
+}
+
+model ReadingArticle {
+  id             String   @id @default(uuid())
+  title          String
+  excerpt        String?
+  content        String   
+  contentRomaji  String?  
+  contentMeaning String?  
+  level          String
+  topic          String?
+  image          String?
+  createdAt      DateTime @default(now())
+}
+
+model MockTest {
+  id          String     @id @default(uuid())
+  title       String
+  level       String     
+  duration    Int        
+  isPremium   Boolean    @default(false)
+  questions   Question[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  testResults TestResult[]
+}
+
+model Question {
+  id            String   @id @default(uuid())
+  content       String   
+  imageUrl      String?  
+  audioUrl      String?
+  type          String   
+  options       String[] 
+  correctAnswer Int    
+  explanation   String?  
+  
+  testId        String
+  test          MockTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+}
+
+model TestResult {
+  id             String   @id @default(uuid())
+  score          Int      
+  totalQuestions Int
+  answers        Json     
+  completedAt    DateTime @default(now())
+  
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  testId         String
+  test           MockTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// 8. PASSWORD RESET
+// ==========================================
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  expires   DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([email, token])
+}
+
+// ==========================================
+// 9. ANALYTICS
+// ==========================================
+
+model Visit {
+  id        String   @id @default(uuid())
+  path      String   @default("/")
+  timestamp DateTime @default(now())
+}

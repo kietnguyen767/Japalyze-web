@@ -37,17 +37,17 @@ export async function GET(request: Request) {
 
     // 3. Xử lý Logic: LƯU VÀO POSTGRESQL (PRISMA) 
     // Thay vì Redis hset, ta dùng prisma.upsert (Update nếu có, Insert nếu chưa)
-
+    
     const user = await prisma.user.upsert({
       where: { email: googleUser.email },
-
+      
       // Nếu user đã tồn tại -> Cập nhật tên và avatar (đề phòng họ đổi avatar Google)
       update: {
         name: googleUser.name,
         avatar: googleUser.picture,
         // Không update isPremium hay provider để tránh mất dữ liệu cũ
       },
-
+      
       // Nếu user chưa tồn tại -> Tạo mới
       create: {
         email: googleUser.email,
@@ -62,27 +62,26 @@ export async function GET(request: Request) {
     // 4. Tạo Session Token vào Redis (Giữ nguyên cơ chế session tốc độ cao)
     const sessionToken = uuidv4();
     const userIdString = String(user.id); // Convert to string
-
+    
     console.log('🔑 Google Auth - Tạo session:', sessionToken.substring(0, 10) + '...');
     console.log('💾 User ID:', user.id, '| Type:', typeof user.id);
     console.log('💾 User ID as String:', userIdString, '| Type:', typeof userIdString);
-
+    
     const redisKey = `session:${sessionToken}`;
     console.log('💾 Lưu vào Redis - Key:', redisKey, '| Value:', userIdString);
-
+    
     try {
-      const setResult = await redis.set(redisKey, userIdString, { ex: 86400 });
-      console.log('✅ redis.set OK - Result:', setResult);
-
+      const setResult = await redis.setex(redisKey, 86400, userIdString);
+      console.log('✅ redis.setex OK - Result:', setResult);
+      
       // Verify ngay lập tức
       const verify = await redis.get(redisKey);
       console.log('🔍 Verify Redis - Retrieved:', verify, '| Expected:', userIdString, '| Match:', verify === userIdString ? '✅' : '❌');
-    } catch (redisError) {
-      const err = redisError as { message?: string };
-      console.error('❌ REDIS ERROR:', err.message);
-      throw err;
+    } catch (redisError: any) {
+      console.error('❌ REDIS ERROR:', redisError.message);
+      throw redisError;
     }
-
+    
     // 🔥 QUAN TRỌNG: Lưu user.id (UUID của Postgres) vào session thay vì email
     // Để sau này các API khác dễ dàng query database 
 

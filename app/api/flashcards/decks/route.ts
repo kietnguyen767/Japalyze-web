@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getUserId } from '@/lib/get-user';
-import { SAMPLE_DECKS } from '@/lib/flashcardData';
-import { ensureSampleDeck } from '@/lib/flashcardUtils';
-
+import { getUserId } from '@/lib/get-user'; // Nhớ tạo file helper này như bài trước
 export const dynamic = 'force-dynamic';
 // GET: Lấy toàn bộ Deck và Card bên trong
 export async function GET(request: Request) {
@@ -12,18 +9,11 @@ export async function GET(request: Request) {
   console.log('🔍 Cookie header:', request.headers.get('cookie'));
 
   const userId = await getUserId();
+  console.log('👤 userId:', userId);
 
-  // Kiểm tra user có tồn tại thực sự trong DB không
-  let userInDb = null;
-  if (userId) {
-    userInDb = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true }
-    });
-  }
-
-  // Nếu KHÔNG có userId hoặc user không tồn tại trong DB -> Trả về dữ liệu mẫu tĩnh (Guest Mode)
-  if (!userId || !userInDb) {
+  // Nếu KHÔNG có userId (Chưa đăng nhập) -> Trả về dữ liệu mẫu tĩnh
+  if (!userId) {
+    const { SAMPLE_DECKS } = await import('@/lib/flashcardData');
     const formattedSamples = SAMPLE_DECKS.map((s, idx) => ({
       id: `sample-${idx}`,
       title: s.title,
@@ -33,13 +23,14 @@ export async function GET(request: Request) {
       _count: {
         cards: s.cards.length
       },
-      learnedCount: 0,
+      learnedCount: 0, // Mặc định 0 cho mẫu khi chưa login
       cards: []
     }));
     return NextResponse.json({ decks: formattedSamples });
   }
 
-  // Nếu có user thực sự -> Đảm bảo bộ thẻ mẫu hiện diện trong DB của họ
+  // Đảm bảo có deck mẫu nếu user đã đăng nhập nhưng chưa có gì
+  const { ensureSampleDeck } = await import('@/lib/flashcardUtils');
   await ensureSampleDeck(userId);
 
   try {
