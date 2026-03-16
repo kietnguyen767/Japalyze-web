@@ -100,10 +100,10 @@ export async function GET() {
 
             if (user.progress) {
                 // Chỉ lấy bộ ID duy nhất đã hoàn thành
-                const completedQuestIds = new Set(user.progress.map(p => (p as any).questId));
+                const completedQuestIds = new Set(user.progress.map((p: any) => p.questId));
 
                 // Lấy tất cả ID hợp lệ của lộ trình N5 để lọc
-                const allOfficialN5QuestIds = new Set(N5_WEEKS.flatMap(w => w.quests.map(q => q.id)));
+                const allOfficialN5QuestIds = new Set(N5_WEEKS.flatMap((w: any) => w.quests.map((q: any) => q.id)));
                 const officialCompletedIds = new Set([...completedQuestIds].filter(id => allOfficialN5QuestIds.has(id)));
 
                 // ── Tính theo N5_WEEKS ──
