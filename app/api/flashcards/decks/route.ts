@@ -51,7 +51,7 @@ export async function GET(request: Request) {
 
     // Để lấy learnedCount, ta cần chạy thêm 1 query aggregate hoặc map (nhưng map sẽ chậm nếu dùng prisma gọi nhiều lần)
     // Thay vào đó, ta fetch card count có điều kiện:
-    const decksWithLearned = await Promise.all(decks.map(async (deck) => {
+    const decksWithLearned = await Promise.all(decks.map(async (deck: any) => {
       const learned = await prisma.card.count({
         where: {
           deckId: deck.id,
