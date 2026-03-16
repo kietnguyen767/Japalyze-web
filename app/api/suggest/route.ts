@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCache, setCache } from "@/lib/redis";
 import { createHash } from "node:crypto";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client/default";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
