@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCache, setCache } from "@/lib/redis";
 import { createHash } from "node:crypto";
-import { Prisma, DictionaryEntry, ExampleSentence } from "@prisma/client/default";
+import { Prisma, DictionaryEntry, ExampleSentence } from "@prisma/client";
 import * as wanakana from "wanakana";
 import { mapPosFromTags } from "@/lib/dictionary/pos";
 
