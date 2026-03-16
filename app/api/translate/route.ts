@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     // 1) Kiểm tra Redis Cache (Lưu trong 24h)
     const cacheKey = `translation:gemini:${sha1(text)}:${source}:${target}`;
     const cachedValue = await getCache<string>(cacheKey);
-    
+
     if (cachedValue) {
       return NextResponse.json({
         success: true,
@@ -98,13 +98,13 @@ export async function POST(request: Request) {
     // 2) Thử dịch bằng Google Gemini trước
     try {
       const prompt = buildGeminiPrompt(text, source, target);
-      
+
       // Gọi Gemini API
       const result = await geminiModel.generateContent(prompt);
       const response = await result.response;
-      
+
       finalTranslation = response.text().trim();
-      
+
       if (!finalTranslation) {
         throw new Error("Empty translation from Gemini");
       }
@@ -138,7 +138,7 @@ export async function POST(request: Request) {
             userId,
           },
         })
-        .catch((err) => console.error("Lỗi lưu lịch sử:", err));
+        .catch((err: any) => console.error("Lỗi lưu lịch sử:", err));
     }
 
     // 6) Trả về kết quả
