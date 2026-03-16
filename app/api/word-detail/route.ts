@@ -104,7 +104,7 @@ export async function POST(req: Request) {
       }
 
       if (!entry) {
-        const rows = await prisma.$queryRaw<Array<{ id: string; lemma: string; score: number }>>((prisma as any).sql`
+        const rows = await (prisma as any).$queryRaw((prisma as any).sql`
           SELECT id, lemma, GREATEST(similarity(lemma, ${text}), similarity(COALESCE(reading, ''), ${text})) AS score
           FROM "DictionaryEntry"
           WHERE lang='ja' AND (lemma % ${text} OR COALESCE(reading,'') % ${text})

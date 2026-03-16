@@ -51,17 +51,7 @@ export async function POST(req: Request) {
     const viPrefix = `%${q}%`; // Tiếng Việt nên tìm chứa từ
     const romaPrefix = `${qLower}%`;
 
-    const rows = await prisma.$queryRaw<
-      Array<{
-        id: string;
-        lemma: string;
-        reading: string | null;
-        romaji: string | null;
-        posTag: string;
-        meaningVi: string | null;
-        score: number;
-      }>
-    >((prisma as any).sql`
+    const rows = await prisma.$queryRaw((prisma as any).sql`
       SELECT
         id,
         lemma,
