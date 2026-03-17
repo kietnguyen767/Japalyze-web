@@ -7,25 +7,25 @@ import { useAuth } from '@/context/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Gamepad2, Ghost, Keyboard, Sparkles, Play,
-  Zap, Star, Moon, Swords, Flower2
+  Zap, Star, Moon, Swords, Flower2, Sun
 } from 'lucide-react';
 
 const GAMES = [
-  {
-    id: 'monster-typer',
-    title: 'Huyền Thoại Diệt Quái',
-    subtitle: 'RPG Luyện Gõ & Phản Xạ',
-    description: 'Nhập vai chiến binh Samurai đối đầu với các Yo-kai (Yêu quái). Gõ đúng phiên âm hoặc nghĩa của từ vựng thật nhanh để tung chiêu tấn công trước khi bị quái vật hạ gục.',
-    icon: Swords,
-    secondaryIcon: Keyboard,
-    color: 'from-red-500 to-orange-600',
-    //  THÊM DÒNG NÀY: Màu chữ cụ thể cho Icon chính
-    textColor: 'text-red-600',
-    shadow: 'shadow-red-200',
-    tags: ['Nhập vai (RPG)', 'Gõ máy', 'Phản xạ'],
-    stats: { players: '2.4k', rating: 4.9 },
-    href: '#'
-  },
+  // {
+  //   id: 'monster-typer',
+  //   title: 'Huyền Thoại Diệt Quái',
+  //   subtitle: 'RPG Luyện Gõ & Phản Xạ',
+  //   description: 'Nhập vai chiến binh Samurai đối đầu với các Yo-kai (Yêu quái). Gõ đúng phiên âm hoặc nghĩa của từ vựng thật nhanh để tung chiêu tấn công trước khi bị quái vật hạ gục.',
+  //   icon: Swords,
+  //   secondaryIcon: Keyboard,
+  //   color: 'from-red-500 to-orange-600',
+  //   //  THÊM DÒNG NÀY: Màu chữ cụ thể cho Icon chính
+  //   textColor: 'text-red-600',
+  //   shadow: 'shadow-red-200',
+  //   tags: ['Nhập vai (RPG)', 'Gõ máy', 'Phản xạ'],
+  //   stats: { players: '2.4k', rating: 4.9 },
+  //   href: '#'
+  // },
   {
     id: 'tarot',
     title: 'Tiên Tri Tarot',
@@ -40,6 +40,20 @@ const GAMES = [
     tags: ['Văn hóa', 'Đọc hiểu', 'Thư giãn'],
     stats: { players: '1.8k', rating: 4.8 },
     href: '/games/tarot'
+  },
+  {
+    id: 'tuvi',
+    title: 'Tử Vi Bát Tự',
+    subtitle: 'Bản đồ vận mệnh',
+    description: 'Khám phá Bát Tự của bạn qua ngày giờ sinh. Phân tích Ngũ Hành, Thiên Can, Địa Chi để hiểu rõ tính cách, sự nghiệp và hướng phát triển trong cuộc đời.',
+    icon: Sun,
+    secondaryIcon: Sparkles,
+    color: 'from-amber-500 to-orange-600',
+    textColor: 'text-amber-600',
+    shadow: 'shadow-amber-200',
+    tags: ['Văn hóa', 'Phân tích', 'Thư giãn'],
+    stats: { players: '1.2k', rating: 4.7 },
+    href: '/games/tuvi'
   }
 ];
 
@@ -76,7 +90,7 @@ export default function GamesPage() {
         </div>
 
         {/* GAMES GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {GAMES.map((game) => (
             <div
               key={game.id}
