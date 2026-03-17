@@ -66,12 +66,12 @@ export async function POST(request: Request) {
                     `,
                 });
             } catch (emailError) {
-                console.error('Lỗi khi gửi email:', emailError);
-                // Vẫn trả về thành công để tránh lộ thông tin email, nhưng log lỗi lại
+                console.error('Lỗi khi gửi email (Resend):', emailError);
+                // Back up log console cho dev
+                console.log(`Reset Link for ${email}: ${resetLink}`);
             }
         } else {
             console.warn('Email không được gửi vì chưa cấu hình RESEND_API_KEY');
-            // Back up log console cho dev
             console.log(`Reset Link for ${email}: ${resetLink}`);
         }
 
@@ -84,4 +84,5 @@ export async function POST(request: Request) {
         return NextResponse.json({ message: 'Lỗi server' }, { status: 500 });
     }
 }
+
 

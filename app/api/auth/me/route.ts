@@ -17,7 +17,6 @@ export async function GET(request: Request) {
         }
     }
 
-    // Nếu không có token -> Trả về 401 (AuthContext sẽ hiểu là Khách)
     if (!token) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
