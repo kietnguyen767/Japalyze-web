@@ -38,7 +38,8 @@ function AuthSuccessContent() {
         const data = await res.json();
 
         // Lưu session token
-        document.cookie = `session_token=${token}; path=/; max-age=86400`;
+        const isProd = window.location.protocol === 'https:';
+        document.cookie = `session_token=${token}; path=/; max-age=86400; SameSite=Lax${isProd ? '; Secure' : ''}`;
 
         // Lưu user vào context
         login(data.user);

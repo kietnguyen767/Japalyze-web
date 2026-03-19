@@ -48,7 +48,8 @@ export default function RegisterPage() {
       if (res.ok) {
         //  LƯU TOKEN VÀO COOKIE
         if (data.token) {
-          document.cookie = `session_token=${data.token}; path=/; max-age=86400; SameSite=Lax`;
+          const isProd = window.location.protocol === 'https:';
+          document.cookie = `session_token=${data.token}; path=/; max-age=86400; SameSite=Lax${isProd ? '; Secure' : ''}`;
         }
 
         // Tự động login

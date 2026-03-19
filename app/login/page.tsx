@@ -47,7 +47,8 @@ export default function LoginPage() {
 
       //  LƯU TOKEN VÀO COOKIE
       if (data.token) {
-        document.cookie = `session_token=${data.token}; path=/; max-age=86400; SameSite=Lax`;
+        const isProd = window.location.protocol === 'https:';
+        document.cookie = `session_token=${data.token}; path=/; max-age=86400; SameSite=Lax${isProd ? '; Secure' : ''}`;
       }
 
       login(data.user);
