@@ -37,17 +37,17 @@ export async function GET(request: Request) {
 
     // 3. Xử lý Logic: LƯU VÀO POSTGRESQL (PRISMA) 
     // Thay vì Redis hset, ta dùng prisma.upsert (Update nếu có, Insert nếu chưa)
-    
+
     const user = await prisma.user.upsert({
       where: { email: googleUser.email },
-      
+
       // Nếu user đã tồn tại -> Cập nhật tên và avatar (đề phòng họ đổi avatar Google)
       update: {
         name: googleUser.name,
         avatar: googleUser.picture,
         // Không update isPremium hay provider để tránh mất dữ liệu cũ
       },
-      
+
       // Nếu user chưa tồn tại -> Tạo mới
       create: {
         email: googleUser.email,
@@ -62,18 +62,18 @@ export async function GET(request: Request) {
     // 4. Tạo Session Token vào Redis (Giữ nguyên cơ chế session tốc độ cao)
     const sessionToken = uuidv4();
     const userIdString = String(user.id); // Convert to string
-    
+
     console.log('🔑 Google Auth - Tạo session:', sessionToken.substring(0, 10) + '...');
     console.log('💾 User ID:', user.id, '| Type:', typeof user.id);
     console.log('💾 User ID as String:', userIdString, '| Type:', typeof userIdString);
-    
+
     const redisKey = `session:${sessionToken}`;
     console.log('💾 Lưu vào Redis - Key:', redisKey, '| Value:', userIdString);
-    
+
     try {
       const setResult = await redis.setex(redisKey, 86400, userIdString);
       console.log('✅ redis.setex OK - Result:', setResult);
-      
+
       // Verify ngay lập tức
       const verify = await redis.get(redisKey);
       console.log('🔍 Verify Redis - Retrieved:', verify, '| Expected:', userIdString, '| Match:', verify === userIdString ? '✅' : '❌');
@@ -81,13 +81,17 @@ export async function GET(request: Request) {
       console.error('❌ REDIS ERROR:', redisError.message);
       throw redisError;
     }
-    
+
     // 🔥 QUAN TRỌNG: Lưu user.id (UUID của Postgres) vào session thay vì email
     // Để sau này các API khác dễ dàng query database 
 
     // 5. Đá người dùng về trang xử lý thành công (Giữ nguyên)
     // Lưu ý: Đảm bảo biến NEXT_PUBLIC_DOMAIN trong .env đã đúng (http://localhost:3000 hoặc domain thật)
-    const baseUrl = process.env.NEXT_PUBLIC_DOMAIN || 'http://localhost:3000';
+    const rawBaseUrl = process.env.NEXT_PUBLIC_DOMAIN || 'http://localhost:3000';
+    const baseUrl = rawBaseUrl.replace(/\/$/, ''); // Xóa dấu / ở cuối nếu có
+
+    console.log('🔗 [Google Auth] Final redirect URL:', `${baseUrl}/auth-success?token=${sessionToken}`);
+
     return NextResponse.redirect(`${baseUrl}/auth-success?token=${sessionToken}`);
 
   } catch (error: any) {

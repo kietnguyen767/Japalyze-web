@@ -6,52 +6,55 @@ import prisma from '@/lib/prisma';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
-  try {
-    const cookieStore = await cookies();
-    let token = cookieStore.get('session_token')?.value;
+    try {
+        const cookieStore = await cookies();
+        let token = cookieStore.get('session_token')?.value;
 
-    if (!token) {
-        const authHeader = request.headers.get('Authorization');
-        if (authHeader) {
-            token = authHeader.replace('Bearer ', '');
+        if (!token) {
+            const authHeader = request.headers.get('Authorization');
+            if (authHeader) {
+                token = authHeader.replace('Bearer ', '');
+            }
         }
-    }
 
-    if (!token) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const userIdRaw = await redis.get(`session:${token}`);
-    const userId = typeof userIdRaw === 'string' ? userIdRaw : null;
-    
-    if (!userId) {
-        return NextResponse.json({ error: 'Session expired' }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: {
-            id: true,
-            email: true,
-            name: true,
-            avatar: true,
-            role: true,
-            isPremium: true,
-            currentLevel: true, 
-            onboardingCompleted: true,
-            // 👇 THÊM DÒNG NÀY: Để AuthContext biết đang ở Phase mấy
-            currentPhase: true 
+        if (!token) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
-    });
 
-    if (!user) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        const userIdRaw = await redis.get(`session:${token}`);
+        const userId = typeof userIdRaw === 'string' ? userIdRaw : null;
+
+        console.log('🔍 [Auth ME] Token:', token?.substring(0, 10) + '...', '| Redis UserID:', userId);
+
+        if (!userId) {
+            console.warn('⚠️ [Auth ME] Session not found in Redis for token');
+            return NextResponse.json({ error: 'Session expired' }, { status: 401 });
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                avatar: true,
+                role: true,
+                isPremium: true,
+                currentLevel: true,
+                onboardingCompleted: true,
+                // 👇 THÊM DÒNG NÀY: Để AuthContext biết đang ở Phase mấy
+                currentPhase: true
+            }
+        });
+
+        if (!user) {
+            return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        }
+
+        return NextResponse.json({ user });
+
+    } catch (error) {
+        console.error("Auth API Error:", error);
+        return NextResponse.json({ error: 'Internal Error' }, { status: 500 });
     }
-
-    return NextResponse.json({ user });
-    
-  } catch (error) {
-    console.error("Auth API Error:", error);
-    return NextResponse.json({ error: 'Internal Error' }, { status: 500 });
-  }
 }

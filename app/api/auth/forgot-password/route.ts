@@ -1,3 +1,4 @@
+//app/api/auth/forgot-password/route.ts
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { v4 as uuidv4 } from 'uuid';
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
         if (resend) {
             try {
                 await resend.emails.send({
-                    from: 'JapaLyze <https://japalyze.app>', // Dùng mặc định của resend nếu chưa verify domain
+                    from: 'JapaLyze <noreply@japalyze.app>', // Dùng email hợp lệ thay vì URL
                     to: email,
                     subject: '[JapaLyze] Khôi phục mật khẩu',
                     html: `
