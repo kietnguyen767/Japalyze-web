@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Be_Vietnam_Pro } from "next/font/google";
+import { Inter } from "next/font/google";
 import SakuraEffect from "@/components/SakuraEffect";
 import { AuthProvider } from '@/context/AuthContext';
 
@@ -10,8 +10,8 @@ export const metadata: Metadata = {
 };
 
 // Load font
-const beVietnamPro = Be_Vietnam_Pro({
-  subsets: ["latin", "vietnamese"],
+const inter = Inter({
+  subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700", "800"],
 });
 
@@ -28,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="vi">
 
-      <body className={`${beVietnamPro.className} antialiased`}>
+      <body className={`${inter.className} antialiased`}>
         <SakuraEffect />
         <QueryProvider>
           <ToastProvider>

@@ -46,7 +46,7 @@ export async function POST(request: Request) {
         if (resend) {
             try {
                 await resend.emails.send({
-                    from: 'JapaLyze <onboarding@resend.dev>', // Dùng mặc định của resend nếu chưa verify domain
+                    from: 'JapaLyze <https://japalyze.app>', // Dùng mặc định của resend nếu chưa verify domain
                     to: email,
                     subject: '[JapaLyze] Khôi phục mật khẩu',
                     html: `

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import redis from '@/lib/redis';
+import prisma from '@/lib/prisma';
 
 export async function GET() {
   try {
@@ -7,20 +8,23 @@ export async function GET() {
     const userKeys = await redis.keys('user:*');
     let sampleUser = null;
     if (userKeys.length > 0) {
-        sampleUser = await redis.hgetall(userKeys[0]); // Hoặc redis.get(userKeys[0]) tùy cách bạn lưu
+      sampleUser = await redis.hgetall(userKeys[0]); // Hoặc redis.get(userKeys[0]) tùy cách bạn lưu
     }
 
     // 2. Lấy mẫu Decks của user đó (nếu có)
     let sampleDecks = null;
     let sampleProgress = null;
     if (userKeys.length > 0) {
-        const email = userKeys[0].replace('user:', '');
-        
-        const decksData = await redis.get(`decks:${email}`);
-        sampleDecks = typeof decksData === 'string' ? JSON.parse(decksData) : decksData;
+      const email = userKeys[0].replace('user:', '');
 
-        const progressData = await redis.get(`exercise_progress:${email}`);
-        sampleProgress = typeof progressData === 'string' ? JSON.parse(progressData) : progressData;
+      const dbUser = await prisma.user.findUnique({ where: { email } });
+      if (dbUser) {
+        const userDecks = await prisma.deck.findMany({ where: { userId: dbUser.id } });
+        sampleDecks = userDecks;
+      }
+
+      const progressData = await redis.get(`exercise_progress:${email}`);
+      sampleProgress = typeof progressData === 'string' ? JSON.parse(progressData) : progressData;
     }
 
     // 3. Lấy mẫu Community Posts

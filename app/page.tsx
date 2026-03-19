@@ -8,7 +8,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
     Play, Zap, Languages, BookOpen, BookOpenText, FileText,
-    Gamepad2, Loader2, ArrowRight, Sparkles, Target, Trophy, Plus, Star, Search, Flame, HelpCircle, Lock, Construction, Flag
+    Gamepad2, Loader2, ArrowRight, Sparkles, Target, Trophy, Plus, Star, Search, Flame, HelpCircle, Lock, Construction, Flag, RefreshCcw
 } from 'lucide-react';
 
 
@@ -77,12 +77,13 @@ interface DashboardData {
         currentPhase: number;
         phasePercentage: number;
         streakDays: number;
+        phaseTitle?: string;
     };
 }
 
 function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: () => void }) {
     const { data, isLoading: loadingData } = useQuery<DashboardData | null>({
-        queryKey: ['dashboard-data', user?.id],
+        queryKey: ['dashboard-data', user?.id, user?.currentLevel],
         queryFn: async () => {
             const res = await apiFetch('/api/user/dashboard');
             if (!res.ok) throw new Error('API Error');
@@ -98,14 +99,36 @@ function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: ()
         currentLevel: null,
         totalN5Percentage: 0,
         currentPhase: 1,
+        phaseTitle: '',
         phasePercentage: 0,
         streakDays: 0
     };
     const hasLevel = user?.currentLevel;
     const streakDays = progress.streakDays;
-    const isN5 = hasLevel === 'N5';
-    const isLevelActive = hasLevel && isN5;
-    const currentWeek = progress.currentPhase; // API now returns week number
+    const isLevelActive = !!hasLevel; // All levels N1-N5 are now active
+    const currentWeek = progress.currentPhase;
+
+    // 3. Xử lý kích hoạt N5 nhanh
+    const [activating, setActivating] = useState(false);
+    const handleActivateN5 = async () => {
+        if (isLevelActive) return; // Nếu đã là N5 thì thôi
+        setActivating(true);
+        try {
+            const res = await apiFetch('/api/user/update-profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ currentLevel: 'N5' })
+            });
+            if (res.ok) {
+                // Refresh data
+                window.location.href = '/roadmap/n5';
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setActivating(false);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-slate-50/50 text-slate-700 selection:bg-indigo-100 selection:text-indigo-700 flex flex-col">
@@ -130,7 +153,7 @@ function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: ()
                             </h1>
                             <p className="text-slate-500 mt-2 text-lg">
                                 {user
-                                    ? (isLevelActive ? 'Hôm nay chúng ta sẽ chinh phục bài học nào?' : (hasLevel ? `Lộ trình ${hasLevel} đang được xây dựng.` : 'Bạn chưa thiết lập lộ trình học tập.'))
+                                    ? (isLevelActive ? 'Hôm nay chúng ta sẽ chinh phục bài học nào?' : 'Bạn chưa thiết lập lộ trình học tập.')
                                     : 'Đăng nhập để bắt đầu hành trình chinh phục tiếng Nhật.'}
                             </p>
                         </div>
@@ -152,9 +175,9 @@ function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: ()
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
                         {/* --- CARD 1: LỘ TRÌNH TỔNG --- */}
-                        <div className={`md:col-span-2 rounded-[2rem] p-8 text-white shadow-xl relative overflow-hidden group hover:scale-[1.01] transition-transform duration-300 flex flex-col justify-between
+                        <div className={`md:col-span-2 rounded-2xl p-8 text-white shadow-xl relative overflow-hidden group hover:scale-[1.01] transition-transform duration-300 flex flex-col justify-between
                 ${isLevelActive
-                                ? 'bg-gradient-to-br from-blue-600 to-indigo-700 shadow-blue-200/50'
+                                ? 'bg-gradient-to-br from-blue-600 to-blue-800 shadow-blue-200/50'
                                 : 'bg-slate-800 shadow-slate-200/50'
                             }`}>
 
@@ -170,8 +193,8 @@ function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: ()
                                             </>
                                         ) : (
                                             <>
-                                                <Construction size={12} className="text-yellow-400" />
-                                                Đang xây dựng
+                                                <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse shadow-[0_0_8px_#fbbf24]"></div>
+                                                Sắp ra mắt
                                             </>
                                         )
                                     ) : (
@@ -194,18 +217,18 @@ function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: ()
                                 <p className={`mb-6 max-w-md leading-relaxed text-base ${isLevelActive ? 'text-blue-100/90' : 'text-slate-400'}`}>
                                     {user
                                         ? (hasLevel
-                                            ? (isLevelActive ? 'Hành trình vạn dặm bắt đầu từ bước chân đầu tiên. Tiếp tục cố gắng nhé!' : 'Hiện tại hệ thống chỉ mới hỗ trợ lộ trình N5.')
+                                            ? (isLevelActive ? 'Hành trình vạn dặm bắt đầu từ bước chân đầu tiên.' : `Hệ thống đang hoàn thiện lộ trình ${user.currentLevel}.`)
                                             : 'Để JapaLyze xây dựng lộ trình học cá nhân hóa, hãy cho chúng tôi biết trình độ hiện tại của bạn.')
                                         : 'Trải nghiệm phương pháp học tập thông minh, lộ trình từ N5 đến N1.'
                                     }
                                 </p>
 
                                 {/* Progress Bar */}
-                                {isLevelActive ? (
+                                {hasLevel ? (
                                     <div className="bg-black/20 rounded-xl p-4 backdrop-blur-sm border border-white/10 mb-6 max-w-lg">
                                         <div className="flex justify-between items-end mb-2">
                                             <span className="text-xs font-bold text-blue-100 uppercase flex items-center gap-2">
-                                                <Flag size={14} /> Tiến độ toàn trình N5
+                                                <Flag size={14} /> Tiến độ toàn trình {user.currentLevel}
                                             </span>
                                             <span className="text-sm font-black text-white">{progress.totalN5Percentage}%</span>
                                         </div>
@@ -214,7 +237,7 @@ function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: ()
                                                 className="h-full bg-yellow-400 rounded-full shadow-[0_0_10px_rgba(250,204,21,0.6)] relative transition-all duration-1000"
                                                 style={{ width: `${Math.max(progress.totalN5Percentage, 5)}%` }}
                                             >
-                                                <div className="absolute top-0 right-0 bottom-0 w-1 bg-white/50"></div>
+                                                {isLevelActive && <div className="absolute top-0 right-0 bottom-0 w-1 bg-white/50"></div>}
                                             </div>
                                         </div>
                                     </div>
@@ -225,20 +248,21 @@ function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: ()
                                 {/* Button Action */}
                                 {user ? (
                                     hasLevel ? (
-                                        isLevelActive ? (
-                                            <Link href="/roadmap/n5" className="inline-flex items-center gap-2 px-8 py-3.5 bg-white text-blue-700 font-bold rounded-xl hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 w-fit">
-                                                <Play size={20} fill="currentColor" /> Vào bản đồ lộ trình
-                                            </Link>
-                                        ) : (
-                                            <div className="flex gap-3">
-                                                <button disabled className="inline-flex items-center gap-2 px-8 py-3.5 bg-slate-700 text-slate-400 font-bold rounded-xl cursor-not-allowed w-fit">
-                                                    <Lock size={20} /> Chưa mở khóa
-                                                </button>
-                                                <button onClick={onOpenSurvey} className="inline-flex items-center gap-2 px-4 py-3.5 bg-slate-700/50 text-white font-bold rounded-xl hover:bg-slate-600 transition-all border border-slate-600">
-                                                    Đổi sang N5
+                                        <div className="flex flex-col gap-4">
+                                            {!isLevelActive && (
+                                                <div className="flex items-center gap-2 text-xs font-bold text-blue-300 uppercase tracking-wider">
+                                                    <Sparkles size={14} className="text-yellow-400" /> Gợi ý cho bạn:
+                                                </div>
+                                            )}
+                                            <div className="flex flex-wrap gap-3">
+                                                <Link href={`/roadmap/${user.currentLevel?.toLowerCase()}`} className="inline-flex items-center gap-2 px-8 py-3.5 bg-white text-blue-700 font-bold rounded-xl hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 w-fit">
+                                                    <Play size={20} fill="currentColor" /> Vào bản đồ lộ trình {user.currentLevel}
+                                                </Link>
+                                                <button onClick={onOpenSurvey} className={`inline-flex items-center gap-2 px-4 py-3.5 font-bold rounded-xl transition-all border backdrop-blur-sm shadow-lg hover:shadow-xl hover:-translate-y-0.5 ${isLevelActive ? 'bg-blue-700/50 text-white border-blue-400/30 hover:bg-blue-600' : 'bg-slate-700/50 text-slate-300 border-slate-600 hover:bg-slate-600'}`}>
+                                                    <RefreshCcw size={18} /> Đổi lộ trình
                                                 </button>
                                             </div>
-                                        )
+                                        </div>
                                     ) : (
                                         <button onClick={onOpenSurvey} className="inline-flex items-center gap-2 px-8 py-3.5 bg-yellow-400 text-yellow-900 font-bold rounded-xl hover:bg-yellow-300 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 w-fit">
                                             <Target size={20} /> 🎯 Thiết lập mục tiêu ngay
@@ -257,24 +281,24 @@ function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: ()
                         </div>
 
                         {/* --- CARD 2: CHI TIẾT GIAI ĐOẠN HIỆN TẠI --- */}
-                        <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm hover:shadow-lg hover:border-green-100 transition-all group flex flex-col relative overflow-hidden">
+                        <div className="bg-white rounded-2xl p-8 border border-slate-100 shadow-sm hover:shadow-lg hover:border-blue-100 transition-all group flex flex-col relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity rotate-12">
                                 <Target size={120} />
                             </div>
 
                             <div className="flex-1">
-                                <div className="w-14 h-14 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                                <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-5 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-sm">
                                     <Target size={28} fill="currentColor" className="opacity-80" />
                                 </div>
 
                                 <div className="mb-4">
                                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Trạng thái hiện tại</span>
                                     <h3 className="font-bold text-slate-800 text-xl mt-1">
-                                        {isLevelActive ? `Tuần ${currentWeek}/8` : 'Chưa kích hoạt'}
+                                        {isLevelActive ? `Tuần ${currentWeek}` : 'Chưa kích hoạt'}
                                     </h3>
                                     <p className="text-slate-500 text-sm mt-1 line-clamp-2">
                                         {isLevelActive
-                                            ? (currentWeek <= 2 ? 'Bảng chữ cái & Phát âm' : currentWeek <= 5 ? 'Từ vựng & Ngữ pháp' : 'Ôn tập & Kiểm tra')
+                                            ? (progress.phaseTitle || `Thông tin Tuần ${currentWeek}`)
                                             : 'Vui lòng chọn lộ trình để xem chi tiết.'}
                                     </p>
                                 </div>
@@ -282,12 +306,12 @@ function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: ()
                                 {isLevelActive && (
                                     <div className="mt-2">
                                         <div className="flex justify-between items-center mb-1.5">
-                                            <span className="text-xs font-bold text-green-600">Hoàn thành</span>
+                                            <span className="text-xs font-bold text-blue-600">Hoàn thành</span>
                                             <span className="text-xs font-bold text-slate-700">{progress.phasePercentage}%</span>
                                         </div>
                                         <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
                                             <div
-                                                className="h-full bg-green-500 rounded-full transition-all duration-1000"
+                                                className="h-full bg-blue-500 rounded-full transition-all duration-1000"
                                                 style={{ width: `${progress.phasePercentage}%` }}
                                             ></div>
                                         </div>
@@ -295,9 +319,19 @@ function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: ()
                                 )}
                             </div>
 
-                            <Link href="/roadmap/n5" className="mt-6 w-full py-3.5 bg-slate-50 text-slate-700 font-bold text-sm rounded-xl text-center hover:bg-green-500 hover:text-white transition-all shadow-sm flex items-center justify-center gap-2">
-                                {isLevelActive ? 'Tiếp tục nhiệm vụ' : 'Kích hoạt ngay'} <ArrowRight size={16} />
-                            </Link>
+                            {isLevelActive ? (
+                                <Link href={`/roadmap/${user.currentLevel?.toLowerCase()}`} className="mt-6 w-full py-3.5 bg-slate-50 text-slate-600 font-semibold text-sm rounded-xl text-center hover:bg-blue-600 hover:text-white transition-all shadow-sm flex items-center justify-center gap-2">
+                                    Tiếp tục nhiệm vụ <ArrowRight size={16} />
+                                </Link>
+                            ) : (
+                                <button
+                                    onClick={handleActivateN5}
+                                    disabled={activating}
+                                    className="mt-6 w-full py-3.5 bg-slate-50 text-slate-600 font-semibold text-sm rounded-xl text-center hover:bg-blue-600 hover:text-white transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                                >
+                                    {activating ? <Loader2 size={16} className="animate-spin" /> : 'Kích hoạt ngay'} <ArrowRight size={16} />
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -306,7 +340,7 @@ function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: ()
             {/* CONTENT GRID - FIX 2: relative z-0 để không đè lên menu */}
             <div className="relative z-0 max-w-6xl mx-auto px-4 mt-12 grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
                 <div className="lg:col-span-2 space-y-8">
-                    <SectionBox title="Lịch sử Dịch thuật" icon={<Languages className="text-blue-500" />} link="/translate" linkText="Mở công cụ">
+                    <SectionBox title="Lịch sử Dịch thuật" icon={<Languages className="text-blue-600" />} link="/translate" linkText="Mở công cụ">
                         {loadingData ? <SkeletonList /> : (user && history.translation.length > 0) ? (
                             <div className="space-y-3">
                                 {history.translation.map((item: { source: string; target: string; time: string }, idx: number) => (
@@ -324,19 +358,19 @@ function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: ()
 
                     <div>
                         <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2 mb-5 px-1">
-                            <BookOpenText size={22} className="text-green-500" /> Chủ đề bài tập
+                            <BookOpenText size={22} className="text-blue-600" /> Chủ đề bài tập
                         </h3>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                             {[
-                                { id: 'hiragana', name: 'Bảng Hiragana', color: 'from-pink-50 to-rose-50 text-rose-600 border-rose-100 hover:border-rose-300' },
-                                { id: 'numbers', name: 'Số đếm', color: 'from-blue-50 to-sky-50 text-blue-600 border-blue-100 hover:border-blue-300' },
-                                { id: 'food', name: 'Ẩm thực', color: 'from-orange-50 to-amber-50 text-orange-600 border-orange-100 hover:border-orange-300' },
-                                { id: 'animals', name: 'Động vật', color: 'from-purple-50 to-violet-50 text-purple-600 border-purple-100 hover:border-purple-300' },
-                                { id: 'weather', name: 'Thời tiết', color: 'from-cyan-50 to-teal-50 text-teal-600 border-teal-100 hover:border-teal-300' },
-                                { id: 'family', name: 'Gia đình', color: 'from-emerald-50 to-green-50 text-emerald-600 border-emerald-100 hover:border-emerald-300' },
+                                { id: 'hiragana', name: 'Bảng Hiragana' },
+                                { id: 'numbers', name: 'Số đếm' },
+                                { id: 'food', name: 'Ẩm thực' },
+                                { id: 'animals', name: 'Động vật' },
+                                { id: 'weather', name: 'Thời tiết' },
+                                { id: 'family', name: 'Gia đình' },
                             ].map((topic) => (
-                                <Link key={topic.id} href={`/exercises/${topic.id}`} className={`p-4 rounded-2xl bg-gradient-to-br ${topic.color} border font-bold text-center transition-all shadow-sm hover:shadow-md hover:-translate-y-1 relative group`}>
-                                    <span className="relative z-10">{topic.name}</span>
+                                <Link key={topic.id} href={`/exercises/${topic.id}`} className="p-4 rounded-xl bg-white border border-slate-100 text-slate-600 font-semibold text-center transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600">
+                                    {topic.name}
                                 </Link>
                             ))}
                         </div>
@@ -344,10 +378,10 @@ function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: ()
                 </div>
 
                 <div className="space-y-8">
-                    <div className="bg-white rounded-[2rem] border border-slate-100 p-6 shadow-sm hover:shadow-lg transition-all relative overflow-hidden">
+                    <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm hover:shadow-lg transition-all relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-red-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-                        <h3 className="font-bold text-slate-700 flex items-center gap-2 mb-6 relative z-10">
-                            <FileText size={20} className="text-red-500" /> Kết quả thi gần nhất
+                        <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-6 relative z-10">
+                            <FileText size={20} className="text-blue-600" /> Kết quả thi gần nhất
                         </h3>
                         <div className="text-center py-4 relative z-10">
                             {loadingData ? <div className="h-20 w-32 mx-auto bg-slate-100 rounded-xl animate-pulse"></div> :
@@ -364,31 +398,31 @@ function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: ()
                         </Link>
                     </div>
 
-                    <SectionBox title="Bộ Deck của tôi" icon={<BookOpen size={20} className="text-indigo-500" />} link="/flashcards" linkText="Xem tất cả">
+                    <SectionBox title="Bộ Deck của tôi" icon={<BookOpen size={20} className="text-blue-600" />} link="/flashcards" linkText="Xem tất cả">
                         {loadingData ? <SkeletonList /> : (user && history.decks.length > 0) ? (
                             <div className="space-y-3">
                                 {history.decks.map((deck: { id: string; title: string; count: number }, idx: number) => (
-                                    <div key={idx} className="flex justify-between items-center p-3.5 bg-white border border-slate-100 rounded-xl hover:border-indigo-300 hover:shadow-sm transition-all group">
-                                        <span className="font-medium text-slate-700 truncate flex-1 group-hover:text-indigo-700 transition-colors">{deck.title}</span>
-                                        <span className="text-[11px] font-bold bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-lg ml-2">{deck.count} thẻ</span>
+                                    <div key={idx} className="flex justify-between items-center p-3.5 bg-white border border-slate-100 rounded-xl hover:border-blue-200 hover:shadow-sm transition-all group">
+                                        <span className="font-medium text-slate-700 truncate flex-1 group-hover:text-blue-600 transition-colors">{deck.title}</span>
+                                        <span className="text-[11px] font-bold bg-blue-50 text-blue-600 px-2.5 py-1 rounded-lg ml-2">{deck.count} thẻ</span>
                                     </div>
                                 ))}
                             </div>
                         ) : <EmptyState text={user ? "Chưa tạo bộ thẻ nào" : "Đăng nhập để quản lý thẻ"} />}
 
-                        <Link href="/flashcards" className="mt-4 flex items-center justify-center gap-2 w-full py-2.5 border border-dashed border-indigo-200 text-indigo-600 font-bold text-sm rounded-xl hover:bg-indigo-50 hover:border-indigo-300 transition-all">
+                        <Link href="/flashcards" className="mt-4 flex items-center justify-center gap-2 w-full py-2.5 border border-dashed border-blue-200 text-blue-600 font-semibold text-sm rounded-xl hover:bg-blue-50 transition-all">
                             <Plus size={16} /> Tạo bộ mới
                         </Link>
                     </SectionBox>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <Link href="/roleplay" className="p-5 bg-purple-600 text-white rounded-[1.5rem] text-center hover:bg-purple-700 hover:scale-[1.03] transition-all shadow-lg shadow-purple-200/50">
+                        <Link href="/roleplay" className="p-5 bg-blue-600 text-white rounded-2xl text-center hover:bg-blue-700 hover:scale-[1.03] transition-all shadow-lg shadow-blue-200/50">
                             <Zap size={28} className="mx-auto mb-3 opacity-90" />
-                            <span className="font-bold text-sm block">Roleplay AI</span>
+                            <span className="font-semibold text-sm block">Roleplay AI</span>
                         </Link>
-                        <Link href="/games" className="p-5 bg-teal-500 text-white rounded-[1.5rem] text-center hover:bg-teal-600 hover:scale-[1.03] transition-all shadow-lg shadow-teal-200/50">
+                        <Link href="/games" className="p-5 bg-slate-700 text-white rounded-2xl text-center hover:bg-slate-800 hover:scale-[1.03] transition-all shadow-lg shadow-slate-200/50">
                             <Gamepad2 size={28} className="mx-auto mb-3 opacity-90" />
-                            <span className="font-bold text-sm block">Game Vui</span>
+                            <span className="font-semibold text-sm block">Game Vui</span>
                         </Link>
                     </div>
                 </div>
@@ -413,10 +447,10 @@ interface SectionBoxProps {
 
 function SectionBox({ title, icon, link, linkText, children }: SectionBoxProps) {
     return (
-        <div className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm hover:border-blue-200 transition-colors">
+        <div className="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm hover:border-blue-100 transition-colors">
             <div className="flex justify-between items-center mb-6">
                 <h3 className="font-bold text-slate-800 text-lg flex items-center gap-3">{icon} {title}</h3>
-                {link && <Link href={link} className="text-sm text-blue-600 font-bold hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors">{linkText}</Link>}
+                {link && <Link href={link} className="text-sm text-blue-600 font-semibold hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors">{linkText}</Link>}
             </div>
             {children}
         </div>
@@ -503,7 +537,7 @@ function OnboardingModal({ onFinish, onSkip }: { onFinish: () => void, onSkip: (
 
     return (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in zoom-in duration-300">
-            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100 relative">
+            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-[420px] overflow-hidden relative border border-white/20">
 
                 {/* Loading Overlay */}
                 {loading && (
@@ -512,31 +546,45 @@ function OnboardingModal({ onFinish, onSkip }: { onFinish: () => void, onSkip: (
                     </div>
                 )}
 
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-8 text-center text-white relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
-                    <Sparkles className="absolute top-4 right-4 opacity-50 text-yellow-300" />
-                    <h2 className="text-3xl font-black mb-2 relative z-10">Chào mừng bạn! 🎉</h2>
-                    <p className="text-blue-100 text-sm font-medium relative z-10">Chọn mục tiêu để JapaLyze thiết kế lộ trình riêng.</p>
+                {/* Header Section */}
+                <div className="pt-8 pb-5 px-6 text-center">
+                    <h2 className="text-xl font-bold text-slate-800">Mục tiêu của bạn là gì?</h2>
                 </div>
-                <div className="p-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                    <div className="space-y-3">
+
+                {/* Options Section */}
+                <div className="px-6 pb-6 w-full">
+                    <div className="space-y-2.5">
                         {levels.map((lvl) => (
-                            <button key={lvl.id} onClick={() => handleSubmit(lvl.id)} disabled={loading} className="w-full p-4 rounded-2xl border-2 border-slate-50 hover:border-blue-500 hover:bg-blue-50 transition-all text-left flex justify-between items-center group">
-                                <div>
-                                    <div className="font-bold text-slate-800 group-hover:text-blue-700 text-lg">{lvl.t}</div>
-                                    <div className="text-xs text-slate-500 font-medium">{lvl.d}</div>
+                            <button
+                                key={lvl.id}
+                                onClick={() => handleSubmit(lvl.id)}
+                                disabled={loading}
+                                className="w-full relative group p-3 rounded-2xl border-2 border-slate-50 hover:border-blue-500 bg-white hover:bg-blue-50/50 transition-all text-left flex items-center gap-3"
+                            >
+                                {/* Level Badge */}
+                                <div className="w-10 h-10 rounded-[10px] bg-slate-50 group-hover:bg-blue-100 flex items-center justify-center font-black text-[15px] transition-colors shrink-0 outline outline-1 outline-slate-100 group-hover:outline-blue-200">
+                                    <span className="text-slate-600 group-hover:text-blue-700">{lvl.id}</span>
                                 </div>
-                                <ArrowRight size={20} className="text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
+
+                                {/* Content */}
+                                <div className="flex-1">
+                                    <div className="font-bold text-slate-800 group-hover:text-blue-700 text-[14px] leading-snug">{lvl.t.replace(lvl.id, '').trim()}</div>
+                                    <div className="text-[12px] text-slate-500 font-medium mt-0.5">{lvl.d}</div>
+                                </div>
+
+                                {/* Arrow */}
+                                <ArrowRight size={16} className="text-slate-300 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-transform" />
                             </button>
                         ))}
                     </div>
-                    <div className="mt-8 pt-5 border-t border-slate-100 flex justify-center">
+
+                    <div className="mt-5 pt-4 border-t border-slate-100/80 flex justify-center">
                         <button
                             onClick={handleSkipAction}
                             disabled={loading}
-                            className="text-sm text-slate-400 font-bold hover:text-slate-600 hover:underline transition-colors disabled:opacity-50"
+                            className="text-[13px] text-slate-400 font-bold hover:text-slate-600 transition-colors disabled:opacity-50"
                         >
-                            Bỏ qua (Tôi sẽ chọn sau)
+                            Quyết định sau
                         </button>
                     </div>
                 </div>

@@ -1,7 +1,7 @@
-﻿//app/roadmap/n5/page.tsx
+//app/roadmap/n4/page.tsx
 'use client';
 
-import { N5_WEEKS } from '@/lib/data';
+import { N4_WEEKS } from '@/lib/data';
 import Link from 'next/link';
 import {
     ArrowLeft, Star, CalendarDays,
@@ -13,8 +13,8 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-type Quest = (typeof N5_WEEKS)[0]['quests'][0];
-type Week = (typeof N5_WEEKS)[0];
+type Quest = (typeof N4_WEEKS)[0]['quests'][0];
+type Week = (typeof N4_WEEKS)[0];
 
 const LEVELS = [
     { id: 'N5', label: 'N5 – Sơ cấp', desc: 'Bắt đầu từ con số 0', available: true },
@@ -30,7 +30,7 @@ function ChangeLevelModal({ currentLevel, onClose, onChanged }: {
     onClose: () => void;
     onChanged: () => void;
 }) {
-    const [selected, setSelected] = useState(currentLevel || 'N5');
+    const [selected, setSelected] = useState(currentLevel || 'N4');
     const [saving, setSaving] = useState(false);
     const router = useRouter();
 
@@ -103,10 +103,10 @@ const WEEK_ACCENT: Record<number, string> = {
     1: 'bg-green-500', 2: 'bg-teal-500', 3: 'bg-blue-500',
     4: 'bg-indigo-500', 5: 'bg-orange-500', 6: 'bg-red-500',
     7: 'bg-purple-500', 8: 'bg-amber-500', 9: 'bg-emerald-500',
-    10: 'bg-cyan-500', 11: 'bg-rose-500',
+    10: 'bg-cyan-500', 11: 'bg-rose-500', 12: 'bg-zinc-800'
 };
 
-export default function N5RoadmapPage() {
+export default function N4RoadmapPage() {
     const { user, refreshUser } = useAuth();
     const [showChangeLevel, setShowChangeLevel] = useState(false);
     const searchParams = useSearchParams();
@@ -129,7 +129,7 @@ export default function N5RoadmapPage() {
         [progressData]);
 
     const allOfficialQuestIds = useMemo(() =>
-        new Set(N5_WEEKS.flatMap(w => w.quests.map(q => q.id))),
+        new Set(N4_WEEKS.flatMap(w => w.quests.map(q => q.id))),
         []);
 
     const officialCompletedCount = useMemo(() => {
@@ -142,10 +142,10 @@ export default function N5RoadmapPage() {
 
     // ── Selected Week state driven by URL ──────────────────────────────────
     const weekParam = parseInt(searchParams?.get('week') || '1');
-    const selectedWeek = N5_WEEKS.find(w => w.week === weekParam) || N5_WEEKS[0];
+    const selectedWeek = N4_WEEKS.find(w => w.week === weekParam) || N4_WEEKS[0];
 
     const setSelectedWeek = (week: Week) => {
-        router.push(`/roadmap/n5?week=${week.week}`, { scroll: false });
+        router.push(`/roadmap/n4?week=${week.week}`, { scroll: false });
     };
 
     // Scroll mobile tab into view
@@ -158,17 +158,17 @@ export default function N5RoadmapPage() {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
     const currentWeek = (() => {
-        for (const w of N5_WEEKS) {
+        for (const w of N4_WEEKS) {
             if (!w.quests.every(q => completedIds.has(q.id))) return w.week;
         }
-        return N5_WEEKS.length;
+        return N4_WEEKS.length;
     })();
 
-    const totalQuests = N5_WEEKS.flatMap(w => w.quests).length;
+    const totalQuests = N4_WEEKS.flatMap(w => w.quests).length;
     const weekCompleted = selectedWeek.quests.filter(q => completedIds.has(q.id)).length;
     const weekTotal = selectedWeek.quests.length;
-    const weekPct = Math.round((weekCompleted / weekTotal) * 100);
-    const overallPct = Math.round((officialCompletedCount / totalQuests) * 100);
+    const weekPct = weekTotal > 0 ? Math.round((weekCompleted / weekTotal) * 100) : 0;
+    const overallPct = totalQuests > 0 ? Math.round((officialCompletedCount / totalQuests) * 100) : 0;
 
     const isCompleted = (w: Week) => w.quests.every(q => completedIds.has(q.id));
     const isCurrent = (w: Week) => w.week === currentWeek;
@@ -284,7 +284,7 @@ export default function N5RoadmapPage() {
                                 <Link href="/" className="inline-flex items-center text-xs font-bold text-slate-400 hover:text-blue-600 transition-colors mb-1">
                                     <ArrowLeft size={12} className="mr-1" /> Dashboard
                                 </Link>
-                                <h1 className="text-base font-black text-slate-800">Lộ Trình N5</h1>
+                                <h1 className="text-base font-black text-slate-800">Lộ Trình N4</h1>
                             </div>
                             <div className="text-right">
                                 <div className="text-xl font-black text-slate-800">{overallPct}%</div>
@@ -306,7 +306,7 @@ export default function N5RoadmapPage() {
                             className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide -mx-4 px-4"
                             style={{ scrollbarWidth: 'none' }}
                         >
-                            {N5_WEEKS.map((week) => {
+                            {N4_WEEKS.map((week) => {
                                 const completed = isCompleted(week);
                                 const current = isCurrent(week);
                                 const active = selectedWeek.week === week.week;
@@ -317,7 +317,7 @@ export default function N5RoadmapPage() {
                                         onClick={() => setSelectedWeek(week)}
                                         className={`flex flex-col items-center shrink-0 rounded-xl px-3 py-2 transition-all border
                                         ${active
-                                                ? `${WEEK_ACCENT[week.week]} text-white border-transparent shadow-md scale-105`
+                                                ? `${WEEK_ACCENT[week.week] || 'bg-slate-800'} text-white border-transparent shadow-md scale-105`
                                                 : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300'
                                             }
                                     `}
@@ -351,8 +351,8 @@ export default function N5RoadmapPage() {
                             <Link href="/" className="inline-flex items-center text-xs font-bold text-slate-400 hover:text-blue-600 mb-3 transition-colors">
                                 <ArrowLeft size={13} className="mr-1" /> Dashboard
                             </Link>
-                            <h1 className="text-lg font-black text-slate-800 leading-tight">Lộ Trình N5</h1>
-                            <p className="text-xs text-slate-400 mt-0.5">11 tuần · Từ Zero đến Hero</p>
+                            <h1 className="text-lg font-black text-slate-800 leading-tight">Lộ Trình N4</h1>
+                            <p className="text-xs text-slate-400 mt-0.5">{N4_WEEKS.length} tuần · Chinh phục Nhật Ngữ</p>
 
                             <div className="mt-3">
                                 <div className="flex justify-between text-[10px] font-semibold text-slate-400 mb-1">
@@ -369,7 +369,7 @@ export default function N5RoadmapPage() {
                         </div>
 
                         <nav className="flex-1 overflow-y-auto py-2">
-                            {N5_WEEKS.map((week) => {
+                            {N4_WEEKS.map((week) => {
                                 const completed = isCompleted(week);
                                 const current = isCurrent(week);
                                 const active = selectedWeek.week === week.week;
@@ -382,7 +382,7 @@ export default function N5RoadmapPage() {
                                         ${active ? 'bg-blue-50 border-r-2 border-blue-500' : 'hover:bg-slate-50'}
                                     `}
                                     >
-                                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-white text-xs font-black shadow-sm ${WEEK_ACCENT[week.week] ?? 'bg-slate-400'}`}>
+                                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-white text-xs font-black shadow-sm ${WEEK_ACCENT[week.week] || 'bg-slate-800'}`}>
                                             {completed ? <Star size={14} fill="currentColor" /> : week.week}
                                         </div>
                                         <div className="flex-1 min-w-0">
@@ -425,7 +425,6 @@ export default function N5RoadmapPage() {
                     Thay đổi trình độ
                 </button>
             </div>
-
             {showChangeLevel && (
                 <ChangeLevelModal
                     currentLevel={user?.currentLevel ?? null}

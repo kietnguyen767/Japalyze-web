@@ -2,7 +2,15 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
 import redis from '@/lib/redis';
-import { N5_PHASES, N5_WEEKS } from '@/lib/data';
+import { N5_WEEKS, N4_WEEKS, N3_WEEKS, N2_WEEKS, N1_WEEKS } from '@/lib/data';
+
+const ROADMAPS: Record<string, any[]> = {
+    'N5': N5_WEEKS,
+    'N4': N4_WEEKS,
+    'N3': N3_WEEKS,
+    'N2': N2_WEEKS,
+    'N1': N1_WEEKS,
+};
 
 interface Quest {
     id: string;
@@ -54,6 +62,7 @@ export async function GET() {
         // 2. TÍNH TOÁN TIẾN ĐỘ & STREAK (BỌC TRONG TRY-CATCH)
         // =========================================================
         let currentPhase = 1;
+        let phaseTitle = '';
         let phasePercentage = 0;
         let totalN5Percentage = 0;
         let streakCount = user.streakCount || 0;
@@ -102,65 +111,39 @@ export async function GET() {
                 // Chỉ lấy bộ ID duy nhất đã hoàn thành
                 const completedQuestIds = new Set(user.progress.map((p: any) => p.questId));
 
-                // Lấy tất cả ID hợp lệ của lộ trình N5 để lọc
-                const allOfficialN5QuestIds = new Set(N5_WEEKS.flatMap((w: any) => w.quests.map((q: any) => q.id)));
-                const officialCompletedIds = new Set([...completedQuestIds].filter(id => allOfficialN5QuestIds.has(id)));
+                // Lấy lộ trình hiện tại của user
+                const currentLevel = user.currentLevel || 'N5';
+                const currentRoadmap = ROADMAPS[currentLevel] || [];
 
-                // ── Tính theo N5_WEEKS ──
-                if (N5_WEEKS.length > 0) {
-                    let totalQuestsN5 = 0;
-                    let totalCompletedN5 = 0;
+                // ── Tính theo Roadmaps ──
+                if (currentRoadmap.length > 0) {
+                    let totalQuests = 0;
+                    let totalCompleted = 0;
                     let foundActiveWeek = false;
 
-                    for (const week of N5_WEEKS) {
+                    for (const week of currentRoadmap) {
                         const wTotal = week.quests?.length || 0;
-                        const wCompleted = week.quests?.filter((q) => completedQuestIds.has(q.id)).length || 0;
-                        totalQuestsN5 += wTotal;
-                        totalCompletedN5 += wCompleted;
+                        const wCompleted = week.quests?.filter((q: any) => completedQuestIds.has(q.id)).length || 0;
+                        totalQuests += wTotal;
+                        totalCompleted += wCompleted;
 
                         if (!foundActiveWeek) {
                             if (wCompleted < wTotal) {
-                                currentPhase = week.week; // reuse currentPhase field for week number
+                                currentPhase = week.week;
+                                phaseTitle = week.title;
                                 phasePercentage = wTotal > 0 ? Math.round((wCompleted / wTotal) * 100) : 0;
                                 foundActiveWeek = true;
-                            } else if (week.week === N5_WEEKS.length) {
+                            } else if (week.week === currentRoadmap.length) {
                                 currentPhase = week.week;
+                                phaseTitle = week.title;
                                 phasePercentage = 100;
                                 foundActiveWeek = true;
                             }
                         }
                     }
 
-                    totalN5Percentage = totalQuestsN5 > 0
-                        ? Math.round((totalCompletedN5 / totalQuestsN5) * 100)
-                        : 0;
-
-                    // ── Fallback về N5_PHASES nếu chưa có N5_WEEKS ──
-                } else if (N5_PHASES.length > 0) {
-                    let totalQuestsN5 = 0;
-                    let totalCompletedN5 = 0;
-                    let foundActivePhase = false;
-
-                    for (const phase of N5_PHASES) {
-                        const phaseTotal = phase.quests?.length || 0;
-                        const phaseCompleted = phase.quests?.filter((q: { id: string }) => completedQuestIds.has(q.id)).length || 0;
-                        totalQuestsN5 += phaseTotal;
-                        totalCompletedN5 += phaseCompleted;
-
-                        if (!foundActivePhase) {
-                            if (phaseCompleted < phaseTotal) {
-                                currentPhase = phase.id;
-                                phasePercentage = phaseTotal > 0 ? Math.round((phaseCompleted / phaseTotal) * 100) : 0;
-                                foundActivePhase = true;
-                            } else if (phase.id === N5_PHASES.length) {
-                                currentPhase = phase.id;
-                                phasePercentage = 100;
-                                foundActivePhase = true;
-                            }
-                        }
-                    }
-                    totalN5Percentage = totalQuestsN5 > 0
-                        ? Math.round((totalCompletedN5 / totalQuestsN5) * 100)
+                    totalN5Percentage = totalQuests > 0
+                        ? Math.round((totalCompleted / totalQuests) * 100)
                         : 0;
                 }
             }
@@ -194,6 +177,7 @@ export async function GET() {
                 currentLevel: user.currentLevel || null,
                 totalN5Percentage: totalN5Percentage,
                 currentPhase: currentPhase,
+                phaseTitle: phaseTitle,
                 phasePercentage: phasePercentage,
                 streakDays: streakCount
             }
@@ -204,7 +188,7 @@ export async function GET() {
         // Vẫn trả về JSON rỗng để Frontend không bị treo
         return NextResponse.json({
             history: { translation: [], decks: [], test: null },
-            progress: { currentLevel: null, totalN5Percentage: 0, currentPhase: 1, phasePercentage: 0 }
+            progress: { currentLevel: null, totalN5Percentage: 0, currentPhase: 1, phaseTitle: '', phasePercentage: 0, streakDays: 0 }
         });
     }
 }
