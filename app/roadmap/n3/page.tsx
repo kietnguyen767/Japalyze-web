@@ -1,4 +1,3 @@
-//app/roadmap/n3/page.tsx
 'use client';
 
 import { N3_WEEKS } from '@/lib/data';
@@ -10,7 +9,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Quest = (typeof N3_WEEKS)[0]['quests'][0];
@@ -112,6 +111,8 @@ export default function N3RoadmapPage() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const tabScrollRef = useRef<HTMLDivElement>(null);
+    const queryClient = useQueryClient();
+    const [completingId, setCompletingId] = useState<string | null>(null);
 
     // ── Progress Fetching with React Query ──────────────────────────────────
     const { data: progressData, isLoading: loadingProgress } = useQuery({
@@ -123,6 +124,32 @@ export default function N3RoadmapPage() {
         },
         staleTime: 0,
     });
+
+    const completeMutation = useMutation({
+        mutationFn: async (questId: string) => {
+            const res = await fetch('/api/user/roadmap-progress', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ questId }),
+            });
+            if (!res.ok) throw new Error('Failed to complete');
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['roadmap-progress'] });
+            setCompletingId(null);
+        },
+        onError: () => {
+            setCompletingId(null);
+        }
+    });
+
+    const handleManualComplete = (e: React.MouseEvent, questId: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setCompletingId(questId);
+        completeMutation.mutate(questId);
+    };
 
     const completedIds = useMemo(() =>
         new Set(progressData?.completedQuestIds || []),
@@ -224,49 +251,56 @@ export default function N3RoadmapPage() {
                 {selectedWeek.quests.map((quest: Quest) => {
                     const Icon = quest.icon;
                     const isDone = completedIds.has(quest.id);
+                    const isCompleting = completingId === quest.id;
+                    const isExternal = !quest.link.startsWith('/roadmap');
+                    const finalLink = isExternal
+                        ? `/roadmap/n3/external/${quest.id}?questId=${quest.id}&originalLink=${encodeURIComponent(quest.link)}`
+                        : `${quest.link}${quest.link.includes('?') ? '&' : '?'}questId=${quest.id}`;
+
                     return (
-                        <Link
-                            key={quest.id}
-                            href={quest.link}
-                            className={`group flex flex-col gap-3 p-4 rounded-2xl border transition-all duration-200
-                                ${isDone
-                                    ? 'bg-green-50/60 border-green-200 hover:shadow-md hover:border-green-300'
-                                    : 'bg-white border-slate-100 hover:border-blue-300 hover:shadow-lg hover:-translate-y-0.5'
-                                }
-                            `}
-                        >
-                            <div className="flex items-start justify-between">
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${selectedWeek.color} group-hover:scale-105 transition-transform`}>
-                                    <Icon size={19} className={selectedWeek.iconColor} />
+                        <div key={quest.id} className="relative group">
+                            <Link
+                                href={finalLink}
+                                className={`flex flex-col gap-3 p-4 rounded-2xl border transition-all duration-200 h-full
+                                    ${isDone
+                                        ? 'bg-green-50/60 border-green-200 hover:shadow-md hover:border-green-300'
+                                        : 'bg-white border-slate-100 hover:border-blue-300 hover:shadow-lg hover:-translate-y-0.5'
+                                    }
+                                `}
+                            >
+                                <div className="flex items-start justify-between">
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${selectedWeek.color} group-hover:scale-105 transition-transform`}>
+                                        <Icon size={19} className={selectedWeek.iconColor} />
+                                    </div>
+                                    {isDone
+                                        ? <CheckCircle2 size={19} className="text-green-500 shrink-0" strokeWidth={2.5} />
+                                        : <Circle size={19} className="text-slate-200 shrink-0" />
+                                    }
                                 </div>
-                                {isDone
-                                    ? <CheckCircle2 size={19} className="text-green-500 shrink-0" strokeWidth={2.5} />
-                                    : <Circle size={19} className="text-slate-200 shrink-0" />
-                                }
-                            </div>
-                            <div>
-                                <h3 className={`font-bold text-sm leading-snug transition-colors
-                                    ${isDone ? 'text-green-700' : 'text-slate-800 group-hover:text-blue-700'}
-                                `}>
-                                    {quest.title}
-                                </h3>
-                                <p className="text-xs text-slate-400 mt-1 leading-relaxed line-clamp-3">
-                                    {quest.desc}
-                                </p>
-                            </div>
-                            <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-100">
-                                <span className={`text-[11px] font-bold px-2 py-1 rounded-lg
-                                    ${isDone ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-500'}
-                                `}>
-                                    {isDone ? '✓ Hoàn thành' : `+${quest.xp} XP`}
-                                </span>
-                                <span className={`text-[11px] font-semibold flex items-center gap-0.5 transition-colors
-                                    ${isDone ? 'text-green-500' : 'text-slate-400 group-hover:text-blue-500'}
-                                `}>
-                                    Vào học <ChevronRight size={12} />
-                                </span>
-                            </div>
-                        </Link>
+                                <div>
+                                    <h3 className={`font-bold text-sm leading-snug transition-colors
+                                        ${isDone ? 'text-green-700' : 'text-slate-800 group-hover:text-blue-700'}
+                                    `}>
+                                        {quest.title}
+                                    </h3>
+                                    <p className="text-xs text-slate-400 mt-1 leading-relaxed line-clamp-3">
+                                        {quest.desc}
+                                    </p>
+                                </div>
+                                <div className="flex items-center justify-between mt-auto pt-2 border-t border-slate-100">
+                                    <span className={`text-[11px] font-bold px-2 py-1 rounded-lg
+                                        ${isDone ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-500'}
+                                    `}>
+                                        {isDone ? '✓ Hoàn thành' : `+${quest.xp} XP`}
+                                    </span>
+                                    <span className={`text-[11px] font-semibold flex items-center gap-0.5 transition-colors
+                                        ${isDone ? 'text-green-500' : 'text-slate-400 group-hover:text-blue-500'}
+                                    `}>
+                                        Vào học <ChevronRight size={12} />
+                                    </span>
+                                </div>
+                            </Link>
+                        </div>
                     );
                 })}
             </div>

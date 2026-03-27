@@ -136,7 +136,7 @@ function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: ()
 
 
             <div className="relative z-0 pt-10 pb-16 px-4 bg-white border-b border-slate-100">
-                <div className="max-w-6xl mx-auto">
+                <div className="max-w-7xl mx-auto">
 
                     {/* HEADER INFO */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
@@ -338,7 +338,7 @@ function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: ()
             </div>
 
             {/* CONTENT GRID - FIX 2: relative z-0 để không đè lên menu */}
-            <div className="relative z-0 max-w-6xl mx-auto px-4 mt-12 grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+            <div className="relative z-0 max-w-7xl mx-auto px-4 mt-12 grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
                 <div className="lg:col-span-2 space-y-8">
                     <SectionBox title="Lịch sử Dịch thuật" icon={<Languages size={22} className="text-blue-600" />} link="/translate" linkText="Mở công cụ">
                         {loadingData ? <SkeletonList /> : (user && history.translation.length > 0) ? (
@@ -347,15 +347,17 @@ function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: ()
                                     <Link
                                         key={idx}
                                         href="/translate"
-                                        className="flex items-center justify-between p-4 bg-slate-50/50 border border-slate-100 rounded-xl hover:bg-white hover:border-blue-300 hover:shadow-md transition-all group"
+                                        className="flex items-center justify-between p-5 bg-slate-50/50 border border-slate-100 rounded-2xl hover:bg-white hover:border-blue-300 hover:shadow-lg transition-all group"
                                     >
                                         <div className="flex-1 min-w-0 mr-4">
-                                            <p className="font-bold text-slate-700 text-base truncate group-hover:text-blue-600 transition-colors tracking-tight">{item.source}</p>
-                                            <p className="text-sm text-slate-500 truncate mt-0.5">{item.target}</p>
+                                            <p className="font-bold text-slate-800 text-base group-hover:text-blue-600 transition-colors tracking-tight leading-tight truncate">{item.source}</p>
+                                            <p className="text-sm text-slate-500 mt-1 font-medium">{item.target}</p>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[10px] font-bold text-slate-400 bg-white px-2 py-1 rounded-lg border border-slate-100 shrink-0">{item.time}</span>
-                                            <ArrowRight size={16} className="text-slate-300 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all" />
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-[11px] font-bold text-slate-400 bg-white px-3 py-1.5 rounded-xl border border-slate-100 shrink-0 shadow-sm">{item.time}</span>
+                                            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-inner">
+                                                <ArrowRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
+                                            </div>
                                         </div>
                                     </Link>
                                 ))}
@@ -412,19 +414,23 @@ function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: ()
                                     <Link
                                         key={idx}
                                         href={`/flashcards/${deck.id}`}
-                                        className="flex items-center gap-4 p-4 bg-slate-50/50 border border-slate-100 rounded-2xl hover:bg-white hover:border-blue-400 hover:shadow-md transition-all group"
+                                        className="flex items-center gap-5 p-5 bg-slate-50/50 border border-slate-100 rounded-[1.5rem] hover:bg-white hover:border-blue-400 hover:shadow-xl transition-all group"
                                     >
-                                        <div className="w-12 h-12 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors shrink-0 shadow-sm">
-                                            <BookOpen size={22} />
+                                        <div className="w-14 h-14 bg-white border border-slate-100 rounded-2xl flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all shrink-0 shadow-md">
+                                            <BookOpen size={26} />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-black text-slate-800 text-sm truncate group-hover:text-blue-600 transition-colors uppercase tracking-tight">{deck.title}</span>
-                                                <span className="text-[8px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-black uppercase tracking-widest shrink-0">Official</span>
+                                            <div className="flex items-center justify-between gap-2 overflow-hidden">
+                                                <span className="font-bold text-slate-800 text-sm group-hover:text-blue-600 transition-colors uppercase tracking-tight leading-tight truncate flex-1">{deck.title}</span>
+                                                <span className="text-[9px] bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full font-black uppercase tracking-widest shrink-0 border border-blue-200">Official</span>
                                             </div>
-                                            <p className="text-xs text-slate-500 font-bold mt-1">{deck.count} thẻ ghi nhớ</p>
+                                            <p className="text-[13px] text-slate-500 font-bold mt-1.5 flex items-center gap-1.5 opacity-80">
+                                                <Zap size={12} className="text-yellow-500" fill="currentColor" /> {deck.count} thẻ ghi nhớ
+                                            </p>
                                         </div>
-                                        <ArrowRight size={16} className="text-slate-300 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all" />
+                                        <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-300 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all">
+                                            <ArrowRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
+                                        </div>
                                     </Link>
                                 ))}
                             </div>
@@ -463,10 +469,14 @@ interface SectionBoxProps {
 
 function SectionBox({ title, icon, link, linkText, children }: SectionBoxProps) {
     return (
-        <div className="bg-white rounded-[2rem] border border-slate-100 p-7 shadow-sm hover:border-blue-100 transition-colors">
-            <div className="flex justify-between items-center mb-6">
-                <h3 className="font-black text-slate-800 text-xl flex items-center gap-3">{icon} {title}</h3>
-                {link && <Link href={link} className="text-xs text-blue-600 font-black hover:bg-blue-50 px-4 py-2 rounded-xl transition-all border border-blue-50 hover:shadow-sm">{linkText}</Link>}
+        <div className="bg-white rounded-[2rem] border border-slate-100 p-6 shadow-sm hover:border-blue-100 transition-colors">
+            <div className="flex items-center justify-between gap-4 mb-6">
+                <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2.5 leading-tight">{icon} {title}</h3>
+                {link && (
+                    <Link href={link} className="text-[11px] text-blue-600 font-bold hover:bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-50/50 transition-all shrink-0 whitespace-nowrap">
+                        {linkText}
+                    </Link>
+                )}
             </div>
             {children}
         </div>
