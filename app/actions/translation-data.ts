@@ -1,7 +1,7 @@
 'use server'
 
 import { getApiUrl } from '@/lib/apiClient';
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 
 // getTranslationHistory: calls backend dashboard endpoint and extracts translation history
 export async function getTranslationHistory(userId: string) {
@@ -16,8 +16,14 @@ export async function getTranslationHistory(userId: string) {
     // Ensure absolute URL on server
     const finalUrl = url.startsWith('/') ? `${protocol}://${host}${url}` : url;
 
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get('session_token')?.value;
+
     const res = await fetch(finalUrl, {
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(sessionToken ? { 'Cookie': `session_token=${sessionToken}` } : {})
+      },
       cache: 'no-store',
     });
     if (!res.ok) {
@@ -26,7 +32,16 @@ export async function getTranslationHistory(userId: string) {
     }
     const json = await res.json();
     const history = json?.history?.translation ?? [];
-    return { success: true, data: history };
+
+    // Map fields to match TranslationPanel expectation
+    const formattedHistory = history.map((item: any) => ({
+      id: item.id || Math.random().toString(),
+      sourceText: item.source,
+      targetText: item.target,
+      createdAt: item.time
+    }));
+
+    return { success: true, data: formattedHistory };
   } catch (error) {
     console.error("getTranslationHistory Error:", error);
     return { success: false, data: [] };

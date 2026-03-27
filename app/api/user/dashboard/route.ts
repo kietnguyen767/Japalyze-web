@@ -43,7 +43,17 @@ export async function GET() {
         // 1. Lấy dữ liệu cơ bản
         const translationHistory = await prisma.translationHistory.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: 3 });
         const testResult = await prisma.testResult.findFirst({ where: { userId }, orderBy: { completedAt: 'desc' }, include: { test: true } });
-        const decks = await prisma.deck.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: 4, include: { _count: { select: { cards: true } } } });
+
+        // Lấy bộ thẻ mẫu (chứa [SAMPLE] trong description) thay vì bộ thẻ cá nhân
+        const sampleDecks = await prisma.deck.findMany({
+            where: {
+                userId,
+                description: { contains: '[SAMPLE]' }
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 3,
+            include: { _count: { select: { cards: true } } }
+        });
 
         // Khởi tạo user
         const user = await prisma.user.findUnique({
@@ -167,7 +177,7 @@ export async function GET() {
                     name: testResult.test.title,
                     date: new Date(testResult.completedAt).toLocaleDateString('vi-VN')
                 } : null,
-                decks: decks.map((d: { id: string; title: string; _count: { cards: number } }) => ({
+                decks: sampleDecks.map((d: { id: string; title: string; _count: { cards: number } }) => ({
                     id: d.id,
                     title: d.title,
                     count: d._count.cards

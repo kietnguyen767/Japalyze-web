@@ -127,18 +127,25 @@ export async function POST(request: Request) {
     // 4) Lưu vào Cache (24h)
     await setCache(cacheKey, finalTranslation, 86400);
 
-    // 5) Lưu lịch sử vào Postgres (Chạy ngầm, không await để phản hồi nhanh)
+    // 5) Lưu lịch sử vào Postgres
     const userId = await getUserId();
+    console.log("📝 [Translate] userId detected:", userId);
+
     if (userId) {
-      prisma.translationHistory
-        .create({
+      try {
+        const historyRecord = await prisma.translationHistory.create({
           data: {
             sourceText: text,
             targetText: finalTranslation,
             userId,
           },
-        })
-        .catch((err: any) => console.error("Lỗi lưu lịch sử:", err));
+        });
+        console.log("✅ [Translate] History saved successfully:", historyRecord.id);
+      } catch (err: any) {
+        console.error("❌ [Translate] Error saving history:", err.message);
+      }
+    } else {
+      console.warn("⚠️ [Translate] No userId found, skipping history save.");
     }
 
     // 6) Trả về kết quả

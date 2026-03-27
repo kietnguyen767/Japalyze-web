@@ -14,6 +14,7 @@ import { useAuth } from '@/context/AuthContext';
 import SaveFlashcardModal from '@/components/SaveFlashcardModal';
 import { getDashboardVocabulary, getTranslationHistory } from '@/app/actions/translation-data';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiFetch } from '@/lib/apiClient';
 
 
 // --- Types ---
@@ -124,7 +125,7 @@ export default function TranslationPanel() {
     queryKey: ['word-detail', detailTrigger],
     queryFn: async () => {
       if (!detailTrigger) return null;
-      const res = await fetch('/api/word-detail', {
+      const res = await apiFetch('/api/word-detail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -300,7 +301,7 @@ export default function TranslationPanel() {
 
     try {
       // 2. Chạy dịch và lấy chi tiết từ song song
-      const translateTask = fetch('/api/translate', {
+      const translateTask = apiFetch('/api/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: textToTranslate, source: sLang, target: tLang }),
@@ -338,7 +339,7 @@ export default function TranslationPanel() {
     setIsAnalyzing(true);
     setAnalysis(null);
     try {
-      const res = await fetch('/api/analyze', {
+      const res = await apiFetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

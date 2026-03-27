@@ -340,17 +340,24 @@ function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: ()
             {/* CONTENT GRID - FIX 2: relative z-0 để không đè lên menu */}
             <div className="relative z-0 max-w-6xl mx-auto px-4 mt-12 grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
                 <div className="lg:col-span-2 space-y-8">
-                    <SectionBox title="Lịch sử Dịch thuật" icon={<Languages className="text-blue-600" />} link="/translate" linkText="Mở công cụ">
+                    <SectionBox title="Lịch sử Dịch thuật" icon={<Languages size={22} className="text-blue-600" />} link="/translate" linkText="Mở công cụ">
                         {loadingData ? <SkeletonList /> : (user && history.translation.length > 0) ? (
                             <div className="space-y-3">
                                 {history.translation.map((item: { source: string; target: string; time: string }, idx: number) => (
-                                    <div key={idx} className="flex justify-between items-center p-4 bg-slate-50/50 border border-slate-100 rounded-2xl hover:bg-white hover:shadow-md transition-all cursor-default group">
+                                    <Link
+                                        key={idx}
+                                        href="/translate"
+                                        className="flex items-center justify-between p-4 bg-slate-50/50 border border-slate-100 rounded-xl hover:bg-white hover:border-blue-300 hover:shadow-md transition-all group"
+                                    >
                                         <div className="flex-1 min-w-0 mr-4">
-                                            <p className="font-bold text-slate-700 truncate group-hover:text-blue-600 transition-colors">{item.source}</p>
+                                            <p className="font-bold text-slate-700 text-base truncate group-hover:text-blue-600 transition-colors tracking-tight">{item.source}</p>
                                             <p className="text-sm text-slate-500 truncate mt-0.5">{item.target}</p>
                                         </div>
-                                        <span className="text-xs text-slate-400 bg-white px-2 py-1 rounded-md border border-slate-100">{item.time}</span>
-                                    </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-bold text-slate-400 bg-white px-2 py-1 rounded-lg border border-slate-100 shrink-0">{item.time}</span>
+                                            <ArrowRight size={16} className="text-slate-300 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all" />
+                                        </div>
+                                    </Link>
                                 ))}
                             </div>
                         ) : <EmptyState text={user ? "Chưa có lịch sử dịch gần đây" : "Đăng nhập để xem lịch sử"} />}
@@ -369,7 +376,7 @@ function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: ()
                                 { id: 'weather', name: 'Thời tiết' },
                                 { id: 'family', name: 'Gia đình' },
                             ].map((topic) => (
-                                <Link key={topic.id} href={`/exercises/${topic.id}`} className="p-4 rounded-xl bg-white border border-slate-100 text-slate-600 font-semibold text-center transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600">
+                                <Link key={topic.id} href={`/exercises/${topic.id}`} className="p-5 rounded-2xl bg-white border border-slate-100 text-slate-600 font-bold text-base text-center transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:border-blue-200 hover:text-blue-600 flex items-center justify-center min-h-[70px]">
                                     {topic.name}
                                 </Link>
                             ))}
@@ -378,41 +385,50 @@ function Dashboard({ user, onOpenSurvey }: { user: User | null, onOpenSurvey: ()
                 </div>
 
                 <div className="space-y-8">
-                    <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm hover:shadow-lg transition-all relative overflow-hidden">
+                    <div className="bg-white rounded-2xl border border-slate-100 p-7 shadow-sm hover:shadow-lg transition-all relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-red-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
                         <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-6 relative z-10">
-                            <FileText size={20} className="text-blue-600" /> Kết quả thi gần nhất
+                            <FileText size={22} className="text-blue-600" /> Kết quả thi gần nhất
                         </h3>
-                        <div className="text-center py-4 relative z-10">
-                            {loadingData ? <div className="h-20 w-32 mx-auto bg-slate-100 rounded-xl animate-pulse"></div> :
+                        <div className="text-center py-5 relative z-10">
+                            {loadingData ? <div className="h-24 w-40 mx-auto bg-slate-100 rounded-xl animate-pulse"></div> :
                                 (user && history.test) ? (
                                     <div className="animate-in zoom-in duration-300">
                                         <div className="text-6xl font-black text-slate-800 tracking-tighter">{history.test.lastScore}<span className="text-2xl text-slate-400 font-bold">/{history.test.total}</span></div>
-                                        <p className="text-sm font-bold text-slate-500 mt-2 line-clamp-1 px-4">{history.test.name}</p>
+                                        <p className="text-base font-bold text-slate-500 mt-2 line-clamp-1 px-4">{history.test.name}</p>
                                         <span className="inline-block mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50 px-2 py-1 rounded border border-slate-100">{history.test.date}</span>
                                     </div>
-                                ) : <p className="text-slate-400 text-sm italic">{user ? 'Chưa có dữ liệu thi thử.' : 'Đăng nhập để xem điểm thi.'}</p>}
+                                ) : <p className="text-slate-400 text-sm italic py-2">{user ? 'Chưa có dữ liệu thi thử.' : 'Đăng nhập để xem điểm thi.'}</p>}
                         </div>
-                        <Link href="/tests" className="block w-full py-3 bg-slate-800 text-white text-center font-bold rounded-xl text-sm hover:bg-slate-700 hover:shadow-lg transition-all mt-6 relative z-10">
+                        <Link href="/tests" className="block w-full py-3.5 bg-slate-800 text-white text-center font-bold rounded-xl text-sm hover:bg-slate-700 hover:shadow-lg transition-all mt-6 relative z-10">
                             Làm đề thi thử
                         </Link>
                     </div>
 
-                    <SectionBox title="Bộ Deck của tôi" icon={<BookOpen size={20} className="text-blue-600" />} link="/flashcards" linkText="Xem tất cả">
+                    <SectionBox title="Danh sách bộ thẻ mẫu" icon={<BookOpen size={22} className="text-blue-600" />} link="/flashcards" linkText="Xem tất cả">
                         {loadingData ? <SkeletonList /> : (user && history.decks.length > 0) ? (
                             <div className="space-y-3">
                                 {history.decks.map((deck: { id: string; title: string; count: number }, idx: number) => (
-                                    <div key={idx} className="flex justify-between items-center p-3.5 bg-white border border-slate-100 rounded-xl hover:border-blue-200 hover:shadow-sm transition-all group">
-                                        <span className="font-medium text-slate-700 truncate flex-1 group-hover:text-blue-600 transition-colors">{deck.title}</span>
-                                        <span className="text-[11px] font-bold bg-blue-50 text-blue-600 px-2.5 py-1 rounded-lg ml-2">{deck.count} thẻ</span>
-                                    </div>
+                                    <Link
+                                        key={idx}
+                                        href={`/flashcards/${deck.id}`}
+                                        className="flex items-center gap-4 p-4 bg-slate-50/50 border border-slate-100 rounded-2xl hover:bg-white hover:border-blue-400 hover:shadow-md transition-all group"
+                                    >
+                                        <div className="w-12 h-12 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors shrink-0 shadow-sm">
+                                            <BookOpen size={22} />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-black text-slate-800 text-sm truncate group-hover:text-blue-600 transition-colors uppercase tracking-tight">{deck.title}</span>
+                                                <span className="text-[8px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-black uppercase tracking-widest shrink-0">Official</span>
+                                            </div>
+                                            <p className="text-xs text-slate-500 font-bold mt-1">{deck.count} thẻ ghi nhớ</p>
+                                        </div>
+                                        <ArrowRight size={16} className="text-slate-300 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all" />
+                                    </Link>
                                 ))}
                             </div>
-                        ) : <EmptyState text={user ? "Chưa tạo bộ thẻ nào" : "Đăng nhập để quản lý thẻ"} />}
-
-                        <Link href="/flashcards" className="mt-4 flex items-center justify-center gap-2 w-full py-2.5 border border-dashed border-blue-200 text-blue-600 font-semibold text-sm rounded-xl hover:bg-blue-50 transition-all">
-                            <Plus size={16} /> Tạo bộ mới
-                        </Link>
+                        ) : <EmptyState text={user ? "Chưa có bộ thẻ mẫu nào" : "Đăng nhập để xem bộ thẻ"} />}
                     </SectionBox>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -447,10 +463,10 @@ interface SectionBoxProps {
 
 function SectionBox({ title, icon, link, linkText, children }: SectionBoxProps) {
     return (
-        <div className="bg-white rounded-2xl border border-slate-100 p-8 shadow-sm hover:border-blue-100 transition-colors">
+        <div className="bg-white rounded-[2rem] border border-slate-100 p-7 shadow-sm hover:border-blue-100 transition-colors">
             <div className="flex justify-between items-center mb-6">
-                <h3 className="font-bold text-slate-800 text-lg flex items-center gap-3">{icon} {title}</h3>
-                {link && <Link href={link} className="text-sm text-blue-600 font-semibold hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors">{linkText}</Link>}
+                <h3 className="font-black text-slate-800 text-xl flex items-center gap-3">{icon} {title}</h3>
+                {link && <Link href={link} className="text-xs text-blue-600 font-black hover:bg-blue-50 px-4 py-2 rounded-xl transition-all border border-blue-50 hover:shadow-sm">{linkText}</Link>}
             </div>
             {children}
         </div>
